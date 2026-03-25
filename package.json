@@ -1,0 +1,13 @@
+{
+  "name": "latentarchon-compliance",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Compliance documentation and PDF generation for Latent Archon",
+  "scripts": {
+    "build:pdfs": "node scripts/build-pdfs.mjs",
+    "clean": "rm -rf dist/"
+  },
+  "devDependencies": {
+    "md-to-pdf": "^5.2.4"
+  }
+}
