@@ -42,11 +42,10 @@ npm run build:pdfs
 On push to `main`, the `publish-pdfs` workflow:
 1. Builds PDFs from all markdown sources
 2. Uploads them as a GitHub Actions artifact (90-day retention)
-3. Sends a `repository_dispatch` to `latentarchon/marketing`, which triggers a rebuild
 
-The marketing site checks out this repo at build time, builds PDFs, and copies them to `public/docs/` before deploying. No PDFs are committed to either repo.
+The marketing site (`latentarchon/marketing`) checks out this repo at build time, builds PDFs, and copies them to `public/docs/` before deploying to Firebase Hosting. No PDFs are committed to either repo.
 
-**Required secret**: `MARKETING_DISPATCH_TOKEN` — a fine-grained PAT with `contents: write` on `latentarchon/marketing` (needed for `repository_dispatch`).
+To update PDFs on the marketing site, trigger a marketing deploy via `workflow_dispatch` or push any change to `marketing/main`.
 
 ## Review Cycle
 

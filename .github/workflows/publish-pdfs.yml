@@ -39,11 +39,3 @@ jobs:
           name: compliance-pdfs
           path: dist/*.pdf
           retention-days: 90
-
-      - name: Trigger marketing site rebuild
-        uses: peter-evans/repository-dispatch@v3
-        with:
-          token: ${{ secrets.MARKETING_DISPATCH_TOKEN }}
-          repository: latentarchon/marketing
-          event-type: compliance-pdfs-updated
-          client-payload: '{"sha": "${{ github.sha }}", "ref": "${{ github.ref }}"}'
