@@ -64,13 +64,13 @@ Controls are categorized by implementation responsibility:
 | Control | Title | Responsibility | Implementation |
 |---------|-------|---------------|----------------|
 | AC-1 | Policy and Procedures | Latent Archon + Customer | See `policies/access-control.md` |
-| AC-2 | Account Management | Shared | Identity Platform tenants; org admin RBAC for user lifecycle; SCIM 2.0 for automated provisioning/deprovisioning |
+| AC-2 | Account Management | Shared | Identity Platform tenants; org admin RBAC for user lifecycle; SCIM 2.0 for automated provisioning/deprovisioning; **interceptor-level org membership gate rejects users not belonging to any organization** |
 | AC-2(1) | Automated Account Management | Shared | SCIM 2.0 server syncs with customer IdP; JIT provisioning on first login |
 | AC-2(2) | Automated Temporary/Emergency Accounts | Latent Archon | Invite tokens are time-limited; no anonymous accounts |
 | AC-2(3) | Disable Accounts | Shared | Firebase Admin SDK `DisableUser()`; SCIM DELETE deprovisions; self-service account closure via `CloseAccount` RPC with step-up MFA; automated 90-day data purge via Cloud Scheduler |
 | AC-2(4) | Automated Audit Actions | Latent Archon | All account lifecycle events audit-logged with user/IP/timestamp |
-| AC-3 | Access Enforcement | Latent Archon | RBAC (master_admin, admin, editor, viewer) enforced per-RPC; PostgreSQL RLS (fail-closed) |
-| AC-4 | Information Flow Enforcement | Shared | VPC networking (private IP only); FQDN-based egress firewall (default deny all, explicit Google API allowlist); Cloud Armor WAF; RLS workspace scoping; vector store token restrictions; per-tenant IP allowlisting via Cloud Armor |
+| AC-3 | Access Enforcement | Latent Archon | RBAC (master_admin, admin, editor, viewer) enforced per-RPC; PostgreSQL RLS (fail-closed); **org membership enforced at interceptor level** (orgless users rejected on all non-AuthService RPCs); **subdomain→org DB validation** rejects unknown tenant subdomains and cross-tenant mismatches; org slug format validated against DNS-safe regex + reserved-slug blocklist |
+| AC-4 | Information Flow Enforcement | Shared | VPC networking (private IP only); FQDN-based egress firewall (default deny all, explicit Google API allowlist); Cloud Armor WAF; RLS workspace scoping; vector store token restrictions; per-tenant IP allowlisting via Cloud Armor; **subdomain→org cross-tenant prevention** (Host subdomain resolved to org via DB, user's org must match) |
 | AC-5 | Separation of Duties | Latent Archon | Three Cloud Run services with distinct DB roles (chat_ro, admin_rw, ops_rw); two-project auth isolation |
 | AC-6 | Least Privilege | Shared | 15 specific IAM roles on terraform-sa; DB roles with minimal grants; per-service SA with scoped permissions |
 | AC-6(1) | Authorize Access to Security Functions | Latent Archon | Only master_admin can promote to master_admin; MFA reset restricted to admins with self-reset blocked |
@@ -247,7 +247,7 @@ Controls are categorized by implementation responsibility:
 | SC-13 | Cryptographic Protection | GCP Inherited | AES-256 at rest; TLS 1.2+ in transit |
 | SC-17 | Public Key Infrastructure Certificates | Shared | Certificate Manager with DNS authorization; Google-managed certs |
 | SC-20 | Secure Name/Address Resolution Service | GCP Inherited | Google Cloud DNS |
-| SC-23 | Session Authenticity | Latent Archon | JWT-based sessions; TOTP MFA; tenant triple-check |
+| SC-23 | Session Authenticity | Latent Archon | JWT-based sessions; TOTP MFA; **five-layer tenant enforcement**: JWT claim, IDP pool header match, Host subdomain vs token pool, org membership gate, subdomain→org DB validation |
 | SC-28 | Protection of Information at Rest | Shared | AES-256 all storage; Cloud KMS CMEK available |
 | SC-39 | Process Isolation | GCP + Latent Archon | Cloud Run container isolation; three separate services; two-project split |
 

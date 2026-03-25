@@ -44,6 +44,8 @@ This policy applies to:
 - Employee accounts require management approval before provisioning
 - Customer accounts require org admin authorization (invite flow)
 - No shared or generic accounts are permitted
+- **Every user must belong to an organization** — the auth interceptor rejects orgless users on all non-AuthService RPCs
+- **Every organization must have a unique, DNS-safe slug** — validated against RFC 1123 regex (`^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$`) and a reserved-slug blocklist at creation time
 - Service accounts use Workload Identity Federation (WIF) — no static keys
 - Org policy `iam.disableServiceAccountKeyCreation` enforces this at the GCP organization level
 
@@ -124,6 +126,8 @@ This policy applies to:
 
 ### 5.2 Enforcement Points
 
+- **Org Membership Gate (interceptor-level)**: All non-AuthService RPCs require the user to belong to an organization. Users without org membership are rejected with `PermissionDenied` before reaching any handler. AuthService RPCs are exempt to allow invite acceptance.
+- **Subdomain→Org DB Validation (interceptor-level)**: If the Host header contains a tenant subdomain (not a reserved infra subdomain), the slug is resolved against the `organizations` table. Unknown subdomains are rejected. Cross-tenant mismatches (user's org ≠ subdomain org) are rejected.
 - Every RPC handler performs explicit authorization checks before business logic
 - Organization operations require `IsOrgAdmin()` or `IsMasterAdmin()`
 - Workspace operations require `CanUserAccessWorkspace()` (explicit membership OR master_admin)

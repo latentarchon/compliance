@@ -30,13 +30,19 @@ This two-project split provides **complete auth pool isolation** — a valid cha
 
 ### Multi-Tenant Tenant Routing
 
-Each customer organization receives its own Identity Platform **tenant** in both projects. Tenant isolation is enforced at three independent layers:
+Each customer organization receives its own Identity Platform **tenant** in both projects and a unique **DNS-safe slug** (RFC 1123 label) used for subdomain routing. Tenant isolation is enforced at five independent layers in the auth interceptor chain:
 
 1. **JWT Claim**: Firebase ID token must contain a `firebase.tenant` claim
-2. **Header Match**: `X-Tenant-ID` request header must match the token's tenant ID
-3. **Host Subdomain Match**: The request hostname subdomain must match the tenant configuration
+2. **Header Match**: `X-IDP-Pool-ID` request header must match the token's IDP pool ID
+3. **Host Subdomain Match**: The request hostname subdomain must match the token's IDP pool
+4. **Org Membership Gate**: After token verification, the user's organization membership is resolved from the database. Users without any org membership are **rejected** on all non-AuthService RPCs (`PermissionDenied: "organization membership required"`)
+5. **Subdomain→Org DB Validation**: If the Host header contains a non-reserved subdomain (i.e., not `www`, `api`, `app`, `admin`, `staging`, `localhost`), the subdomain is resolved against the `organizations` table by slug. **Unknown subdomains are rejected** (`PermissionDenied: "unknown tenant"`). If the resolved org does not match the user's org, the request is rejected (`PermissionDenied: "tenant mismatch"`)
 
-If any check fails, the request is rejected with `PermissionDenied`.
+If any check fails, the request is rejected with `PermissionDenied`. This five-layer enforcement prevents orgless users, unknown tenant subdomains, and cross-tenant request routing.
+
+### Organization Slug Enforcement
+
+Organization slugs are validated at creation time against a DNS-safe regex (`^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$`) and a reserved-slug blocklist. Slugs must be 3–63 characters, lowercase alphanumeric with hyphens, and cannot collide with infrastructure subdomains. The `organizations.slug` column is `NOT NULL UNIQUE` in the database schema.
 
 ### Multi-Factor Authentication (MFA)
 
@@ -114,9 +120,18 @@ Client (SPA)
     → Security Headers Middleware
     → IP Rate Limiter (pre-auth)
     → Connect-RPC Interceptor Chain:
-      1. Auth (token verify, tenant check, MFA, session timeout)
-      2. Per-User Rate Limiter
-      3. Logging Interceptor
+      1. Recovery (panic → CodeInternal, never leaks stack traces)
+      2. Trace (OpenTelemetry span injection)
+      3. Auth:
+         a. Token verify (Firebase JWT)
+         b. IDP pool isolation (header + Host subdomain vs token pool)
+         c. MFA enforcement (TOTP required, step-up for sensitive RPCs)
+         d. Session timeouts (idle 30 min, absolute 12 hr)
+         e. JIT provisioning (federated users)
+         f. Org membership gate (reject orgless users)
+         g. Subdomain→org DB validation (reject unknown/mismatched tenants)
+      4. Per-User Rate Limiter
+      5. Logging Interceptor
     → Handler (authorization check, business logic)
     → RLS-scoped Database Query (Cloud SQL, private VPC)
 ```
