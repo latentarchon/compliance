@@ -1,0 +1,49 @@
+name: Publish Compliance PDFs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**.md'
+      - 'scripts/**'
+      - 'package.json'
+  workflow_dispatch:
+
+jobs:
+  build-and-dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build:pdfs
+
+      - name: Verify PDFs generated
+        run: |
+          count=$(ls -1 dist/*.pdf 2>/dev/null | wc -l)
+          echo "Generated $count PDFs"
+          ls -lh dist/
+          if [ "$count" -eq 0 ]; then
+            echo "::error::No PDFs were generated"
+            exit 1
+          fi
+
+      - name: Upload PDFs as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: compliance-pdfs
+          path: dist/*.pdf
+          retention-days: 90
+
+      - name: Trigger marketing site rebuild
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.MARKETING_DISPATCH_TOKEN }}
+          repository: latentarchon/marketing
+          event-type: compliance-pdfs-updated
+          client-payload: '{"sha": "${{ github.sha }}", "ref": "${{ github.ref }}"}'

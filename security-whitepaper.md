@@ -28,6 +28,20 @@ Authentication is split across two GCP projects with independent Firebase Auth /
 
 This two-project split provides **complete auth pool isolation** — a valid chat-pool JWT cannot authenticate against the admin API, and vice versa. Credential compromise in one pool cannot escalate to the other.
 
+### Cross-Pool Identity Prohibition
+
+Because Firebase UIDs are project-scoped, the same person has different UIDs in the admin and chat pools. **Cross-pool identity bridging is explicitly prohibited** — the system never copies memberships between pools by matching on email. This would create a lateral escalation path (compromise one pool → gain the other pool's permissions).
+
+Instead, workspace access across pools uses the **explicit invite flow**:
+
+1. Admin creates workspace → admin UID stored in `workspace_members` (admin app)
+2. System auto-creates a pending invite for the creator's email
+3. Creator receives email with sign-in link to the chat app
+4. Creator authenticates in the chat app → chat UID
+5. Creator accepts invite → chat UID stored in `workspace_members` (chat app)
+
+Each pool's membership is created through that pool's own authentication, with an auditable invite record bridging the two. See `docs/POOL_ISOLATION.md` for the full architectural decision record.
+
 ### Multi-Tenant Tenant Routing
 
 Each customer organization receives its own Identity Platform **tenant** in both projects and a unique **DNS-safe slug** (RFC 1123 label) used for subdomain routing. Tenant isolation is enforced at five independent layers in the auth interceptor chain:

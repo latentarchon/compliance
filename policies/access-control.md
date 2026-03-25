@@ -114,7 +114,7 @@ This policy applies to:
 | Role | Capabilities |
 |------|-------------|
 | `master_admin` | Full org access; implicit access to all workspaces; can promote other master_admins; can reset member MFA |
-| `admin` | Org management; create workspaces (auto-added as workspace admin); invite/remove members |
+| `admin` | Org management; create workspaces (auto-added as workspace admin + auto-invited to chat pool); invite/remove members |
 
 #### Workspace Roles
 
@@ -165,6 +165,22 @@ This policy applies to:
 - Every stored embedding includes workspace_id and document_id token restrictions
 - Search queries include workspace ID filters
 - Cross-workspace leakage is prevented at the vector database level
+
+### 6.4 Auth Pool Isolation
+
+The admin app and chat app use **separate Firebase/Identity Platform projects** with independent UID namespaces. This provides blast-radius isolation — credential compromise in one pool cannot escalate to the other.
+
+**Prohibited**: Cross-pool identity bridging (copying memberships between pools by email matching). This would create a lateral escalation path and defeat the purpose of pool separation.
+
+**Required**: Workspace access across pools uses the explicit invite flow only:
+
+1. Admin creates workspace → admin UID added to `workspace_members`
+2. System auto-creates a pending invite for the creator's email (chat pool)
+3. Creator receives sign-in link to the chat app
+4. Creator authenticates in the chat app → chat UID
+5. Creator accepts invite → chat UID added to `workspace_members`
+
+Each pool's membership is established through that pool's own authentication, with an auditable invite record. See `backend/docs/POOL_ISOLATION.md` for the full architecture decision record.
 
 ---
 
