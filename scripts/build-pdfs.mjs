@@ -3,14 +3,26 @@ import { readdir, mkdir } from 'fs/promises';
 import { join, basename } from 'path';
 import { existsSync } from 'fs';
 
-const DOCS = [
+// PUBLIC — safe to host on the marketing site (latentarchon.com/docs/)
+const PUBLIC_DOCS = [
   'security-whitepaper.md',
-  'ssp-lite-nist-800-53.md',
-  'policies/information-security.md',
   'policies/access-control.md',
   'policies/change-management.md',
   'policies/incident-response.md',
   'policies/vendor-risk.md',
+];
+
+// INTERNAL — shared only with agency sponsors, 3PAO, and FedRAMP PMO under NDA
+const INTERNAL_DOCS = [
+  'ssp-lite-nist-800-53.md',
+  'fedramp-ssp.md',
+  'fedramp-ssp-appendix-a-controls.md',
+  'contingency-plan.md',
+  'configuration-management-plan.md',
+  'continuous-monitoring-plan.md',
+  'supply-chain-risk-management-plan.md',
+  'privacy-impact-assessment.md',
+  'policies/information-security.md',
   'policies/encryption.md',
   'policies/data-classification.md',
   'policies/business-continuity.md',
@@ -19,16 +31,16 @@ const DOCS = [
   'policies/security-awareness-training.md',
   'policies/physical-security.md',
   'policies/vulnerability-scanning.md',
-  'fedramp-ssp.md',
-  'fedramp-ssp-appendix-a-controls.md',
-  'contingency-plan.md',
-  'configuration-management-plan.md',
-  'continuous-monitoring-plan.md',
-  'supply-chain-risk-management-plan.md',
-  'privacy-impact-assessment.md',
+];
+
+const ALL_DOCS = [
+  ...PUBLIC_DOCS.map(d => ({ doc: d, tier: 'public' })),
+  ...INTERNAL_DOCS.map(d => ({ doc: d, tier: 'internal' })),
 ];
 
 const DIST = join(import.meta.dirname, '..', 'dist');
+const DIST_PUBLIC = join(DIST, 'public');
+const DIST_INTERNAL = join(DIST, 'internal');
 const ROOT = join(import.meta.dirname, '..');
 
 const pdfOptions = {
@@ -54,24 +66,28 @@ const pdfOptions = {
 };
 
 async function main() {
-  if (!existsSync(DIST)) await mkdir(DIST, { recursive: true });
+  for (const dir of [DIST_PUBLIC, DIST_INTERNAL]) {
+    if (!existsSync(dir)) await mkdir(dir, { recursive: true });
+  }
 
-  for (const doc of DOCS) {
+  for (const { doc, tier } of ALL_DOCS) {
     const src = join(ROOT, doc);
     if (!existsSync(src)) {
       console.warn(`⚠  Skipping ${doc} (not found)`);
       continue;
     }
     const outName = basename(doc, '.md') + '.pdf';
-    const dest = join(DIST, outName);
-    console.log(`📄 ${doc} → dist/${outName}`);
+    const destDir = tier === 'public' ? DIST_PUBLIC : DIST_INTERNAL;
+    const dest = join(destDir, outName);
+    console.log(`📄 [${tier}] ${doc} → dist/${tier}/${outName}`);
     try {
       await mdToPdf({ path: src }, { ...pdfOptions, dest });
     } catch (err) {
       console.error(`❌ Failed: ${doc}`, err.message);
     }
   }
-  console.log('\n✅ PDFs written to dist/');
+  console.log(`\n✅ Public PDFs → dist/public/ (${PUBLIC_DOCS.length} docs)`);
+  console.log(`🔒 Internal PDFs → dist/internal/ (${INTERNAL_DOCS.length} docs)`);
 }
 
 main();
