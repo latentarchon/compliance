@@ -127,7 +127,7 @@ This policy applies to:
 ### 5.2 Enforcement Points
 
 - **Org Membership Gate (interceptor-level)**: All non-AuthService RPCs require the user to belong to an organization. Users without org membership are rejected with `PermissionDenied` before reaching any handler. AuthService RPCs are exempt to allow invite acceptance.
-- **Subdomain→Org DB Validation (interceptor-level)**: If the Host header contains a tenant subdomain (not a reserved infra subdomain), the slug is resolved against the `organizations` table. Unknown subdomains are rejected. Cross-tenant mismatches (user's org ≠ subdomain org) are rejected.
+- **Subdomain→Org DB Validation (interceptor-level)**: If the Host header contains an org slug subdomain (not a reserved infra subdomain), the slug is resolved against the `organizations` table via `GetOrgIDBySlug`. Unknown subdomains are rejected. Cross-org mismatches (user's org ≠ subdomain org) are rejected.
 - Every RPC handler performs explicit authorization checks before business logic
 - Organization operations require `IsOrgAdmin()` or `IsMasterAdmin()`
 - Workspace operations require `CanUserAccessWorkspace()` (explicit membership OR master_admin)
@@ -210,13 +210,13 @@ Each pool's membership is established through that pool's own authentication, wi
 
 ## 8. Network-Level Access Controls
 
-### 8.1 Per-Tenant IP Allowlisting
+### 8.1 Per-Organization IP Allowlisting
 
 Organization administrators can configure CIDR-based IP allowlists enforced at the WAF layer:
 
 - Self-service configuration via `UpdateOrganizationSettings` RPC with CIDR validation
 - Allowlists synced to Cloud Armor deny rules (priority 50–99) via GCP Compute API
-- CEL expressions match tenant hostname + IP range for per-tenant enforcement
+- CEL expressions match org hostname (`request.headers['host'].startsWith('<slug>.')`) + IP range for per-org enforcement
 - Full reconciliation logic (add/update/remove) ensures Cloud Armor rules stay in sync with database state
 - Sync failure is non-fatal — database is source of truth; logged and audit-recorded
 - Periodic reconciliation cron catches Cloud Armor drift

@@ -69,8 +69,8 @@ Controls are categorized by implementation responsibility:
 | AC-2(2) | Automated Temporary/Emergency Accounts | Latent Archon | Invite tokens are time-limited; no anonymous accounts |
 | AC-2(3) | Disable Accounts | Shared | Firebase Admin SDK `DisableUser()`; SCIM DELETE deprovisions; self-service account closure via `CloseAccount` RPC with step-up MFA; automated 90-day data purge via Cloud Scheduler |
 | AC-2(4) | Automated Audit Actions | Latent Archon | All account lifecycle events audit-logged with user/IP/timestamp |
-| AC-3 | Access Enforcement | Latent Archon | RBAC (master_admin, admin, editor, viewer) enforced per-RPC; PostgreSQL RLS (fail-closed); **org membership enforced at interceptor level** (orgless users rejected on all non-AuthService RPCs); **subdomain→org DB validation** rejects unknown tenant subdomains and cross-tenant mismatches; org slug format validated against DNS-safe regex + reserved-slug blocklist |
-| AC-4 | Information Flow Enforcement | Shared | VPC networking (private IP only); FQDN-based egress firewall (default deny all, explicit Google API allowlist); Cloud Armor WAF; RLS workspace scoping; vector store token restrictions; per-tenant IP allowlisting via Cloud Armor; **subdomain→org cross-tenant prevention** (Host subdomain resolved to org via DB, user's org must match) |
+| AC-3 | Access Enforcement | Latent Archon | RBAC (master_admin, admin, editor, viewer) enforced per-RPC; PostgreSQL RLS (fail-closed); **org membership enforced at interceptor level** (orgless users rejected on all non-AuthService RPCs); **subdomain→org DB validation** rejects unknown org subdomains and cross-org mismatches; org slug format validated against DNS-safe regex + reserved-slug blocklist |
+| AC-4 | Information Flow Enforcement | Shared | VPC networking (private IP only); FQDN-based egress firewall (default deny all, explicit Google API allowlist); Cloud Armor WAF; RLS workspace scoping; vector store token restrictions; per-org IP allowlisting via Cloud Armor; **subdomain→org cross-org prevention** (Host subdomain resolved to org via DB, user's org must match) |
 | AC-5 | Separation of Duties | Latent Archon | Three Cloud Run services with distinct DB roles (chat_ro, admin_rw, ops_rw); two-project auth isolation with **cross-pool identity bridging explicitly prohibited** — workspace access across pools uses explicit invite flow only (auto-invite on workspace creation; see `docs/POOL_ISOLATION.md`) |
 | AC-6 | Least Privilege | Shared | 15 specific IAM roles on terraform-sa; DB roles with minimal grants; per-service SA with scoped permissions |
 | AC-6(1) | Authorize Access to Security Functions | Latent Archon | Only master_admin can promote to master_admin; MFA reset restricted to admins with self-reset blocked |
@@ -85,7 +85,7 @@ Controls are categorized by implementation responsibility:
 | AC-17(1) | Monitoring/Control | Shared | Cloud Logging captures all access; Cloud Armor logs blocked requests |
 | AC-17(2) | Protection of Confidentiality/Integrity | GCP + Latent Archon | TLS 1.2+ everywhere; HSTS 2-year; PSC for Vertex AI |
 | AC-20 | Use of External Systems | Customer | Customer policy |
-| AC-22 | Publicly Accessible Content | Latent Archon | No public content; all document access requires auth + workspace membership; per-tenant IP allowlisting via Cloud Armor CEL expressions |
+| AC-22 | Publicly Accessible Content | Latent Archon | No public content; all document access requires auth + workspace membership; per-org IP allowlisting via Cloud Armor CEL expressions |
 
 ### AT — Awareness and Training
 
@@ -103,7 +103,7 @@ Controls are categorized by implementation responsibility:
 | AU-1 | Policy and Procedures | Latent Archon | Audit logging is mandatory and cannot be disabled |
 | AU-2 | Event Logging | Latent Archon | All auth, RBAC, document, member, admin, and SCIM provisioning events audited |
 | AU-3 | Content of Audit Records | Latent Archon | user_id, org_id, workspace_id, action, status, resource_type/id, IP, user_agent, trace_id, correlation_id, timestamp |
-| AU-3(1) | Additional Audit Information | Latent Archon | JSONB metadata: request_id, tenant_id, span_id, error_code, duration_ms, platform |
+| AU-3(1) | Additional Audit Information | Latent Archon | JSONB metadata: request_id, idp_pool_id, trace_id, span_id, error_code, duration_ms, platform |
 | AU-4 | Audit Log Storage Capacity | GCP Inherited | Cloud Logging auto-scales; GCS export for long-term retention |
 | AU-5 | Response to Audit Logging Process Failures | Latent Archon | Best-effort design: failures logged but never block requests; structured logs to Cloud Logging as fallback |
 | AU-6 | Audit Record Review, Analysis, and Reporting | Shared | Cloud Logging dashboards; alert policies on WARN-level audit events; **Pub/Sub SIEM export pipeline** (per-customer topic + pull/push subscription for agency Splunk/Sentinel/Chronicle integration) |
@@ -239,7 +239,7 @@ Controls are categorized by implementation responsibility:
 |---------|-------|---------------|----------------|
 | SC-1 | Policy and Procedures | Latent Archon | Documented in security whitepaper |
 | SC-5 | Denial-of-Service Protection | Shared | Cloud Armor (DDoS + WAF); Cloud Run auto-scaling; two-tier rate limiting |
-| SC-7 | Boundary Protection | Shared | VPC private networking; FQDN-based egress firewall (deny-by-default); Cloud Armor with OWASP Top 10 rules + method/origin/bot enforcement; no public IPs on services; PSC for Vertex AI; per-tenant IP allowlisting |
+| SC-7 | Boundary Protection | Shared | VPC private networking; FQDN-based egress firewall (deny-by-default); Cloud Armor with OWASP Top 10 rules + method/origin/bot enforcement; no public IPs on services; PSC for Vertex AI; per-org IP allowlisting |
 | SC-8 | Transmission Confidentiality and Integrity | GCP + Latent Archon | TLS 1.2+ all paths; HSTS 2-year; PSC for internal services |
 | SC-8(1) | Cryptographic Protection | GCP + Latent Archon | TLS 1.2+ with modern cipher suites; Google-managed certificates |
 | SC-10 | Network Disconnect | Latent Archon | Global session idle timeout (30 min default); absolute timeout (12 hr default); **per-org configurable** via org settings (idle: 5-480 min, absolute: 60-1440 min); enforced server-side in auth interceptor |
@@ -248,7 +248,7 @@ Controls are categorized by implementation responsibility:
 | SC-17 | Public Key Infrastructure Certificates | Shared | Certificate Manager with DNS authorization; Google-managed certs |
 | SC-20 | Secure Name/Address Resolution Service | Shared | **Cloudflare DNS** with **DNSSEC enabled** (`cloudflare_zone_dnssec` resource); DS record registered at domain registrar; authoritative zone signing provides data origin authentication |
 | SC-21 | Secure Name/Address Resolution Service (Recursive/Caching) | Shared | DNSSEC validation on Cloudflare resolvers; GCP internal DNS resolves via Google Public DNS (DNSSEC-validating); ensures authenticity of DNS responses for all platform services |
-| SC-23 | Session Authenticity | Latent Archon | JWT-based sessions; TOTP MFA; **five-layer tenant enforcement**: JWT claim, IDP pool header match, Host subdomain vs token pool, org membership gate, subdomain→org DB validation |
+| SC-23 | Session Authenticity | Latent Archon | JWT-based sessions; TOTP MFA; **five-layer org isolation**: IDP pool presence, IDP pool header match, org membership gate, subdomain→org DB validation, cross-org check |
 | SC-28 | Protection of Information at Rest | Shared | AES-256 all storage; Cloud KMS CMEK available |
 | SC-39 | Process Isolation | GCP + Latent Archon | Cloud Run container isolation; three separate services; two-project split |
 
@@ -259,7 +259,7 @@ Controls are categorized by implementation responsibility:
 | SI-1 | Policy and Procedures | Latent Archon | Documented in policies |
 | SI-2 | Flaw Remediation | Shared | Dependabot; govulncheck + Trivy vulnerability scanning in CI; distroless containers; BoringCrypto (FIPS 140-2 validated) via `GOEXPERIMENT=boringcrypto` |
 | SI-3 | Malicious Code Protection | Latent Archon | ClamAV malware scanning on all uploads (**fail-closed in production** — uploads rejected if scanner unavailable); magic-byte validation; file type allowlist; ClamAV deployed as internal-only Cloud Run service |
-| SI-4 | System Monitoring | Shared | Cloud Logging; Cloud Monitoring; Cloud Armor analytics; audit events; real-time security email notifications to org admins; usage analytics and cost attribution per tenant/workspace |
+| SI-4 | System Monitoring | Shared | Cloud Logging; Cloud Monitoring; Cloud Armor analytics; audit events; real-time security email notifications to org admins; usage analytics and cost attribution per org/workspace |
 | SI-5 | Security Alerts, Advisories, and Directives | Shared | Dependabot alerts; GCP Security Bulletins |
 | SI-10 | Information Input Validation | Latent Archon | All RPC inputs validated: required fields, length limits, pagination bounds, UUID parsing, enum validation |
 | SI-11 | Error Handling | Latent Archon | Generic error responses; no internal details leaked; RecoveryInterceptor catches panics |
@@ -312,7 +312,7 @@ The following control families are **fully or predominantly inherited** from GCP
 |----|---------|------|-----------|--------|
 | ~~POA-1~~ | ~~ClamAV Docker image not yet deployed~~ | ~~Complete~~ | Terraform module + staging/production configs deployed (`infra/modules/clamav/`). Uses `benzino77/clamav-rest` on Cloud Run (internal-only, archon-admin invoker). Needs image push + `terragrunt apply`. | **Infra ready** |
 | ~~POA-2~~ | ~~App Check enforcement set to UNENFORCED~~ | ~~Complete~~ | All 4 identity-platform configs (staging admin/chat, production admin/chat) set to `ENFORCED`. Pending: production Firebase app IDs + reCAPTCHA site keys. | **Done** |
-| ~~POA-3~~ | ~~Production Cloud Armor IP ranges TBD~~ | ~~Complete~~ | Self-service per-tenant IP allowlisting implemented via Cloud Armor API integration; org admins configure CIDR allowlists via `UpdateOrganizationSettings` RPC | **Done** |
+| ~~POA-3~~ | ~~Production Cloud Armor IP ranges TBD~~ | ~~Complete~~ | Self-service per-org IP allowlisting implemented via Cloud Armor API integration; org admins configure CIDR allowlists via `UpdateOrganizationSettings` RPC | **Done** |
 | POA-4 | FedRAMP 3PAO assessment | High | Engage 3PAO for formal Moderate assessment | Q3 2026 |
 | POA-5 | StateRAMP authorization | Medium | Apply after FedRAMP Moderate achieved | Q4 2026 |
 | ~~POA-6~~ | ~~US-CERT incident reporting not documented~~ | ~~Complete~~ | IR policy v1.1 updated with FedRAMP Incident Communications Procedure: CAT 1-6 timelines, US-CERT/CISA reporting process (1hr initial → 72hr follow-up → 30-day final), FedRAMP PMO notification, agency ISSO escalation | **Done** |

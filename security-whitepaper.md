@@ -42,17 +42,19 @@ Instead, workspace access across pools uses the **explicit invite flow**:
 
 Each pool's membership is created through that pool's own authentication, with an auditable invite record bridging the two. See `docs/POOL_ISOLATION.md` for the full architectural decision record.
 
-### Multi-Tenant Tenant Routing
+### Multi-Tenant Organization Routing
 
-Each customer organization receives its own Identity Platform **tenant** in both projects and a unique **DNS-safe slug** (RFC 1123 label) used for subdomain routing. Tenant isolation is enforced at five independent layers in the auth interceptor chain:
+Each customer organization receives its own Identity Platform **IDP pool** in both projects and a unique **DNS-safe slug** (RFC 1123 label) used for subdomain routing. Organization isolation is enforced at five independent layers in the auth interceptor chain:
 
-1. **JWT Claim**: Firebase ID token must contain a `firebase.tenant` claim
-2. **Header Match**: `X-IDP-Pool-ID` request header must match the token's IDP pool ID
-3. **Host Subdomain Match**: The request hostname subdomain must match the token's IDP pool
-4. **Org Membership Gate**: After token verification, the user's organization membership is resolved from the database. Users without any org membership are **rejected** on all non-AuthService RPCs (`PermissionDenied: "organization membership required"`)
-5. **Subdomain→Org DB Validation**: If the Host header contains a non-reserved subdomain (i.e., not `www`, `api`, `app`, `admin`, `staging`, `localhost`), the subdomain is resolved against the `organizations` table by slug. **Unknown subdomains are rejected** (`PermissionDenied: "unknown tenant"`). If the resolved org does not match the user's org, the request is rejected (`PermissionDenied: "tenant mismatch"`)
+1. **IDP Pool Presence**: Firebase ID token must contain a `firebase.tenant` claim (when `REQUIRE_IDP_POOL=true`)
+2. **Header Match**: `X-IDP-Pool-ID` request header must exactly match the token's `firebase.tenant` claim
+3. **Org Membership Gate**: After token verification, the user's organization membership is resolved from the database (`organization_members` by Firebase UID). Users without any org membership are **rejected** on all non-AuthService RPCs (`PermissionDenied: "organization membership required"`)
+4. **Subdomain→Org DB Validation**: If the Host header contains a non-reserved subdomain (i.e., not `www`, `api`, `app`, `admin`, `staging`, `localhost`), the subdomain is resolved against the `organizations` table by slug via `GetOrgIDBySlug`. **Unknown subdomains are rejected** (`PermissionDenied: "unknown organization"`)
+5. **Cross-Org Check**: If the subdomain resolves to an org that differs from the user's resolved org, the request is rejected (`PermissionDenied: "organization mismatch"`)
 
-If any check fails, the request is rejected with `PermissionDenied`. This five-layer enforcement prevents orgless users, unknown tenant subdomains, and cross-tenant request routing.
+If any check fails, the request is rejected with `PermissionDenied`. This five-layer enforcement prevents orgless users, unknown org subdomains, and cross-org request routing.
+
+> **Note**: `organization_id` (PostgreSQL UUID) is the business identifier. `idp_pool_id` (Identity Platform tenant string) is the auth isolation implementation detail. They are never interchangeable. See `docs/TENANT_CONFIGURATION.md` for the full terminology guide.
 
 ### Organization Slug Enforcement
 
@@ -148,7 +150,7 @@ Client (SPA)
          d. Session timeouts (idle 30 min, absolute 12 hr)
          e. JIT provisioning (federated users)
          f. Org membership gate (reject orgless users)
-         g. Subdomain→org DB validation (reject unknown/mismatched tenants)
+         g. Subdomain→org DB validation (reject unknown/mismatched orgs)
       4. Per-User Rate Limiter
       5. Logging Interceptor
     → Handler (authorization check, business logic)
@@ -234,7 +236,7 @@ All security-relevant operations are persisted to the `audit_events` database ta
 | `resource_type` / `resource_id` | Affected resource |
 | `ip_address` (INET) | Client IP |
 | `user_agent` | Client identification |
-| `metadata` (JSONB) | request_id, tenant_id, trace_id, span_id, error_code, duration_ms |
+| `metadata` (JSONB) | request_id, idp_pool_id, trace_id, span_id, error_code, duration_ms, platform |
 | `correlation_id` | Cross-event linking |
 
 ### Audited Operations
@@ -370,12 +372,12 @@ Export manifests include chain-of-custody metadata (who exported, when, what sco
 
 ## 11. Usage Analytics & Cost Attribution
 
-The platform includes an **Analytics Service** providing per-tenant usage metrics and cost attribution:
+The platform includes an **Analytics Service** providing per-organization usage metrics and cost attribution:
 
 | Capability | Detail |
 |-----------|--------|
 | Usage Metrics | Chat messages, document uploads, vector searches, and API calls tracked per org and workspace |
-| Cost Attribution | Vertex AI, Document AI, Cloud Storage, and compute costs attributed to tenant/workspace |
+| Cost Attribution | Vertex AI, Document AI, Cloud Storage, and compute costs attributed to org/workspace |
 | Dashboard | Admin-facing usage dashboard with time-series charts and per-workspace breakdowns |
 | Access Control | Analytics endpoints restricted to organization admin role; data org-scoped |
 | Export | Analytics data exportable as CSV/JSON for agency reporting systems |
@@ -407,13 +409,13 @@ Beyond basic liveness checks (`/health`), the platform implements **mode-aware d
 
 Readiness checks are scoped to the server mode to prevent cascading failures across unrelated service boundaries.
 
-### Per-Tenant Cloud Armor IP Allowlisting
+### Per-Organization Cloud Armor IP Allowlisting
 
 Organization administrators can configure **self-service IP allowlists** via the admin API:
 
 - CIDR-based IP allowlists stored in organization settings (JSONB)
 - Allowlists synced to Cloud Armor WAF rules via the Cloud Armor API
-- CEL expressions match tenant hostname + IP range for per-tenant enforcement
+- CEL expressions match org hostname (`request.headers['host'].startsWith('<slug>.')`) + IP range for per-org enforcement
 - Sync failure is non-fatal (logged + audit event; database is source of truth)
 - Periodic reconciliation cron catches Cloud Armor drift
 
@@ -670,7 +672,7 @@ Cloud Armor WAF is deployed in front of all load-balanced services:
 - **HTTP Method Enforcement**: Only GET, POST, OPTIONS allowed; TRACE, DELETE, PATCH blocked at WAF
 - **Origin Header Restriction**: Requests with disallowed `Origin` headers denied
 - **Bot Blocking**: Empty/missing `User-Agent` denied; known scanner/attack tools (curl, wget, sqlmap, nikto, nmap, nuclei, etc.) blocked
-- **IP Allowlisting**: Configurable for government/VPN IP ranges (plus per-tenant self-service allowlisting)
+- **IP Allowlisting**: Configurable for government/VPN IP ranges (plus per-org self-service allowlisting)
 
 ---
 

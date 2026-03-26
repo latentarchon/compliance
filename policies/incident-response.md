@@ -126,7 +126,7 @@ This policy covers security incidents affecting:
 - **Cloud Run**: Deploy previous revision (instant rollback via traffic split)
 - **Cloud SQL**: Enable enhanced audit logging; snapshot current state
 - **Cloud Armor**: Add emergency IP block rules; adjust rate limits
-- **Identity Platform**: Disable affected tenant; revoke all sessions for affected org
+- **Identity Platform**: Disable affected IDP pool; revoke all sessions for affected org
 - **Kill Switch**: Red team tooling includes kill-on-breach capability for immediate containment
 
 ### Phase 3: Eradication (2–24 hours)

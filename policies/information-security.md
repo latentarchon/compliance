@@ -131,7 +131,7 @@ Security incidents are managed under the Incident Response Policy (POL-IR-001) w
 
 | Principle | Implementation |
 |-----------|---------------|
-| **Defense in Depth** | 5-layer tenant enforcement (interceptor → RLS → DB roles → vector scoping → audit) |
+| **Defense in Depth** | 5-layer org isolation (interceptor → RLS → DB roles → vector scoping → audit) |
 | **Least Privilege** | Separate DB roles per service, per-service IAM, no shared credentials |
 | **Zero Trust** | All requests authenticated and authorized; no implicit trust based on network position |
 | **Encryption Everywhere** | AES-256 at rest, TLS 1.2+ in transit, CMEK via Cloud KMS, FIPS 140-2 BoringCrypto |
