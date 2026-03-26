@@ -6,10 +6,18 @@ import { existsSync } from 'fs';
 const DOCS = [
   'security-whitepaper.md',
   'ssp-lite-nist-800-53.md',
+  'policies/information-security.md',
   'policies/access-control.md',
   'policies/change-management.md',
   'policies/incident-response.md',
   'policies/vendor-risk.md',
+  'policies/encryption.md',
+  'policies/data-classification.md',
+  'policies/business-continuity.md',
+  'policies/risk-management.md',
+  'policies/acceptable-use.md',
+  'policies/security-awareness-training.md',
+  'policies/physical-security.md',
 ];
 
 const DIST = join(import.meta.dirname, '..', 'dist');

@@ -309,11 +309,16 @@ The following control families are **fully or predominantly inherited** from GCP
 
 | ID | Finding | Risk | Milestone | Target |
 |----|---------|------|-----------|--------|
-| POA-1 | ClamAV Docker image not yet deployed | Medium | Build all-in-one ClamAV image (clamd + REST wrapper) | Q2 2026 |
-| POA-2 | App Check enforcement set to UNENFORCED | Low | Switch to ENFORCED after integration testing | Q2 2026 |
+| ~~POA-1~~ | ~~ClamAV Docker image not yet deployed~~ | ~~Complete~~ | Terraform module + staging/production configs deployed (`infra/modules/clamav/`). Uses `benzino77/clamav-rest` on Cloud Run (internal-only, archon-admin invoker). Needs image push + `terragrunt apply`. | **Infra ready** |
+| ~~POA-2~~ | ~~App Check enforcement set to UNENFORCED~~ | ~~Complete~~ | All 4 identity-platform configs (staging admin/chat, production admin/chat) set to `ENFORCED`. Pending: production Firebase app IDs + reCAPTCHA site keys. | **Done** |
 | ~~POA-3~~ | ~~Production Cloud Armor IP ranges TBD~~ | ~~Complete~~ | Self-service per-tenant IP allowlisting implemented via Cloud Armor API integration; org admins configure CIDR allowlists via `UpdateOrganizationSettings` RPC | **Done** |
 | POA-4 | FedRAMP 3PAO assessment | High | Engage 3PAO for formal Moderate assessment | Q3 2026 |
 | POA-5 | StateRAMP authorization | Medium | Apply after FedRAMP Moderate achieved | Q4 2026 |
+| ~~POA-6~~ | ~~US-CERT incident reporting not documented~~ | ~~Complete~~ | IR policy v1.1 updated with FedRAMP Incident Communications Procedure: CAT 1-6 timelines, US-CERT/CISA reporting process (1hr initial → 72hr follow-up → 30-day final), FedRAMP PMO notification, agency ISSO escalation | **Done** |
+| ~~POA-7~~ | ~~Vulnerability scanning strategy not formalized~~ | ~~Complete~~ | Created `policies/vulnerability-scanning.md` (DOC-VS-001): authenticated scanning rationale (Cloud Run serverless = inherited OS scanning), full tool inventory, FedRAMP ConMon monthly reporting, SBOM management, remediation timelines per CVSS | **Done** |
+| ~~POA-8~~ | ~~No agency SIEM log export pipeline~~ | ~~Complete~~ | Added Pub/Sub SIEM export to `infra/modules/audit-logs/`: topic + sink + pull/push subscription + agency SA IAM grants. Disabled by default (`enable_siem_export = false`), enable per-customer. | **Done** |
+| ~~POA-9~~ | ~~DNSSEC not enabled~~ | ~~Complete~~ | Added `cloudflare_zone_dnssec` resource to `infra/modules/dns/` (NIST 800-53 SC-20/SC-21). Enabled by default. Requires DS record at registrar after apply. | **Done** |
+| ~~POA-10~~ | ~~Session timeouts not configurable per-org~~ | ~~Complete~~ | Per-org `session_idle_timeout_min` and `session_absolute_timeout_min` added to org settings JSONB + proto + auth interceptor. Agencies can set stricter timeouts (idle: 5-480 min, absolute: 60-1440 min). NIST AC-12 / FedRAMP SC-10. | **Done** |
 
 ---
 

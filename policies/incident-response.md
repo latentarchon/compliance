@@ -1,11 +1,11 @@
 # Latent Archon — Incident Response Policy
 
 > **Policy ID**: POL-IR-001  
-> **Version**: 1.0  
+> **Version**: 1.1  
 > **Effective Date**: March 2026  
 > **Owner**: Chief Executive / Security Lead  
 > **Review Cycle**: Annual  
-> **NIST 800-53 Controls**: IR-1, IR-2, IR-3, IR-4, IR-5, IR-6, IR-7, IR-8
+> **NIST 800-53 Controls**: IR-1, IR-2, IR-3, IR-4, IR-5, IR-6, IR-6(1), IR-7, IR-8, IR-9
 
 ---
 
@@ -220,13 +220,68 @@ Customer notifications include:
 - Recommended customer actions (if any)
 - Point of contact for questions
 
-### 8.3 Regulatory Notification
+### 8.3 Federal Incident Reporting (US-CERT / CISA)
 
-For incidents involving CUI or data subject to federal regulations:
+FedRAMP and FISMA require reporting security incidents to the Cybersecurity and Infrastructure Security Agency (CISA) via US-CERT. Latent Archon follows the **FedRAMP Incident Communications Procedure** and **NIST SP 800-61 Rev. 2**.
 
-- **CISA**: Report per CIRCIA requirements (if applicable)
-- **Agency ISSO**: Notify customer agency Information System Security Officer
-- **FedRAMP PMO**: Report per FedRAMP continuous monitoring requirements (when authorized)
+#### 8.3.1 Reporting Timelines
+
+| Category | Description | US-CERT Report Deadline | FedRAMP PMO Deadline |
+|----------|-------------|------------------------|---------------------|
+| **CAT 1** | Unauthorized access to CUI / data exfiltration confirmed | **1 hour** from detection | **1 hour** (same report) |
+| **CAT 2** | Denial of service attack (successful) | **2 hours** from detection | **2 hours** |
+| **CAT 3** | Malicious code execution (malware, ransomware) | **1 hour** from detection | **1 hour** |
+| **CAT 4** | Improper usage / policy violation | **1 week** | **1 week** |
+| **CAT 5** | Scans, probes, attempted access (unsuccessful) | **Monthly** (aggregated) | **Monthly** |
+| **CAT 6** | Investigation / unconfirmed | **1 week** | **1 week** |
+
+#### 8.3.2 US-CERT Reporting Process
+
+1. **Incident Commander** initiates US-CERT report at [us-cert.cisa.gov/report](https://us-cert.cisa.gov/report) or via email to `soc@us-cert.gov`
+2. **Initial report** must contain:
+   - Date/time of incident detection
+   - Date/time of incident occurrence (if known)
+   - Incident category (CAT 1-6)
+   - Description of the incident
+   - Affected system(s) and data types
+   - Impact assessment (number of users/records potentially affected)
+   - Actions taken to contain the incident
+   - Point of contact for follow-up
+3. **Follow-up report** within **72 hours** containing:
+   - Root cause analysis (preliminary or final)
+   - Full scope of affected data and users
+   - Eradication and recovery actions taken
+   - Indicators of Compromise (IOCs) if available
+   - Corrective action plan with milestones
+4. **Final report** within **30 days** containing:
+   - Complete root cause analysis
+   - Lessons learned
+   - POA&M items with target dates
+   - Updated risk assessment
+
+#### 8.3.3 FedRAMP PMO Notification
+
+In addition to US-CERT, the **FedRAMP PMO** must be notified:
+
+- **Same timeline** as US-CERT for CAT 1-3 incidents
+- Via email to `info@fedramp.gov` and the assigned FedRAMP reviewer
+- Include the US-CERT incident ticket number
+- Monthly significant change reports must reference any incidents
+
+#### 8.3.4 Agency Customer Notification
+
+- **Agency ISSO**: Notify the customer agency's Information System Security Officer per the timeline in Section 8.1
+- **Sponsoring Agency AO**: Notify the Authorizing Official within 24 hours for CAT 1-3
+- Notification content per Section 8.2, plus US-CERT ticket number
+
+#### 8.3.5 Reporting Contacts
+
+| Entity | Contact | Method |
+|--------|---------|--------|
+| US-CERT / CISA | soc@us-cert.gov | Email + web form |
+| FedRAMP PMO | info@fedramp.gov | Email |
+| Agency ISSO | Per customer contract | Email + phone |
+| GCP Security | security@google.com | Email (for inherited infra incidents) |
 
 ---
 
