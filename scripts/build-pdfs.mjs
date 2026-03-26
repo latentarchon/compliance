@@ -19,6 +19,13 @@ const DOCS = [
   'policies/security-awareness-training.md',
   'policies/physical-security.md',
   'policies/vulnerability-scanning.md',
+  'fedramp-ssp.md',
+  'fedramp-ssp-appendix-a-controls.md',
+  'contingency-plan.md',
+  'configuration-management-plan.md',
+  'continuous-monitoring-plan.md',
+  'supply-chain-risk-management-plan.md',
+  'privacy-impact-assessment.md',
 ];
 
 const DIST = join(import.meta.dirname, '..', 'dist');

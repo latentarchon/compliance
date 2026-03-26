@@ -126,6 +126,48 @@ func ArchonPolicies(complianceDir string) []PolicyDoc {
 			FilePath:    filepath.Join(complianceDir, "security-whitepaper.md"),
 			ControlIDs:  []string{"DCF-SC-1", "DCF-SC-7", "DCF-IA-1", "DCF-AU-1"},
 		},
+		{
+			Name:        "FedRAMP System Security Plan (SSP-LA-001)",
+			Description: "Full FedRAMP Rev 5 SSP covering system identification, description, environment, interconnections, applicable laws, information categorization (FIPS 199 Moderate), users and access, architecture diagrams, ports/protocols/services, cryptographic modules, and appendix cross-references.",
+			FilePath:    filepath.Join(complianceDir, "fedramp-ssp.md"),
+			ControlIDs:  []string{"DCF-PL-2", "DCF-CA-1", "DCF-CA-5", "DCF-PM-1"},
+		},
+		{
+			Name:        "FedRAMP SSP Appendix A — Security Control Implementations",
+			Description: "Detailed control implementation narratives for 230+ NIST 800-53 Rev 5 Moderate controls across 20 families (AC, AT, AU, CA, CM, CP, IA, IR, MA, MP, PE, PL, PM, PS, PT, RA, SA, SC, SI, SR) with responsibility, status, and implementation details.",
+			FilePath:    filepath.Join(complianceDir, "fedramp-ssp-appendix-a-controls.md"),
+			ControlIDs:  []string{"DCF-PL-2", "DCF-CA-1", "DCF-CA-2", "DCF-CA-5"},
+		},
+		{
+			Name:        "Information System Contingency Plan (ISCP-LA-001)",
+			Description: "FedRAMP ISCP covering recovery objectives (RPO/RTO by tier), roles and responsibilities, notification procedures, 5 recovery scenarios (DB failure, Cloud Run failure, GCS failure, Vertex AI failure, regional DR), reconstitution, testing schedule, and backup strategy.",
+			FilePath:    filepath.Join(complianceDir, "contingency-plan.md"),
+			ControlIDs:  []string{"DCF-CP-1", "DCF-CP-2", "DCF-CP-4", "DCF-CP-9", "DCF-CP-10"},
+		},
+		{
+			Name:        "Configuration Management Plan (CMP-LA-001)",
+			Description: "FedRAMP CMP covering configuration items, baseline configuration, change control process (standard/significant/emergency/infrastructure), drift detection, unauthorized change detection, and CM tools.",
+			FilePath:    filepath.Join(complianceDir, "configuration-management-plan.md"),
+			ControlIDs:  []string{"DCF-CM-1", "DCF-CM-2", "DCF-CM-3", "DCF-CM-6", "DCF-CM-9"},
+		},
+		{
+			Name:        "Continuous Monitoring Plan (CONMON-LA-001)",
+			Description: "FedRAMP ConMon plan covering control monitoring frequency, automated monitoring tools, vulnerability management (scanning schedule, remediation SLAs), incident monitoring, monthly/annual reporting deliverables, and evidence collection.",
+			FilePath:    filepath.Join(complianceDir, "continuous-monitoring-plan.md"),
+			ControlIDs:  []string{"DCF-CA-7", "DCF-RA-5", "DCF-SI-2", "DCF-SI-4"},
+		},
+		{
+			Name:        "Supply Chain Risk Management Plan (SCRMP-LA-001)",
+			Description: "FedRAMP SCRMP covering supply chain inventory (vendors, open-source deps, container images), risk assessment for 5 supply chain scenarios, controls (vendor mgmt, dependency pinning, build pipeline security), and monitoring/response procedures.",
+			FilePath:    filepath.Join(complianceDir, "supply-chain-risk-management-plan.md"),
+			ControlIDs:  []string{"DCF-SR-1", "DCF-SR-2", "DCF-SR-3", "DCF-SA-4", "DCF-SA-9"},
+		},
+		{
+			Name:        "Privacy Impact Assessment (PIA-LA-001)",
+			Description: "FedRAMP PIA covering PII inventory (direct and in-document), data flow analysis, 6 privacy risk assessments with mitigations, privacy controls (notice, consent, minimization, purpose limitation, data subject rights), and determination.",
+			FilePath:    filepath.Join(complianceDir, "privacy-impact-assessment.md"),
+			ControlIDs:  []string{"DCF-PT-1", "DCF-PT-2", "DCF-PT-3", "DCF-PT-5"},
+		},
 	}
 }
 
