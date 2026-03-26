@@ -553,10 +553,10 @@ The following algorithms are explicitly prohibited per NIST SP 800-131A:
 | ID | Finding | Severity | Control | Owner | Target Date | Status |
 |----|---------|----------|---------|-------|-------------|--------|
 | POA-1 | Complete 3PAO readiness assessment | High | CA-2 | CEO | Q3 2026 | Open |
-| POA-2 | Conduct first contingency plan tabletop exercise | Medium | CP-4 | Security Lead | Q3 2026 | Open |
+| POA-2 | Conduct first contingency plan tabletop exercise | Medium | CP-4 | Security Lead | Q2 2026 | Remediated — Automated monthly CP-4 test via `contingency-test` CLI + GitHub Actions cron (1st of month). Checks: Cloud SQL backup/PITR, GCS versioning, Cloud Run health, KMS keys, Artifact Registry. Reports uploaded to Drata. |
 | POA-3 | Implement automated session concurrency limiting | Low | AC-10 | Engineering | Q4 2026 | Open |
 | POA-4 | Identify and engage FedRAMP agency sponsor | High | PM-10 | CEO | Q3 2026 | Open |
-| POA-5 | Complete first annual incident response exercise | Medium | IR-3 | Security Lead | Q3 2026 | Open |
+| POA-5 | Complete first annual incident response exercise | Medium | IR-3 | Security Lead | Q2 2026 | Remediated — Monthly IR-3 red team exercise via GitHub Actions cron (1st of month). 44 automated attacks across 3 suites (auth bypass, escalation, exfiltration). MITRE ATT&CK mapped. Reports uploaded to Drata. |
 | POA-6 | Establish formal ISSO appointment letter | Low | PM-2 | CEO | Q2 2026 | Open |
 | POA-7 | Finalize PIA with 3PAO input | Medium | PT-5 | CEO | Q3 2026 | Open |
 | POA-8 | Cross-project Cloud Armor IAM for IP allowlisting | Medium | SC-7 | Engineering | Q2 2026 | Open |
