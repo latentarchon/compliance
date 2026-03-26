@@ -18,6 +18,7 @@ const DOCS = [
   'policies/acceptable-use.md',
   'policies/security-awareness-training.md',
   'policies/physical-security.md',
+  'policies/vulnerability-scanning.md',
 ];
 
 const DIST = join(import.meta.dirname, '..', 'dist');

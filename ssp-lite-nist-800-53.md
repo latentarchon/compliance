@@ -1,6 +1,6 @@
 # Latent Archon — SSP-Lite: NIST 800-53 Moderate Baseline
 
-> **Version**: 1.0  
+> **Version**: 1.1  
 > **Date**: March 2026  
 > **Baseline**: NIST SP 800-53 Rev. 5 — Moderate Impact  
 > **System Name**: Latent Archon Document Intelligence Platform  
@@ -79,7 +79,7 @@ Controls are categorized by implementation responsibility:
 | AC-7 | Unsuccessful Logon Attempts | Shared | Identity Platform brute-force protection; rate limiting at IP + per-user levels |
 | AC-8 | System Use Notification | Customer | SPA login page banner (customer-configurable) |
 | AC-11 | Device Lock | Customer | Client-side responsibility |
-| AC-12 | Session Termination | Latent Archon | Idle timeout (30 min) + absolute timeout (12 hr) enforced server-side via JWT claims |
+| AC-12 | Session Termination | Latent Archon | Global idle timeout (30 min default) + absolute timeout (12 hr default) enforced server-side via JWT claims; **per-org configurable** — agencies set stricter timeouts via `UpdateOrganizationSettings` (idle: 5-480 min, absolute: 60-1440 min) |
 | AC-14 | Permitted Actions Without Identification | Latent Archon | Only `/health` and CORS preflight exempt from auth; all data endpoints require authentication |
 | AC-17 | Remote Access | Shared | All access is remote (cloud-native SaaS); TLS enforced; Cloud Armor WAF |
 | AC-17(1) | Monitoring/Control | Shared | Cloud Logging captures all access; Cloud Armor logs blocked requests |
@@ -106,7 +106,7 @@ Controls are categorized by implementation responsibility:
 | AU-3(1) | Additional Audit Information | Latent Archon | JSONB metadata: request_id, tenant_id, span_id, error_code, duration_ms, platform |
 | AU-4 | Audit Log Storage Capacity | GCP Inherited | Cloud Logging auto-scales; GCS export for long-term retention |
 | AU-5 | Response to Audit Logging Process Failures | Latent Archon | Best-effort design: failures logged but never block requests; structured logs to Cloud Logging as fallback |
-| AU-6 | Audit Record Review, Analysis, and Reporting | Shared | Cloud Logging dashboards; alert policies on WARN-level audit events; export to SIEM |
+| AU-6 | Audit Record Review, Analysis, and Reporting | Shared | Cloud Logging dashboards; alert policies on WARN-level audit events; **Pub/Sub SIEM export pipeline** (per-customer topic + pull/push subscription for agency Splunk/Sentinel/Chronicle integration) |
 | AU-7 | Audit Record Reduction and Report Generation | GCP + Latent Archon | Cloud Logging filtering; structured JSON format; correlation IDs for cross-event linking |
 | AU-8 | Time Stamps | GCP Inherited | Cloud Run uses Google NTP; audit events use `time.Now().UTC()` |
 | AU-9 | Protection of Audit Information | GCP + Latent Archon | DB audit_events table: chat role has INSERT-only; Cloud Logging immutable; GCS export versioned |
@@ -222,7 +222,7 @@ Controls are categorized by implementation responsibility:
 | RA-1 | Policy and Procedures | Latent Archon | Security review process |
 | RA-2 | Security Categorization | Latent Archon | MODERATE impact (CUI data) |
 | RA-3 | Risk Assessment | Latent Archon | Red team program; security architecture review |
-| RA-5 | Vulnerability Monitoring and Scanning | Shared | GoSec SAST + govulncheck + Semgrep (OWASP Top 10 + secrets) + Trivy (FS + container) on PRs/weekly; Gitleaks secret scanning on PRs/push/weekly; Dependabot automated dependency updates; npm audit (high/critical) on SPA builds; red team attack suites; Cloud Armor WAF logging |
+| RA-5 | Vulnerability Monitoring and Scanning | Shared | See `policies/vulnerability-scanning.md` (DOC-VS-001). GoSec SAST + govulncheck + Semgrep (OWASP Top 10 + secrets) + Trivy (FS + container) on PRs/weekly; Gitleaks secret scanning on PRs/push/weekly; Dependabot automated dependency updates; npm audit (high/critical) on SPA builds; red team attack suites (44 MITRE-mapped attacks); FedRAMP ConMon monthly reports; SBOM generation (CycloneDX + SPDX); remediation per CVSS (Critical/High 30d, Medium 90d, Low 180d) |
 
 ### SA — System and Services Acquisition
 
@@ -242,11 +242,12 @@ Controls are categorized by implementation responsibility:
 | SC-7 | Boundary Protection | Shared | VPC private networking; FQDN-based egress firewall (deny-by-default); Cloud Armor with OWASP Top 10 rules + method/origin/bot enforcement; no public IPs on services; PSC for Vertex AI; per-tenant IP allowlisting |
 | SC-8 | Transmission Confidentiality and Integrity | GCP + Latent Archon | TLS 1.2+ all paths; HSTS 2-year; PSC for internal services |
 | SC-8(1) | Cryptographic Protection | GCP + Latent Archon | TLS 1.2+ with modern cipher suites; Google-managed certificates |
-| SC-10 | Network Disconnect | Latent Archon | Session idle timeout (30 min); absolute timeout (12 hr) |
+| SC-10 | Network Disconnect | Latent Archon | Global session idle timeout (30 min default); absolute timeout (12 hr default); **per-org configurable** via org settings (idle: 5-480 min, absolute: 60-1440 min); enforced server-side in auth interceptor |
 | SC-12 | Cryptographic Key Establishment and Management | Shared | Cloud KMS for CMEK; Google-managed keys for default encryption; WIF (no static keys) |
 | SC-13 | Cryptographic Protection | GCP Inherited | AES-256 at rest; TLS 1.2+ in transit |
 | SC-17 | Public Key Infrastructure Certificates | Shared | Certificate Manager with DNS authorization; Google-managed certs |
-| SC-20 | Secure Name/Address Resolution Service | GCP Inherited | Google Cloud DNS |
+| SC-20 | Secure Name/Address Resolution Service | Shared | **Cloudflare DNS** with **DNSSEC enabled** (`cloudflare_zone_dnssec` resource); DS record registered at domain registrar; authoritative zone signing provides data origin authentication |
+| SC-21 | Secure Name/Address Resolution Service (Recursive/Caching) | Shared | DNSSEC validation on Cloudflare resolvers; GCP internal DNS resolves via Google Public DNS (DNSSEC-validating); ensures authenticity of DNS responses for all platform services |
 | SC-23 | Session Authenticity | Latent Archon | JWT-based sessions; TOTP MFA; **five-layer tenant enforcement**: JWT claim, IDP pool header match, Host subdomain vs token pool, org membership gate, subdomain→org DB validation |
 | SC-28 | Protection of Information at Rest | Shared | AES-256 all storage; Cloud KMS CMEK available |
 | SC-39 | Process Isolation | GCP + Latent Archon | Cloud Run container isolation; three separate services; two-project split |
@@ -257,7 +258,7 @@ Controls are categorized by implementation responsibility:
 |---------|-------|---------------|----------------|
 | SI-1 | Policy and Procedures | Latent Archon | Documented in policies |
 | SI-2 | Flaw Remediation | Shared | Dependabot; govulncheck + Trivy vulnerability scanning in CI; distroless containers; BoringCrypto (FIPS 140-2 validated) via `GOEXPERIMENT=boringcrypto` |
-| SI-3 | Malicious Code Protection | Latent Archon | ClamAV malware scanning on all uploads; magic-byte validation; file type allowlist |
+| SI-3 | Malicious Code Protection | Latent Archon | ClamAV malware scanning on all uploads (**fail-closed in production** — uploads rejected if scanner unavailable); magic-byte validation; file type allowlist; ClamAV deployed as internal-only Cloud Run service |
 | SI-4 | System Monitoring | Shared | Cloud Logging; Cloud Monitoring; Cloud Armor analytics; audit events; real-time security email notifications to org admins; usage analytics and cost attribution per tenant/workspace |
 | SI-5 | Security Alerts, Advisories, and Directives | Shared | Dependabot alerts; GCP Security Bulletins |
 | SI-10 | Information Input Validation | Latent Archon | All RPC inputs validated: required fields, length limits, pagination bounds, UUID parsing, enum validation |
@@ -276,7 +277,7 @@ The following control families are **fully or predominantly inherited** from GCP
 | **PE** (Physical & Environmental) | PE-1 through PE-20 | 100% inherited |
 | **MP** (Media Protection) | MP-1, MP-2, MP-4, MP-6 | 100% inherited |
 | **MA** (Maintenance) | MA-1, MA-2, MA-5 | ~90% inherited (serverless model) |
-| **SC** (Comms Protection) | SC-13, SC-20, SC-39 (partial) | Platform-level encryption, DNS, isolation |
+| **SC** (Comms Protection) | SC-13, SC-39 (partial) | Platform-level encryption, isolation (DNS is Cloudflare — shared responsibility) |
 | **AU** (Audit) | AU-4, AU-8 | Storage capacity, timestamps |
 | **CP** (Contingency) | CP-6, CP-7 | Alternate sites provided by GCP multi-zone/region |
 

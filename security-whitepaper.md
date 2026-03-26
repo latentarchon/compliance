@@ -64,14 +64,19 @@ TOTP-based MFA is enforced at the API interceptor level on all data endpoints. M
 
 Admin MFA management (reset, unenroll) is restricted to org admins, with self-reset explicitly blocked and all actions audit-logged.
 
-### Session Management (NIST 800-171 AC-12)
+### Session Management (NIST 800-53 AC-12 / SC-10)
 
-| Control | Default | Enforcement |
-|---------|---------|-------------|
-| Idle timeout | 30 minutes | `auth_time` JWT claim comparison |
-| Absolute timeout | 12 hours | `iat` JWT claim comparison |
+| Control | Global Default | Per-Org Range | Enforcement |
+|---------|---------------|---------------|-------------|
+| Idle timeout | 30 minutes | 5–480 min | `iat` JWT claim comparison |
+| Absolute timeout | 12 hours | 60–1440 min | `auth_time` JWT claim comparison |
 
-Session timeouts are configurable per deployment and enforced server-side in the auth interceptor chain.
+Session timeouts are enforced server-side in the auth interceptor chain at two levels:
+
+1. **Global defaults** — configured via `SESSION_IDLE_TIMEOUT_MIN` and `SESSION_ABSOLUTE_TIMEOUT_MIN` environment variables
+2. **Per-org overrides** — agency administrators can set stricter timeouts via `UpdateOrganizationSettings` RPC (stored in org settings JSONB, enforced after global checks)
+
+Per-org timeouts can only be **stricter** than the global defaults — the interceptor applies the more restrictive of the two. This allows agencies with heightened security requirements (e.g., 15-minute idle timeout) to enforce their own policies.
 
 ### SSO & SCIM
 
@@ -246,7 +251,8 @@ All security-relevant operations are persisted to the `audit_events` database ta
 - All audit events emit structured JSON logs to Cloud Logging
 - Security-critical events (failures, auth, member changes, deletions) logged at WARN level
 - OpenTelemetry trace correlation (trace_id, span_id) for end-to-end request tracing
-- Cloud Logging supports export to Chronicle SIEM, BigQuery, or Pub/Sub for SIEM integration
+- **Pub/Sub SIEM Export Pipeline**: Per-customer Pub/Sub topic + subscription for agency SIEM integration (Splunk, Sentinel, Chronicle). Supports both pull (gRPC) and push (webhook) delivery. Agency service accounts granted subscriber IAM access. Enabled per-customer via `enable_siem_export` Terraform variable.
+- BigQuery audit log sink for long-term analytics and compliance reporting
 
 ### Observability
 
