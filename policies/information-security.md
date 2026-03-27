@@ -53,7 +53,7 @@ This policy applies to:
 | Level | Document | Purpose |
 |-------|----------|---------|
 | **1 — Program** | Information Security Policy (this document) | Overarching security program governance |
-| **2 — System** | System Security Plan (SSP-Lite) | NIST 800-53 Moderate baseline control mapping |
+| **2 — System** | FedRAMP System Security Plan (SSP-LA-001) | NIST 800-53 Moderate baseline control mapping + implementation narratives |
 | **3 — Technical** | Security Architecture Whitepaper | Detailed technical security implementation |
 | **4 — Operational** | Subordinate Policies | Domain-specific requirements (see Section 5) |
 

@@ -50,8 +50,8 @@ All infrastructure is managed via Terraform/Terragrunt, enabling reproducible de
 
 | Service Tier | Components | RPO | RTO | Description |
 |-------------|------------|-----|-----|-------------|
-| **Tier 1 — Critical** | Authentication (Identity Platform), Database (Cloud SQL), Auth Interceptor | < 5 min | < 1 hr | System cannot function without these |
-| **Tier 2 — Essential** | Cloud Run APIs (chat, admin), Cloud Storage, Cloud Armor/LB | < 5 min | < 4 hr | Core service delivery |
+| **Tier 1 — Critical** | Database (Cloud SQL), Document Storage (GCS), Authentication (Identity Platform) | < 5 min | < 1 hr | Customer data and authentication — any loss is unacceptable |
+| **Tier 2 — Essential** | Cloud Run APIs (chat, admin, ops), Load Balancers, Cloud Armor | 0 (stateless) | < 4 hr | Stateless services rebuilt from container images + Terraform |
 | **Tier 3 — Supporting** | Vertex AI (Vector Search + LLM), Document AI, Cloud Tasks, Ops Service | < 24 hr | < 8 hr | AI/search features; system usable without them (degraded mode) |
 | **Tier 4 — Non-Critical** | CI/CD pipelines, Monitoring dashboards, Drata sync | N/A | < 24 hr | Operational tooling; does not affect customer service |
 

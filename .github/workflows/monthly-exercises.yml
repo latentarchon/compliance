@@ -1,4 +1,4 @@
-name: Monthly Compliance Exercises (CP-4 + IR-3)
+name: Monthly Compliance Exercises (CP-4 + IR-3 + AT-2)
 
 on:
   schedule:
@@ -169,12 +169,41 @@ jobs:
             /tmp/redteam-logs/
           retention-days: 365
 
+  # ── AT-2: Security Awareness Training ───────────────────────────
+  training-tracker:
+    name: AT-2 Security Training Evidence
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Build training-tracker CLI
+        working-directory: training-tracker
+        run: go build -o ../training-tracker-cli ./cmd/training-tracker
+
+      - name: Generate training report
+        run: |
+          ./training-tracker-cli \
+            --personnel "Andrew Hendel (CEO/ISSO)" \
+            --output-dir ./reports
+
+      - name: Upload AT-2 report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: at2-training-report
+          path: reports/training-report-*.md
+          retention-days: 365
+
   # ── Upload to Drata ──────────────────────────────────────────────
   upload-drata-evidence:
     name: Upload Evidence to Drata
     runs-on: ubuntu-latest
-    needs: [contingency-test, red-team-exercise]
-    if: always() && (needs.contingency-test.result == 'success' || needs.red-team-exercise.result == 'success')
+    needs: [contingency-test, red-team-exercise, training-tracker]
+    if: always() && (needs.contingency-test.result == 'success' || needs.red-team-exercise.result == 'success' || needs.training-tracker.result == 'success')
     steps:
       - uses: actions/checkout@v4
 
@@ -198,6 +227,13 @@ jobs:
         with:
           name: ir3-red-team-report
           path: ./artifacts/ir3/
+        continue-on-error: true
+
+      - name: Download AT-2 report
+        uses: actions/download-artifact@v4
+        with:
+          name: at2-training-report
+          path: ./artifacts/at2/
         continue-on-error: true
 
       - name: Upload CP-4 report to Drata
@@ -236,6 +272,24 @@ jobs:
           fi
         continue-on-error: true
 
+      - name: Upload AT-2 report to Drata
+        if: hashFiles('artifacts/at2/training-report-*.md') != ''
+        env:
+          DRATA_API_KEY: ${{ secrets.DRATA_API_KEY }}
+          DRATA_WORKSPACE_ID: ${{ secrets.DRATA_WORKSPACE_ID }}
+        run: |
+          REPORT=$(ls ./artifacts/at2/training-report-*.md 2>/dev/null | head -1)
+          if [ -n "$REPORT" ]; then
+            ./drata-sync \
+              --owner-id ${{ secrets.DRATA_OWNER_ID }} \
+              --artifact-name "AT-2 Security Training Report — $(date +%Y-%m-%d)" \
+              --artifact-desc "Monthly security awareness training attestation: 8 modules covering security fundamentals, phishing, insider threat, incident response, secure development, CUI handling, access control, and contingency procedures. Maps to NIST 800-53 AT-2, AT-2(1), AT-2(2), AT-3, IR-2, CP-3." \
+              --artifact-file "$REPORT" \
+              --artifact-controls "DCF-AT-1,DCF-AT-2,DCF-AT-3,DCF-AT-4" \
+              ci-artifact
+          fi
+        continue-on-error: true
+
       - name: Summary
         if: always()
         run: |
@@ -245,5 +299,6 @@ jobs:
           echo "|----------|---------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| CP-4 Contingency Plan Test | CP-2, CP-4, CP-9, CP-10, SC-12 | ${{ needs.contingency-test.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| IR-3 Red Team Exercise | IR-1, IR-2, IR-3, IR-4, IR-5 | ${{ needs.red-team-exercise.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| AT-2 Security Training | AT-2, AT-2(1), AT-2(2), AT-3 | ${{ needs.training-tracker.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Reports uploaded to Drata Evidence Library." >> $GITHUB_STEP_SUMMARY

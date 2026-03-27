@@ -51,9 +51,90 @@
 
 ---
 
-## 2. State & Local Government
+## 2. Law Enforcement (CJIS Market)
 
-### 2.1 State RFP Monitoring
+### 2.1 Market Overview
+
+There are approximately **18,000 law enforcement agencies** in the United States, ranging from 2-person rural departments to agencies with thousands of officers. Most lack enterprise AI tools and rely on legacy records management systems (RMS) with minimal search capability.
+
+**Compliance**: The FBI CJIS Security Policy governs all vendors with access to Criminal Justice Information (CJI). Latent Archon has mapped all 13 policy areas and prepared all required documentation (MCA, Security Addendum, personnel procedures, training). See `compliance/cjis/` for full documentation.
+
+### 2.2 Target Segments
+
+| Segment | Size | Decision Maker | Procurement | Notes |
+|---------|------|----------------|-------------|-------|
+| **Medium PDs (50-500 officers)** | ~3,000 agencies | Chief / Deputy Chief | Direct or state contract | Sweet spot — big enough to need AI, small enough to decide fast |
+| **County Sheriff Offices** | ~3,000 agencies | Sheriff / Undersheriff | County procurement | Often handle both patrol + corrections + courts |
+| **State Law Enforcement** | 50 agencies | Bureau Chief / CIO | State RFP | Large scale; longer procurement; good reference value |
+| **Fusion Centers** | 80 centers | Director | DHS/state funding | Multi-agency intelligence sharing — strong use case |
+| **District Attorney Offices** | ~2,300 offices | DA / Chief of Staff | County procurement | Case file review, prosecution prep |
+| **Public Defender Offices** | ~1,000 offices | Chief PD | County/state | Discovery review, case prep |
+
+### 2.3 Priority Target Agencies (Near-Term)
+
+#### New York (Home Market)
+
+| Agency | Officers | Contact Approach | Notes |
+|--------|----------|-----------------|-------|
+| **NY DCJS** (state CSA) | N/A | Direct — they're the gateway to all NY agencies | Must engage for background checks anyway |
+| **NYPD** | 36,000 | Long-term target; start with specific bureau/unit | Largest PD in US; massive document volume |
+| **Nassau County PD** | 2,500 | County procurement | Major suburban PD; tech-progressive |
+| **Suffolk County PD** | 2,500 | County procurement | Similar profile to Nassau |
+| **Westchester County PD** | 275 | Direct outreach to Chief | Mid-size; manageable pilot scope |
+| **Yonkers PD** | 600 | Direct outreach | 4th largest city in NY |
+| **Albany PD** | 350 | Direct; proximity to state capital / DCJS | Good political visibility |
+| **NYC District Attorney offices** | N/A | Direct to each borough DA | 5 offices; heavy document review |
+
+#### New Jersey (Adjacent Market)
+
+| Agency | Officers | Contact Approach | Notes |
+|--------|----------|-----------------|-------|
+| **NJ State Police** (state CSA) | 3,000 | Direct to CJIS unit | Gateway + potential customer |
+| **Newark PD** | 1,100 | City procurement | Largest NJ PD |
+| **Jersey City PD** | 900 | City procurement | Tech-progressive |
+| **Bergen County PD** | 600 | County procurement | Large suburban county |
+| **Essex County Prosecutor** | N/A | Direct | Heavy caseload |
+
+#### Connecticut (Easy Entry)
+
+| Agency | Officers | Contact Approach | Notes |
+|--------|----------|-----------------|-------|
+| **CT DESPP** (state CSA) | 1,000+ | Direct to CSO | State police + CSA |
+| **Hartford PD** | 400 | City procurement | Capital city |
+| **New Haven PD** | 400 | Direct | Yale area; tech-aware community |
+
+### 2.4 CJIS Engagement Playbook
+
+| Step | Action | Timeline |
+|------|--------|----------|
+| 1 | Identify target agency + decision maker | Week 1 |
+| 2 | Cold outreach with law enforcement brief | Week 1 |
+| 3 | 30-min demo (use non-CJI sample data) | Week 2-3 |
+| 4 | Pilot MoU signed (free 90-day, under micro-purchase) | Week 3-4 |
+| 5 | Agency introduces to state CSA | Week 4-5 |
+| 6 | Background checks submitted | Week 5-6 |
+| 7 | MCA executed | Week 5-6 |
+| 8 | Workspace configured, users onboarded | Week 6-7 |
+| 9 | Active pilot (8 weeks) | Week 7-15 |
+| 10 | ROI assessment + contract proposal | Week 15-16 |
+
+### 2.5 Key Conferences (Law Enforcement)
+
+| Event | Timing | Relevance |
+|-------|--------|----------|
+| **IACP** (Int'l Association of Chiefs of Police) | October | Premier LE conference; 16,000+ attendees |
+| **NSA** (National Sheriffs' Association) | June | Sheriff-focused; 4,000+ attendees |
+| **IADLEST** (Int'l Assoc. of Directors of Law Enforcement Standards) | Various | Training/standards focus |
+| **CJIS Advisory Policy Board** | Twice yearly | FBI CJIS policy makers |
+| **Police Executive Research Forum (PERF)** | Various | Police leadership think tank |
+| **NY Chiefs of Police Conference** | Annual | NY-specific; local networking |
+| **NJ State Association of Chiefs of Police** | Annual | NJ-specific |
+
+---
+
+## 3. State & Local Government
+
+### 3.1 State RFP Monitoring
 
 | Source | URL | Coverage |
 |--------|-----|----------|
@@ -63,7 +144,7 @@
 | **SAM.gov** | sam.gov | Federal (also lists state-posted opportunities) |
 | **State-specific portals** | Varies by state | Direct state procurement sites |
 
-### 2.2 Priority States
+### 3.2 Priority States
 
 Target states with:
 - Active AI/document management RFPs
@@ -72,6 +153,9 @@ Target states with:
 
 | State | Portal | Notes |
 |-------|--------|-------|
+| **New York** | NYS Contract Reporter (nyscontractreporter.com) | Home state; 500+ PDs; strong LE market |
+| **New Jersey** | NJSTART (njstart.gov) | Adjacent market; 500+ agencies |
+| **Connecticut** | State Contracting Portal (biznet.ct.gov) | Nearby; easier entry |
 | **Virginia** | eVA (eva.virginia.gov) | Large federal contractor ecosystem; proximity to DC |
 | **Texas** | ESBD (comptroller.texas.gov) | DIR contracts for IT services |
 | **California** | Cal eProcure (caleprocure.ca.gov) | CDT pre-qualified vendor lists |
@@ -79,7 +163,7 @@ Target states with:
 | **Colorado** | Colorado BIDS | StateRAMP early adopter |
 | **Georgia** | Georgia Procurement Registry | Growing tech hub; state agency modernization |
 
-### 2.3 State Contract Vehicles
+### 3.3 State Contract Vehicles
 
 | Vehicle | Description | Action |
 |---------|-------------|--------|
@@ -89,9 +173,9 @@ Target states with:
 
 ---
 
-## 3. Pilot MoUs with Small Units/Offices
+## 4. Pilot MoUs with Small Units/Offices
 
-### 3.1 Target Profile
+### 4.1 Target Profile
 
 Ideal pilot partners are small government units that:
 - Handle significant document volumes (reports, manuals, case files, correspondence)
@@ -100,7 +184,7 @@ Ideal pilot partners are small government units that:
 - Have authority to sign MoUs without lengthy procurement (micro-purchase threshold or innovation authority)
 - Are willing to provide testimonials and case studies
 
-### 3.2 Target Categories
+### 4.2 Target Categories
 
 | Category | Examples | Document Types |
 |----------|---------|---------------|
@@ -112,7 +196,7 @@ Ideal pilot partners are small government units that:
 | **Public library systems** | Special collections, archives | Digitized collections, reference materials |
 | **University research offices** | Sponsored research, grants admin | Grant proposals, compliance docs, research papers |
 
-### 3.3 MoU Structure
+### 4.3 MoU Structure
 
 | Element | Detail |
 |---------|--------|
@@ -124,7 +208,7 @@ Ideal pilot partners are small government units that:
 | **IP/Data** | Customer retains all data; data deleted at pilot end unless contract follows |
 | **Exit** | Customer can request data export and deletion at any time |
 
-### 3.4 Pilot-to-Contract Conversion
+### 4.4 Pilot-to-Contract Conversion
 
 1. **Week 1–2**: Onboarding — workspace setup, document upload, user training
 2. **Week 3–8**: Active use — weekly check-ins, usage analytics, feedback collection
@@ -134,9 +218,9 @@ Ideal pilot partners are small government units that:
 
 ---
 
-## 4. Outreach Strategy
+## 5. Outreach Strategy
 
-### 4.1 Direct Outreach
+### 5.1 Direct Outreach
 
 | Channel | Approach | Volume |
 |---------|----------|--------|
@@ -145,7 +229,7 @@ Ideal pilot partners are small government units that:
 | **Conferences** | Attend and present at relevant events | 1–2/quarter |
 | **Demo requests** | Offer 30-min live demos to qualified prospects | On demand |
 
-### 4.2 Key Conferences & Events
+### 5.2 Key Conferences & Events
 
 | Event | Timing | Relevance |
 |-------|--------|-----------|
@@ -159,7 +243,7 @@ Ideal pilot partners are small government units that:
 | **NASCIO** (state CIOs) | Annual | State IT leadership |
 | **Code for America Summit** | Annual | GovTech community |
 
-### 4.3 Content Strategy
+### 5.3 Content Strategy
 
 | Content Type | Frequency | Purpose |
 |-------------|-----------|---------|
@@ -171,7 +255,7 @@ Ideal pilot partners are small government units that:
 
 ---
 
-## 5. Registration & Compliance Milestones
+## 6. Registration & Compliance Milestones
 
 | Milestone | Status | Target Date |
 |-----------|--------|-------------|
@@ -180,6 +264,10 @@ Ideal pilot partners are small government units that:
 | CAGE code assigned | Pending SAM.gov | April 2026 |
 | DSIP registration (SBIR/STTR) | Not started | April 2026 |
 | SBA size certification | Not started | May 2026 |
+| CJIS documentation complete | **Done** | March 2026 |
+| First LE customer prospect identified | Not started | April 2026 |
+| CEO fingerprint background check | Pending first customer | Q2 2026 |
+| First MCA executed | Not started | Q2 2026 |
 | FedRAMP 3PAO engagement | Planned | Q3 2026 |
 | FedRAMP Moderate authorization | Planned | Q4 2026 |
 | StateRAMP authorization | Planned | Q1 2027 |
@@ -187,7 +275,7 @@ Ideal pilot partners are small government units that:
 
 ---
 
-## 6. Pipeline Tracking
+## 7. Pipeline Tracking
 
 | Opportunity | Agency | Vehicle | Stage | Value | Next Action | Due |
 |-------------|--------|---------|-------|-------|-------------|-----|
@@ -195,18 +283,19 @@ Ideal pilot partners are small government units that:
 
 ---
 
-## 7. Monthly Review Checklist
+## 8. Monthly Review Checklist
 
+- [ ] **Law Enforcement outreach** (target: 10 agencies/month across NY, NJ, CT)
 - [ ] Review AFWERX Open Topics for new AI/document calls
 - [ ] Check DHS SVIP solicitations
 - [ ] Scan SAM.gov for relevant SBIR/STTR/RFP postings
-- [ ] Review state procurement portals (priority states)
+- [ ] Review state procurement portals (priority states — now includes NY, NJ, CT)
 - [ ] Update pipeline tracker
 - [ ] Send outreach emails (target: 20–40/month)
 - [ ] Post LinkedIn content (target: 12/month)
 - [ ] Follow up on active pilot prospects
 - [ ] Update capability statement if needed
-- [ ] Review conference calendar for upcoming events
+- [ ] Review conference calendar for upcoming events (add IACP, NSA)
 
 ---
 

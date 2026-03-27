@@ -115,7 +115,8 @@ Latent Archon is a multi-tenant document intelligence platform that enables gove
 
 | Framework | Status |
 |-----------|--------|
-| NIST 800-53 Moderate | SSP-lite complete; ~40% controls GCP-inherited |
+| **CJIS Security Policy v5.9.5** | All 13 policy areas mapped and implemented; MCA template ready; awaiting first customer engagement for state CSA audit |
+| NIST 800-53 Moderate | Full SSP complete; ~40% controls GCP-inherited |
 | NIST 800-171 | Controls mapped and implemented |
 | FedRAMP Moderate | Infrastructure ready; 3PAO engagement planned Q3 2026 |
 | StateRAMP | Planned Q4 2026 (post-FedRAMP) |
