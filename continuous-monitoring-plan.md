@@ -31,6 +31,9 @@ This plan covers monitoring of all security controls within the authorization bo
 | Dependency vulnerability alerts | Daily | Dependabot |
 | Infrastructure drift detection | Weekly | `terragrunt plan` comparison |
 | Operating system patching | Inherited (GCP) | Cloud Run managed infrastructure |
+| KSI evidence collection | Weekly | Go CLI (`cmd/ksi-evidence`) queries GCP APIs; SHA-256 manifest |
+| SCN classification | Per-PR | Go CLI (`cmd/classify-scn`) analyzes diffs; posts PR comment |
+| OSCAL SSP validation | Per-PR | CI generates OSCAL v1.1.3 JSON and validates schema |
 | Configuration compliance check | Weekly | Drata automated monitoring sync |
 | Access review (IAM/RBAC) | Monthly | Manual review of GCP IAM and application RBAC |
 | Security control assessment | Annual | 3PAO assessment |
@@ -51,6 +54,9 @@ This plan covers monitoring of all security controls within the authorization bo
 | **Dependabot** | Dependency vulnerabilities across all repositories | GitHub alerts + automated PRs |
 | **Drata** | Control implementation status, evidence freshness, personnel compliance | Dashboard + weekly sync report |
 | **CI/CD Security Pipeline** | SAST findings, container vulnerabilities, secret exposure | Build failure + PR blocking |
+| **KSI Evidence Collector** | GCP firewall rules, Cloud Run services, Cloud Armor, KMS rotation, log sinks, container images, SQL backups, GCS versioning | Weekly CI artifact (365-day retention) |
+| **SCN Classifier** | Security-critical file changes in PRs (30+ patterns) | PR comment (advisory, non-blocking) |
+| **OSCAL Validator** | SSP structural conformance to OSCAL v1.1.3 schema | PR check (advisory, non-blocking) |
 
 ---
 
@@ -94,6 +100,8 @@ Refer to the Configuration Management Plan (CMP-LA-001) for detailed procedures.
 
 Key monitoring activities:
 - **Weekly**: Terraform drift detection via `terragrunt plan`
+- **Weekly**: KSI evidence collection — Go CLI queries 10 GCP API endpoints and writes JSON evidence with SHA-256 checksum manifest
+- **Per-PR**: Automated SCN classifier flags changes to security-critical paths (auth, crypto, network, IAM, SSP) as SIGNIFICANT or ROUTINE
 - **Per-deploy**: Configuration baseline comparison
 - **Continuous**: GitHub branch protection enforcement
 - **Monthly**: IAM role and service account review
@@ -155,6 +163,8 @@ Significant changes that trigger SSP update and notification:
 - Changes to cryptographic implementations
 - Changes to authentication mechanisms
 
+The automated SCN classifier (`cmd/classify-scn`) runs on every PR and classifies changes against 30+ security-critical path patterns. When a change is classified SIGNIFICANT, the CI posts a PR comment directing the team to file an SCN with the FedRAMP PMO before merging. This classification is currently advisory (non-blocking) and will be promoted to a required status check prior to authorization.
+
 ---
 
 ## 7. Evidence Collection
@@ -174,7 +184,26 @@ The Drata sync CLI (`drata-sync`) automatically uploads the following evidence w
 | Risk register | drata-sync risks | Risk assessment evidence |
 | Asset inventory | drata-sync assets | Asset management evidence |
 
-### 7.2 Manual Evidence
+### 7.2 Automated KSI Evidence via CI
+
+The KSI evidence collector (`cmd/ksi-evidence`) runs weekly via GitHub Actions and collects machine-readable evidence from GCP APIs:
+
+| KSI Theme | Evidence File | GCP API Queried |
+|-----------|--------------|----------------|
+| IAM: Non-user authentication | `ksi-iam-sa-keys.json` | IAM Credentials |
+| IAM: Least privilege | `ksi-iam-bindings.json` | Resource Manager |
+| CNA: Network restrictions | `ksi-cna-firewall.json` | Compute Firewalls |
+| CNA: Attack surface | `ksi-cna-services.json` | Cloud Run Services |
+| CNA: DDoS protection | `ksi-cna-armor.json` | Compute Security Policies |
+| SVC: Cryptographic modules | `ksi-svc-kms.json` | Cloud KMS |
+| MLA: SIEM integration | `ksi-mla-sinks.json` | Cloud Logging Config |
+| VDR: Vulnerability scanning | `ksi-vdr-images.json` | Artifact Registry |
+| REC: Recovery capabilities | `ksi-rec-sql-backup.json` | Cloud SQL Admin |
+| REC: GCS versioning | `ksi-rec-gcs-versioning.json` | Cloud Storage |
+
+Each collection run produces a `manifest.json` with SHA-256 checksums and byte counts for every evidence file. Evidence artifacts are uploaded to GitHub Actions with 365-day retention.
+
+### 7.3 Manual Evidence
 
 | Evidence | Collection Method | Frequency |
 |----------|------------------|-----------|

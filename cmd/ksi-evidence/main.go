@@ -11,6 +11,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -70,6 +72,7 @@ func envConfig(env string) ProjectConfig {
 func main() {
 	env := flag.String("env", "staging", "Target environment (staging or production)")
 	outputDir := flag.String("output-dir", "", "Output directory (default: evidence/<env>/<date>)")
+	jsonSummary := flag.Bool("json", false, "Output machine-readable JSON summary")
 	flag.Parse()
 
 	cfg := envConfig(*env)
@@ -126,22 +129,50 @@ func main() {
 		}
 	}
 
-	// Write manifest
+	// Write manifest with SHA-256 checksums
 	if err := collector.writeManifest(); err != nil {
 		log.Printf("Failed to write manifest: %v", err)
 	}
 
-	fmt.Println()
-	fmt.Printf("=== Collection Complete: %d succeeded, %d failed ===\n",
-		len(collectors)-len(errors), len(errors))
+	summary := CollectionSummary{
+		Timestamp:   collector.timestamp,
+		Environment: *env,
+		OutputDir:   *outputDir,
+		Succeeded:   len(collectors) - len(errors),
+		Failed:      len(errors),
+		Total:       len(collectors),
+		Failures:    errors,
+	}
+
+	if *jsonSummary {
+		data, _ := json.MarshalIndent(summary, "", "  ")
+		fmt.Println(string(data))
+	} else {
+		fmt.Println()
+		fmt.Printf("=== Collection Complete: %d succeeded, %d failed ===\n",
+			summary.Succeeded, summary.Failed)
+		if len(errors) > 0 {
+			fmt.Println("\nFailures:")
+			for _, e := range errors {
+				fmt.Printf("  - %s\n", e)
+			}
+		}
+	}
 
 	if len(errors) > 0 {
-		fmt.Println("\nFailures:")
-		for _, e := range errors {
-			fmt.Printf("  - %s\n", e)
-		}
 		os.Exit(1)
 	}
+}
+
+// CollectionSummary is the machine-readable output for CI consumption.
+type CollectionSummary struct {
+	Timestamp   string   `json:"timestamp"`
+	Environment string   `json:"environment"`
+	OutputDir   string   `json:"output_dir"`
+	Succeeded   int      `json:"succeeded"`
+	Failed      int      `json:"failed"`
+	Total       int      `json:"total"`
+	Failures    []string `json:"failures,omitempty"`
 }
 
 // Collector holds shared state for all evidence collection functions.
@@ -169,7 +200,9 @@ func (c *Collector) writeEvidence(filename string, ev Evidence) error {
 
 func (c *Collector) writeManifest() error {
 	type ManifestFile struct {
-		File string `json:"file"`
+		File   string `json:"file"`
+		SHA256 string `json:"sha256"`
+		Bytes  int64  `json:"bytes"`
 	}
 	manifest := struct {
 		Timestamp    string         `json:"collection_timestamp"`
@@ -184,7 +217,17 @@ func (c *Collector) writeManifest() error {
 		AdminProject: c.cfg.AdminProject,
 	}
 	for _, f := range c.files {
-		manifest.Files = append(manifest.Files, ManifestFile{File: f})
+		path := filepath.Join(c.outputDir, f)
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		hash := sha256.Sum256(raw)
+		manifest.Files = append(manifest.Files, ManifestFile{
+			File:   f,
+			SHA256: hex.EncodeToString(hash[:]),
+			Bytes:  int64(len(raw)),
+		})
 	}
 	data, err := json.MarshalIndent(manifest, "", "  ")
 	if err != nil {
