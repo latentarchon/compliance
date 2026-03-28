@@ -114,7 +114,7 @@ In addition to the standard incident reporting channels (US-CERT, FedRAMP PMO), 
 | Least privilege access | RBAC with 4 org roles + 3 workspace roles; 3 least-privilege DB roles | `policies/access-control.md` §5, §6.2 |
 | Account management (provisioning/deprovisioning) | SCIM 2.0 + JIT provisioning; same-day deprovisioning on termination | `policies/access-control.md` §3 |
 | Separation of duties | Separate DB roles per service; admin vs. chat pool isolation | `policies/access-control.md` §6 |
-| Session lock (idle timeout) | 30-min default idle timeout (configurable per org, minimum 5 min) | `policies/access-control.md` §4.2 |
+| Session lock (idle timeout) | 25-min default idle timeout (configurable per org, minimum 5 min) | `policies/access-control.md` §4.2 |
 | Unsuccessful logon attempts | Identity Platform brute-force protection + IP/per-user rate limiting | `policies/access-control.md` §4.4 |
 | System access notifications (login banners) | Configurable per-org login banner (stored in org settings) | Application feature |
 | Remote access controls | All access is remote (cloud SaaS); TLS 1.2+ enforced | `policies/access-control.md` §8 |

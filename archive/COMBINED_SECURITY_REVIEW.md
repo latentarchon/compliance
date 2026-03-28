@@ -285,7 +285,7 @@ Session management complies with **NIST 800-171 AC-12** (Session Termination):
 
 Both timeout configurations are logged at startup:
 ```
-Session timeouts configured: idle=30m0s absolute=12h0m0s
+Session timeouts configured: idle=25m0s absolute=12h0m0s
 ```
 
 Session timeouts are **not enforced in development mode** to facilitate local development.
@@ -932,7 +932,7 @@ go func() {
 | **AC-6** | Least Privilege | Database roles, IAM service accounts, per-service permissions |
 | **AC-7** | Unsuccessful Login Attempts | Firebase Auth built-in lockout; rate limiting on auth endpoints |
 | **AC-8** | System Use Notification | Configurable at frontend level |
-| **AC-11** | Session Lock | Idle session timeout (30 min) enforced at interceptor level |
+| **AC-11** | Session Lock | Idle session timeout (25 min) enforced at interceptor level |
 | **AC-12** | Session Termination | Absolute session timeout (12 hr); configurable idle and absolute timeouts |
 | **AC-17** | Remote Access | TLS-only (HSTS preload), VPC networking, Cloud Armor WAF |
 | **AU-2** | Audit Events | Comprehensive audit_events table with 15+ event types |

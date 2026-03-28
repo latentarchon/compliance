@@ -260,7 +260,7 @@ All other egress is blocked. This is enforced via Terraform-managed firewall rul
 | Requirement | Implementation |
 |-------------|----------------|
 | **Multi-Factor Authentication** | TOTP-based MFA enforced on all data endpoints via auth interceptor. Step-up MFA required for sensitive operations (member invite/remove, document delete, role changes). |
-| **Session Management** | Global idle timeout: 30 min (default). Global absolute timeout: 12 hr (default). Per-org configurable: idle 5-480 min, absolute 60-1440 min. Enforced server-side via JWT `auth_time` and `iat` claims. |
+| **Session Management** | Global idle timeout: 25 min (default). Global absolute timeout: 12 hr (default). Per-org configurable: idle 5-480 min, absolute 60-1440 min. Enforced server-side via JWT `auth_time` and `iat` claims. |
 | **Password Policy** | Managed by Identity Platform. Magic link (passwordless) preferred. SSO federation eliminates password management for enterprise customers. |
 | **Account Lockout** | Identity Platform built-in brute-force protection. Application-level rate limiting at IP + per-user levels. |
 

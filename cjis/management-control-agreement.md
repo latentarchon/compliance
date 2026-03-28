@@ -70,7 +70,7 @@ Latent Archon agrees to the following security responsibilities in compliance wi
 
 - CJI access is restricted to authorized personnel on a need-to-know basis
 - Multi-factor authentication (TOTP) is enforced on all data endpoints
-- Session timeouts are enforced (30-minute idle, 12-hour absolute; agency may configure stricter)
+- Session timeouts are enforced (25-minute idle, 12-hour absolute; agency may configure stricter)
 - Role-based access control limits each user to minimum necessary privileges
 - All access events are audit-logged
 

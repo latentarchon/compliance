@@ -79,7 +79,7 @@ Controls are categorized by implementation responsibility:
 | AC-7 | Unsuccessful Logon Attempts | Shared | Identity Platform brute-force protection; rate limiting at IP + per-user levels |
 | AC-8 | System Use Notification | Customer | SPA login page banner (customer-configurable) |
 | AC-11 | Device Lock | Customer | Client-side responsibility |
-| AC-12 | Session Termination | Latent Archon | Global idle timeout (30 min default) + absolute timeout (12 hr default) enforced server-side via JWT claims; **per-org configurable** — agencies set stricter timeouts via `UpdateOrganizationSettings` (idle: 5-480 min, absolute: 60-1440 min) |
+| AC-12 | Session Termination | Latent Archon | Global idle timeout (25 min default) + absolute timeout (12 hr default) enforced server-side via JWT claims; **per-org configurable** — agencies set stricter timeouts via `UpdateOrganizationSettings` (idle: 5-480 min, absolute: 60-1440 min) |
 | AC-14 | Permitted Actions Without Identification | Latent Archon | Only `/health` and CORS preflight exempt from auth; all data endpoints require authentication |
 | AC-17 | Remote Access | Shared | All access is remote (cloud-native SaaS); TLS enforced; Cloud Armor WAF |
 | AC-17(1) | Monitoring/Control | Shared | Cloud Logging captures all access; Cloud Armor logs blocked requests |
@@ -242,7 +242,7 @@ Controls are categorized by implementation responsibility:
 | SC-7 | Boundary Protection | Shared | VPC private networking; FQDN-based egress firewall (deny-by-default); Cloud Armor with OWASP Top 10 rules + method/origin/bot enforcement; no public IPs on services; PSC for Vertex AI; per-org IP allowlisting |
 | SC-8 | Transmission Confidentiality and Integrity | GCP + Latent Archon | TLS 1.2+ all paths; HSTS 2-year; PSC for internal services |
 | SC-8(1) | Cryptographic Protection | GCP + Latent Archon | TLS 1.2+ with modern cipher suites; Google-managed certificates |
-| SC-10 | Network Disconnect | Latent Archon | Global session idle timeout (30 min default); absolute timeout (12 hr default); **per-org configurable** via org settings (idle: 5-480 min, absolute: 60-1440 min); enforced server-side in auth interceptor |
+| SC-10 | Network Disconnect | Latent Archon | Global session idle timeout (25 min default); absolute timeout (12 hr default); **per-org configurable** via org settings (idle: 5-480 min, absolute: 60-1440 min); enforced server-side in auth interceptor |
 | SC-12 | Cryptographic Key Establishment and Management | Shared | Cloud KMS for CMEK; Google-managed keys for default encryption; WIF (no static keys) |
 | SC-13 | Cryptographic Protection | GCP Inherited | AES-256 at rest; TLS 1.2+ in transit |
 | SC-17 | Public Key Infrastructure Certificates | Shared | Certificate Manager with DNS authorization; Google-managed certs |

@@ -31,7 +31,7 @@ MFA is **enforced by default** for all users. TOTP (Time-Based One-Time Password
 
 | Setting | Default | Recommended (CJIS) | Recommended (Standard) | How to Change |
 |---------|---------|---------------------|------------------------|---------------|
-| Idle Timeout | 30 minutes | 15 minutes | 30 minutes | Admin API → `UpdateOrganizationSettings` |
+| Idle Timeout | 25 minutes | 15 minutes | 25 minutes | Admin API → `UpdateOrganizationSettings` |
 | Absolute Timeout | 12 hours | 8 hours | 12 hours | Admin API → `UpdateOrganizationSettings` |
 
 **Customer Action**: Agencies handling CJIS data should set idle timeout to 15 minutes or less per CJIS Security Policy §5.5.5.

@@ -87,7 +87,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The auth interceptor (`cmd/server/connect_interceptors.go`) enforces server-side session timeouts on every request. Idle timeout defaults to 30 minutes; absolute timeout defaults to 12 hours. Both are calculated from JWT `auth_time` and `iat` claims. Per-organization configurable timeouts allow agencies to set stricter values (idle: 5-480 minutes, absolute: 60-1440 minutes) via `UpdateOrganizationSettings` RPC. Expired sessions receive `Unauthenticated` responses requiring re-authentication.
+**Implementation**: The auth interceptor (`cmd/server/connect_interceptors.go`) enforces server-side session timeouts on every request. Idle timeout defaults to 25 minutes; absolute timeout defaults to 12 hours. Both are calculated from JWT `auth_time` and `iat` claims. Per-organization configurable timeouts allow agencies to set stricter values (idle: 5-480 minutes, absolute: 60-1440 minutes) via `UpdateOrganizationSettings` RPC. Expired sessions receive `Unauthenticated` responses requiring re-authentication.
 
 ### AC-3: Access Enforcement
 
@@ -1521,7 +1521,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The auth interceptor enforces server-side session disconnection: idle timeout (default 30 minutes, per-org configurable 5-480 min) and absolute timeout (default 12 hours, per-org configurable 60-1440 min). Expired sessions are rejected with `Unauthenticated` on the next API request. No persistent network connections are maintained — all communication is request-response over HTTPS.
+**Implementation**: The auth interceptor enforces server-side session disconnection: idle timeout (default 25 minutes, per-org configurable 5-480 min) and absolute timeout (default 12 hours, per-org configurable 60-1440 min). Expired sessions are rejected with `Unauthenticated` on the next API request. No persistent network connections are maintained — all communication is request-response over HTTPS.
 
 ### SC-12: Cryptographic Key Establishment and Management
 
