@@ -478,7 +478,7 @@ The event types are reviewed annually and updated as new features are added.
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: Continuous monitoring is implemented through: Cloud Monitoring dashboards for infrastructure metrics, Cloud Armor analytics for WAF/DDoS events, Cloud Logging for all application and infrastructure logs, Drata automated compliance monitoring (continuous), automated vulnerability scanning (continuous via Dependabot, weekly via Trivy/GoSec/Semgrep), red team attack suite execution (monthly), and access reviews (quarterly). See Appendix G for the full Continuous Monitoring Plan.
+**Implementation**: Continuous monitoring is implemented through: Cloud Monitoring dashboards for infrastructure metrics, Cloud Armor analytics for WAF/DDoS events, Cloud Logging for all application and infrastructure logs, Drata automated compliance monitoring (continuous), automated vulnerability scanning (continuous via Dependabot, weekly via Trivy/GoSec/Semgrep), red team attack suite execution (monthly), access reviews (quarterly), automated KSI (Key Security Indicator) evidence collection via Go CLI (`cmd/ksi-evidence`) running weekly in CI — queries GCP APIs for firewall rules, Cloud Run services, Cloud Armor policies, KMS key rotation, log sinks, container images, SQL backup configuration, and GCS versioning — and produces structured JSON evidence files, and OSCAL v1.1.3 SSP JSON generation and validation via CI (`scripts/generate-oscal-ssp.mjs` + `oscal-cli`). See Appendix G for the full Continuous Monitoring Plan.
 
 ### CA-8: Penetration Testing
 
@@ -524,7 +524,7 @@ The event types are reviewed annually and updated as new features are added.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: All changes follow a PR-based workflow: (1) Developer creates feature branch; (2) CI runs automated checks (lint, test, vet, security scans); (3) Peer review required for approval; (4) Merge to main triggers CI/CD deployment; (5) Terragrunt plan/apply for infrastructure changes. Emergency changes follow an expedited process with post-hoc review within 24 hours. All changes are audit-trailed in Git history and CI/CD logs.
+**Implementation**: All changes follow a PR-based workflow: (1) Developer creates feature branch; (2) CI runs automated checks (lint, test, vet, security scans); (3) Automated SCN (Significant Change Notification) classifier (`cmd/classify-scn`) runs on every PR, analyzing changed files against security-critical path patterns and classifying the change as SIGNIFICANT or ROUTINE — significant changes require an SCN filing with FedRAMP PMO before merge; (4) Peer review required for approval; (5) Merge to main triggers CI/CD deployment; (6) Terragrunt plan/apply for infrastructure changes. Emergency changes follow an expedited process with post-hoc review within 24 hours. All changes are audit-trailed in Git history and CI/CD logs.
 
 ### CM-3(2): Testing, Validation, and Documentation of Changes
 
@@ -552,7 +552,7 @@ The event types are reviewed annually and updated as new features are added.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Security-relevant configuration settings include: (1) Cloud Armor WAF rules (OWASP CRS, bot blocking, rate limiting); (2) TLS configuration (1.2+ only, HSTS 2-year preload); (3) Database RLS policies (fail-closed); (4) Auth interceptor settings (REQUIRE_IDP_POOL, REQUIRE_MFA); (5) Session timeout defaults. All settings are managed in Terraform variables and environment variable configurations, versioned in Git.
+**Implementation**: Security-relevant configuration settings include: (1) Cloud Armor WAF rules (OWASP CRS, bot blocking, rate limiting); (2) TLS configuration (1.2+ only, HSTS 2-year preload); (3) Database RLS policies (fail-closed); (4) Auth interceptor settings (REQUIRE_IDP_POOL, REQUIRE_MFA); (5) Session timeout defaults. All settings are managed in Terraform variables and environment variable configurations, versioned in Git. A Customer Secure Configuration Guide (`customer-secure-configuration-guide.md`, GUIDE-SCG-001) is published for customer agencies, covering MFA enrollment, session timeout configuration, RBAC role assignment, SSO/SCIM setup, IP allowlisting, data retention, and quarterly review procedures.
 
 ### CM-7: Least Functionality
 

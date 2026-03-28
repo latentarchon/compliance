@@ -520,9 +520,11 @@ The following algorithms are explicitly prohibited per NIST SP 800-131A:
 | ISSO | Information System Security Officer |
 | JIT | Just-In-Time (provisioning) |
 | KMS | Key Management Service |
+| KSI | Key Security Indicator (FedRAMP 20x) |
 | LLM | Large Language Model |
 | MFA | Multi-Factor Authentication |
 | NIST | National Institute of Standards and Technology |
+| OSCAL | Open Security Controls Assessment Language |
 | OWASP | Open Worldwide Application Security Project |
 | PIA | Privacy Impact Assessment |
 | PII | Personally Identifiable Information |
@@ -539,6 +541,7 @@ The following algorithms are explicitly prohibited per NIST SP 800-131A:
 | SAST | Static Application Security Testing |
 | SBOM | Software Bill of Materials |
 | SCIM | System for Cross-domain Identity Management |
+| SCN | Significant Change Notification |
 | SCRMP | Supply Chain Risk Management Plan |
 | SLA | Service Level Agreement |
 | SORN | System of Records Notice |
