@@ -277,13 +277,17 @@ All other egress is blocked. This is enforced via Terraform-managed firewall rul
 
 #### Database Roles (Separation of Duties)
 
-| DB Role | Service | Privileges |
-|---------|---------|-----------|
-| `chat_ro` | archon-chat | SELECT only on workspace-scoped tables; INSERT on audit_events |
-| `admin_rw` | archon-admin | Full CRUD on org/workspace/document tables; INSERT on audit_events |
-| `ops_rw` | archon-ops | UPDATE on document processing tables; INSERT on embeddings; INSERT on audit_events |
+Default `PUBLIC` privileges are revoked on all tables and sequences. Only the three named roles below have any access.
 
-All database roles operate under PostgreSQL Row-Level Security (RLS). RLS policies scope queries to the authenticated user's organization and workspace. RLS is **fail-closed**: if `app.organization_id` or `app.workspace_id` session variables are not set, queries return zero rows (not all rows).
+| DB Role | Service | Auth Method | Privileges |
+|---------|---------|-------------|------------|
+| `archon_chat_ro` | archon-chat | Cloud SQL IAM (keyless) | SELECT on reference tables; SELECT + INSERT on messages, rag_searches, generations; INSERT on audit_events; SELECT + INSERT + UPDATE on users (profile upsert) |
+| `archon_admin_rw` | archon-admin | Cloud SQL IAM (keyless) | ALL on all tables and sequences (full CRUD) |
+| `archon_ops_rw` | archon-ops | Cloud SQL IAM (keyless) | SELECT + INSERT + UPDATE on documents, document_versions, DLQ; SELECT + INSERT + UPDATE + DELETE on chunks; INSERT on audit_events and generations; SELECT on reference tables |
+
+**Migration user** (`postgres`): Password-authenticated superuser used exclusively by the Atlas migration job (Cloud Run Job). Has DDL privileges (CREATE/ALTER/DROP). No runtime service has access to these credentials — the password is stored in Secret Manager and mounted only on the migration job container.
+
+All database roles operate under PostgreSQL Row-Level Security (RLS). RLS policies scope queries to the authenticated user's organization and workspace. RLS is **fail-closed**: if `app.organization_id` or `app.workspace_id` session variables are not set, queries return zero rows (not all rows). Roles are granted to IAM service accounts dynamically by naming convention (`archon-chat@*`, `archon-admin@*`, `archon-ops@*`), ensuring environment-agnostic enforcement across staging and production.
 
 ---
 

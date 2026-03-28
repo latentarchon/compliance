@@ -126,7 +126,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 
 **Implementation**: Separation of duties is enforced through:
 
-- **Service Isolation**: Three Cloud Run services (`archon-chat`, `archon-admin`, `archon-ops`) operate with distinct database roles (`chat_ro`, `admin_rw`, `ops_rw`). The chat service cannot modify data. The ops service has limited write access.
+- **Service Isolation**: Three Cloud Run services (`archon-chat`, `archon-admin`, `archon-ops`) operate with distinct PostgreSQL roles (`archon_chat_ro`, `archon_admin_rw`, `archon_ops_rw`) enforced via migration `20260328120000_enforce_least_privilege_db_roles.sql`. Default `PUBLIC` privileges are revoked — only named roles have table access. The chat service cannot modify reference data. The ops service has write access limited to document processing tables only.
 - **Project Isolation**: Two GCP projects with separate Identity Platform pools, Cloud Armor policies, and IAM configurations. Cross-pool identity bridging is explicitly prohibited (see `docs/POOL_ISOLATION.md`).
 - **RBAC**: Only `master_admin` can promote others to `master_admin`. Self-MFA-reset is blocked. Last-admin guard prevents lockout.
 - **CI/CD**: Production deploys require PR approval. Terraform plans are posted as PR comments for review before apply.
@@ -139,7 +139,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 **Implementation**:
 
 - **GCP IAM**: The Terraform service account has exactly 15 specific roles (no `roles/editor` or `roles/owner`). Each Cloud Run service account has scoped permissions for only the APIs it needs. Workload Identity Federation eliminates static service account keys.
-- **Database**: Three distinct PostgreSQL roles with minimum necessary grants. `chat_ro` is read-only. Audit table is INSERT-only for all application roles.
+- **Database**: Three distinct PostgreSQL roles with minimum necessary grants, enforced via Atlas migration. Default `PUBLIC` privileges are revoked on all tables and sequences. `archon_chat_ro` is read-only on reference data (SELECT + INSERT only for chat persistence). `archon_ops_rw` is scoped to document processing tables (cannot touch org/member/invite data). Audit table is INSERT-only for non-admin roles. Schema migrations run under a separate `postgres` superuser whose credentials are isolated in Secret Manager — no runtime service can execute DDL.
 - **Application**: RBAC enforces per-RPC authorization. Viewers cannot modify data. Editors cannot manage members. Only admins can manage workspaces.
 
 ### AC-6(1): Authorize Access to Security Functions

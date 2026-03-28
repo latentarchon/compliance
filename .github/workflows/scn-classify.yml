@@ -1,0 +1,67 @@
+name: SCN Classification
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      base_ref:
+        description: 'Base ref for comparison'
+        required: false
+        default: 'origin/main'
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Classify change significance
+        id: scn
+        run: |
+          go run ./cmd/classify-scn \
+            --base "${{ inputs.base_ref || format('origin/{0}', github.base_ref || 'main') }}" \
+            --head "${{ github.sha }}" \
+            --json > scn-report.json || true
+          cat scn-report.json
+          CLASSIFICATION=$(jq -r '.classification' scn-report.json)
+          echo "classification=$CLASSIFICATION" >> "$GITHUB_OUTPUT"
+
+      - name: Post SCN comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('scn-report.json', 'utf8'));
+            const isSig = report.classification === 'SIGNIFICANT';
+
+            let body = `## FedRAMP SCN Classification: **${report.classification}**\n\n`;
+            body += `| Metric | Count |\n|---|---|\n`;
+            body += `| Total files changed | ${report.total_files_changed} |\n`;
+            body += `| Significant | ${report.significant_files_count} |\n`;
+            body += `| Routine | ${report.routine_files_count} |\n\n`;
+
+            if (report.significant_files && report.significant_files.length > 0) {
+              body += `### ⚠️ Significant Files\n\n`;
+              for (const f of report.significant_files) {
+                body += `- \`${f.file}\` — ${f.reason}\n`;
+              }
+              body += `\n> **Action Required**: File a Significant Change Notification (SCN) with the FedRAMP PMO before merging.\n`;
+              body += `> Contact: security@latentarchon.com\n`;
+            } else {
+              body += `✅ No security-critical files modified. No SCN required.\n`;
+            }
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

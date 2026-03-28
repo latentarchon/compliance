@@ -5,7 +5,9 @@
   "description": "Compliance documentation and PDF generation for Latent Archon",
   "scripts": {
     "build:pdfs": "node scripts/build-pdfs.mjs",
-    "clean": "rm -rf dist/"
+    "generate:oscal": "node scripts/generate-oscal-ssp.mjs",
+    "validate:oscal": "docker run --rm -v \"$(pwd):/data\" ghcr.io/metaschema-framework/oscal-cli:latest validate /data/oscal/ssp.json",
+    "clean": "rm -rf dist/ oscal/"
   },
   "devDependencies": {
     "md-to-pdf": "^5.2.4"

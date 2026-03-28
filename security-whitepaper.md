@@ -114,13 +114,16 @@ If no workspace IDs are set, **zero rows are returned** (fail-closed design).
 
 ### Least-Privilege Database Roles
 
-| Role | Cloud Run Service | Permissions |
-|------|-------------------|-------------|
-| `archon_chat_ro` | Chat API | SELECT on reference tables; SELECT + INSERT on messages/searches |
-| `archon_admin_rw` | Admin API | ALL on all tables |
-| `archon_ops_rw` | Ops service | SELECT/INSERT/UPDATE on documents + chunks; SELECT on reference tables |
+Default `PUBLIC` privileges are revoked on all tables and sequences. Only named roles have access.
 
-The chat role **cannot** create, modify, or delete organizations, workspaces, documents, or members. Roles map to GCP IAM service accounts via Cloud SQL IAM authentication (no static passwords).
+| Role | Cloud Run Service | Auth | Permissions |
+|------|-------------------|------|-------------|
+| `archon_chat_ro` | Chat API | Cloud SQL IAM (keyless) | SELECT on reference tables; SELECT + INSERT on messages/searches/generations; INSERT on audit_events; SELECT + INSERT + UPDATE on users (profile upsert) |
+| `archon_admin_rw` | Admin API | Cloud SQL IAM (keyless) | ALL on all tables and sequences |
+| `archon_ops_rw` | Ops service | Cloud SQL IAM (keyless) | SELECT/INSERT/UPDATE on documents, versions, DLQ; full CRUD on chunks; INSERT on audit_events + generations; SELECT on reference tables |
+| `postgres` (migration only) | Atlas job (Cloud Run Job) | Password (Secret Manager) | Superuser — DDL privileges for schema migrations only. Not accessible to any runtime service. |
+
+The chat role **cannot** create, modify, or delete organizations, workspaces, documents, or members. Even if the chat service is fully compromised, the attacker cannot ALTER tables, CREATE functions/triggers (no backdoor), or DELETE any data. Roles are granted to IAM service accounts dynamically by naming convention, ensuring environment-agnostic enforcement. Enforced via migration `20260328120000_enforce_least_privilege_db_roles.sql`.
 
 ### Vector Store Isolation
 

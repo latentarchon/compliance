@@ -1,3 +1,8 @@
 .DS_Store
 *.pdf
 node_modules/
+dist/
+evidence/
+oscal/
+/ksi-evidence
+/classify-scn
