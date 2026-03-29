@@ -51,8 +51,9 @@
 | **Information System Security Officer (ISSO)** | _[TBD — to be appointed]_ |
 | **Cloud Service Model** | Software as a Service (SaaS) |
 | **Cloud Deployment Model** | Public Cloud |
-| **Underlying CSP** | Google Cloud Platform (GCP) — FedRAMP High Authorized |
+| **Underlying CSPs** | Google Cloud Platform (GCP), Amazon Web Services (AWS), Microsoft Azure — all FedRAMP High Authorized |
 | **GCP Authorization ID** | FR1805181233 |
+| **Deployment Model** | Single-cloud per customer deployment (GCP, AWS, or Azure) |
 | **FIPS 199 Categorization** | Moderate |
 | **Authorization Type** | FedRAMP Agency Authorization |
 | **Authorization Status** | Pre-Authorization (DRAFT) |

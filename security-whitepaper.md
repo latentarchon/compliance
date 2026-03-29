@@ -1,7 +1,7 @@
 # Latent Archon — Security Architecture Whitepaper
 
 > **Classification**: Company Confidential — Approved for Government Prospect Distribution  
-> **Version**: 1.0  
+> **Version**: 2.0  
 > **Date**: March 2026  
 > **Contact**: ajhendel@latentarchon.com
 
@@ -9,7 +9,9 @@
 
 ## Executive Summary
 
-Latent Archon is a multi-tenant document intelligence platform purpose-built for government agencies handling Controlled Unclassified Information (CUI). The platform enables Retrieval-Augmented Generation (RAG) conversation over uploaded documents with workspace-level data isolation, operating entirely on Google Cloud Platform (GCP) FedRAMP-authorized infrastructure.
+Latent Archon is a multi-tenant document intelligence platform purpose-built for government agencies handling Controlled Unclassified Information (CUI). The platform enables Retrieval-Augmented Generation (RAG) conversation over uploaded documents with workspace-level data isolation, deployable on **Google Cloud Platform (GCP)**, **Amazon Web Services (AWS)**, or **Microsoft Azure** — all FedRAMP High authorized infrastructure.
+
+The application binary, database schema, and security controls are **identical across all three clouds**. Only the underlying infrastructure services differ (e.g., Cloud Run vs. ECS Fargate vs. Container Apps). This whitepaper describes the platform's cloud-agnostic security architecture. For cloud-specific implementation details, see the [Cloud Environment Supplements](cloud/).
 
 This whitepaper describes the platform's security architecture across authentication, data isolation, data flow, encryption, logging, disaster recovery, infrastructure governance, and network security.
 
@@ -19,14 +21,16 @@ This whitepaper describes the platform's security architecture across authentica
 
 ### Multi-Pool Auth Isolation
 
-Authentication is split across two GCP projects with independent Firebase Auth / Identity Platform pools:
+Authentication is split across two isolated environments (GCP projects / AWS accounts / Azure subscriptions) with independent identity pools:
 
-| Pool | Project | Users | Domain |
-|------|---------|-------|--------|
-| App (End Users) | `latentarchon-app-prod` | Agency analysts, viewers | `app.latentarchon.com` |
-| Admin (Org Admins) | `latentarchon-admin-prod` | Org administrators, workspace managers | `admin.latentarchon.com` |
+| Pool | GCP | AWS | Azure | Users | Domain |
+|------|-----|-----|-------|-------|--------|
+| App (End Users) | Identity Platform (Firebase Auth) | SAML IdP providers | Azure AD federation | Agency analysts, viewers | `app.{cloud}.latentarchon.com` |
+| Admin (Org Admins) | Identity Platform (Firebase Auth) | SAML IdP providers | Azure AD federation | Org administrators, workspace managers | `admin.{cloud}.latentarchon.com` |
 
-This two-project split provides **complete auth pool isolation** — a valid app-pool JWT cannot authenticate against the admin API, and vice versa. Credential compromise in one pool cannot escalate to the other.
+This two-environment split provides **complete auth pool isolation** — a valid app-pool JWT cannot authenticate against the admin API, and vice versa. Credential compromise in one pool cannot escalate to the other.
+
+> **Cloud-specific auth models**: GCP deployments support self-service registration (magic link + TOTP MFA). AWS and Azure deployments use **SSO/SAML exclusively** — no self-service registration, no magic links. MFA is delegated to the customer's Identity Provider. All three clouds support SAML 2.0 SSO and SCIM 2.0 provisioning.
 
 ### Cross-Pool Identity Prohibition
 
@@ -116,18 +120,20 @@ If no workspace IDs are set, **zero rows are returned** (fail-closed design).
 
 Default `PUBLIC` privileges are revoked on all tables and sequences. Only named roles have access.
 
-| Role | Cloud Run Service | Auth | Permissions |
-|------|-------------------|------|-------------|
-| `archon_app_ro` | App API | Cloud SQL IAM (keyless) | SELECT on reference tables; SELECT + INSERT on messages/searches/generations; INSERT on audit_events; SELECT + INSERT + UPDATE on users (profile upsert) |
-| `archon_admin_rw` | Admin API | Cloud SQL IAM (keyless) | ALL on all tables and sequences |
-| `archon_ops_rw` | Ops service | Cloud SQL IAM (keyless) | SELECT/INSERT/UPDATE on documents, versions, DLQ; full CRUD on chunks; INSERT on audit_events + generations; SELECT on reference tables |
-| `archon_migrator` (migration only) | Atlas job (Cloud Run Job) | Cloud SQL IAM (keyless, SET ROLE) | DDL privileges for schema migrations. Owns all public tables. No static credentials in normal path. `postgres` password exists in Secret Manager as break-glass only (human admin access). |
+| Role | Service | Auth | Permissions |
+|------|---------|------|-------------|
+| `archon_app_ro` | App API | IAM-based (keyless) | SELECT on reference tables; SELECT + INSERT on messages/searches/generations; INSERT on audit_events; SELECT + INSERT + UPDATE on users (profile upsert) |
+| `archon_admin_rw` | Admin API | IAM-based (keyless) | ALL on all tables and sequences |
+| `archon_ops_rw` | Ops service | IAM-based (keyless) | SELECT/INSERT/UPDATE on documents, versions, DLQ; full CRUD on chunks; INSERT on audit_events + generations; SELECT on reference tables |
+| `archon_migrator` (migration only) | Atlas migration job | IAM-based (keyless, SET ROLE) | DDL privileges for schema migrations. Owns all public tables. No static credentials in normal path. `postgres` password exists in secrets management as break-glass only (human admin access). |
+
+Database IAM auth is implemented via Cloud SQL IAM (GCP), RDS IAM (AWS), or Azure AD auth (Azure). The PostgreSQL role model is identical across all clouds.
 
 The app role **cannot** create, modify, or delete organizations, workspaces, documents, or members. Even if the app service is fully compromised, the attacker cannot ALTER tables, CREATE functions/triggers (no backdoor), or DELETE any data. Roles are granted to IAM service accounts dynamically by naming convention, ensuring environment-agnostic enforcement. Enforced via migration `20260328120000_enforce_least_privilege_db_roles.sql`.
 
 ### Vector Store Isolation
 
-Vertex AI Vector Search results are scoped to authorized workspace IDs via token restrictions. Each stored embedding carries `workspace_id` and `document_id` namespace restrictions, preventing cross-workspace data leakage at the vector database level.
+Vector search results are scoped to authorized workspace IDs via token restrictions (GCP: Vertex AI Vector Search), filter queries (AWS: OpenSearch Serverless), or security filters (Azure: AI Search). Each stored embedding carries `workspace_id` and `document_id` namespace restrictions, preventing cross-workspace data leakage at the vector database level.
 
 ---
 
@@ -137,9 +143,9 @@ Vertex AI Vector Search results are scoped to authorized workspace IDs via token
 
 ```
 Client (SPA)
-  → Cloud Armor (WAF + OWASP CRS)
-  → Global Load Balancer (TLS termination, DDoS protection)
-  → Cloud Run (serverless container)
+  → WAF (Cloud Armor / WAFv2 / Front Door WAF — OWASP CRS)
+  → Load Balancer (TLS termination, DDoS protection)
+  → Container Runtime (Cloud Run / ECS Fargate / Container Apps)
     → CORS Middleware
     → Security Headers Middleware
     → IP Rate Limiter (pre-auth)
@@ -147,9 +153,9 @@ Client (SPA)
       1. Recovery (panic → CodeInternal, never leaks stack traces)
       2. Trace (OpenTelemetry span injection)
       3. Auth:
-         a. Token verify (Firebase JWT)
+         a. Token verify (Firebase JWT / SAML assertion)
          b. IDP pool isolation (header + Host subdomain vs token pool)
-         c. MFA enforcement (TOTP required, step-up for sensitive RPCs)
+         c. MFA enforcement (TOTP required / delegated to IdP)
          d. Session timeouts (idle 25 min, absolute 12 hr)
          e. JIT provisioning (federated users)
          f. Org membership gate (reject orgless users)
@@ -157,7 +163,7 @@ Client (SPA)
       4. Per-User Rate Limiter
       5. Logging Interceptor
     → Handler (authorization check, business logic)
-    → RLS-scoped Database Query (Cloud SQL, private VPC)
+    → RLS-scoped Database Query (PostgreSQL, private network)
 ```
 
 ### Document Ingestion Pipeline
@@ -166,11 +172,22 @@ Client (SPA)
 [Manual Upload]  Upload → Size Check (50 MB) → Type Allowlist → Magic-Byte Validation
 [Graph Sync]     Microsoft Graph Delta Query → File Download → Type/Size Check
        ↓
-  → ClamAV Malware Scan → SHA-256 Dedup → GCS Upload (workspace-scoped path)
-  → DB Insert → Cloud Tasks Queue → DLP Inspection (PII/credential detection)
-  → Document AI OCR → Chunking (800-token segments) → Embedding (Vertex AI)
+  → ClamAV Malware Scan → SHA-256 Dedup → Object Storage Upload (workspace-scoped path)
+  → DB Insert → Task Queue → DLP/PII Inspection
+  → Document Extraction (OCR) → Chunking (800-token segments) → Embedding
   → Vector Search Index (workspace-scoped)
 ```
+
+The pipeline is identical across clouds; only the underlying services differ:
+
+| Step | GCP | AWS | Azure |
+|------|-----|-----|-------|
+| Object storage | GCS | S3 | Blob Storage |
+| Task queue | Cloud Tasks | SQS | Service Bus |
+| DLP/PII | Cloud DLP | Comprehend | AI Language |
+| OCR/extraction | Document AI | Textract | Document Intelligence |
+| Embedding | Vertex AI (Gemini Embedding) | Bedrock (Titan Embed) | Azure OpenAI (text-embedding-3) |
+| Vector search | Vertex AI Vector Search | OpenSearch Serverless | Azure AI Search |
 
 Documents from Microsoft 365 (SharePoint, OneDrive) enter the same pipeline as manual uploads. The Graph sync path downloads files via Microsoft Graph API delta queries, then feeds them through the identical malware scan → DLP → embed pipeline. Content-hash deduplication prevents re-ingesting unchanged files.
 
@@ -178,11 +195,15 @@ Documents from Microsoft 365 (SharePoint, OneDrive) enter the same pipeline as m
 
 ```
 User Message → Workspace Access Verification → Query Embedding
-  → Vector Search (workspace-filtered) → Chunk Hydration (from Cloud SQL)
+  → Vector Search (workspace-filtered) → Chunk Hydration (from PostgreSQL)
   → Prompt Construction (server-controlled system prompt + context + history)
-  → Gemini Streaming Response → SSE to Client
+  → LLM Streaming Response → SSE to Client
   → Async: Message Persistence + Audit Event
 ```
+
+| Step | GCP | AWS | Azure |
+|------|-----|-----|-------|
+| LLM | Gemini 2.5 Pro | Claude 3.5 Sonnet (Bedrock) | GPT-4o (Azure OpenAI) |
 
 ### Microsoft Graph Sync Flow
 
@@ -190,22 +211,26 @@ User Message → Workspace Access Verification → Query Embedding
 Admin Console → Initiate OAuth2 (Microsoft Entra ID)
   → HMAC-signed CSRF state token (10-min TTL)
   → Admin consent → Authorization code callback
-  → Token exchange → Refresh token encrypted via Cloud KMS (HSM-backed)
+  → Token exchange → Refresh token encrypted via KMS (HSM-backed)
   → Stored in graph_connections (org-scoped, RLS-protected)
 
 Sync Trigger (manual or scheduled):
-  → Decrypt refresh token (Cloud KMS) → Obtain access token
+  → Decrypt refresh token (KMS) → Obtain access token
   → Microsoft Graph Delta Query (only new/changed files)
   → File download → Standard ingestion pipeline
   → Sync audit log (graph_sync_log table)
 ```
 
-### Cross-Project Data Flow
+OAuth tokens are encrypted at rest using the cloud-native KMS service (Cloud KMS / AWS KMS / Key Vault).
 
-Only one narrow IAM grant crosses the project boundary:
-- `roles/cloudsql.client` + `roles/cloudsql.instanceUser` for the app SA on the admin project
-- This enables app API read access to documents and workspace data from Cloud SQL
-- All other services are project-isolated
+### Cross-Environment Data Flow
+
+Only one narrow IAM grant crosses the environment boundary:
+- GCP: `roles/cloudsql.client` + `roles/cloudsql.instanceUser` for the app SA on the admin project
+- AWS: Cross-account IAM role assumption for RDS access
+- Azure: Cross-subscription managed identity delegation for PostgreSQL access
+
+This enables app API read access to documents and workspace data from PostgreSQL. All other services are environment-isolated.
 
 ---
 
@@ -213,54 +238,45 @@ Only one narrow IAM grant crosses the project boundary:
 
 ### Data at Rest
 
-| Layer | Mechanism | Key Management |
-|-------|-----------|---------------|
-| Cloud SQL (PostgreSQL) | AES-256 | CMEK via Cloud KMS (HSM-backed, 90-day rotation) |
-| Microsoft Graph OAuth Tokens | AES-256-GCM | Cloud KMS `app_secrets` key (HSM-backed, 90-day rotation) |
-| Cloud Storage (GCS) | AES-256 | CMEK via Cloud KMS (HSM-backed, 90-day rotation) |
-| Vertex AI Vector Search | AES-256 | CMEK via Cloud KMS (HSM-backed, 90-day rotation) |
-| Artifact Registry | AES-256 | CMEK via Cloud KMS (HSM-backed, 90-day rotation) |
-| BigQuery (Audit Logs) | AES-256 | CMEK via Cloud KMS (HSM-backed, 90-day rotation) |
-| Cloud Logging | AES-256 | CMEK via Cloud KMS (HSM-backed, 90-day rotation) |
+| Layer | Mechanism | GCP Key Management | AWS Key Management | Azure Key Management |
+|-------|-----------|-------------------|-------------------|---------------------|
+| PostgreSQL | AES-256 | CMEK via Cloud KMS | CMEK via KMS (RDS) | CMEK via Key Vault (TDE) |
+| OAuth Tokens | AES-256-GCM | Cloud KMS `app_secrets` key | KMS (envelope encryption) | Key Vault (envelope encryption) |
+| Object Storage | AES-256 | CMEK via Cloud KMS (GCS) | SSE-KMS (S3) | CMEK via Key Vault (Blob) |
+| Vector Index | AES-256 | CMEK via Cloud KMS (Vertex AI) | Encryption at rest (OpenSearch) | CMEK via Key Vault (AI Search) |
+| Container Images | AES-256 | CMEK via Cloud KMS (AR) | Encryption at rest (ECR) | Encryption at rest (ACR) |
+| Audit Logs | AES-256 | CMEK via Cloud KMS (BigQuery + Cloud Logging) | SSE-KMS (CloudWatch + S3) | CMEK via Key Vault (Monitor + Blob) |
 
-All data-at-rest encryption uses Customer-Managed Encryption Keys (CMEK) backed by Cloud KMS HSMs (FIPS 140-2 Level 3). Keys rotate automatically every 90 days. Each service has a dedicated CMEK key within the project keyring, with service agent IAM grants scoped to the minimum required (`roles/cloudkms.cryptoKeyEncrypterDecrypter`). Key lifecycle events (disable, destroy, version state changes) trigger Cloud Monitoring alerts. Per-tenant CMEK anchor: `organizations.kms_key_name` column stores the KMS key resource name for each tenant, enabling future per-tenant encryption key isolation.
+All data-at-rest encryption uses Customer-Managed Encryption Keys (CMEK) backed by HSMs (FIPS 140-2 Level 3) on all three clouds. Keys rotate automatically (90 days on GCP/Azure, configurable on AWS). Each service has a dedicated CMEK key, with IAM grants scoped to minimum required permissions. Key lifecycle events (disable, destroy, version state changes) trigger monitoring alerts. Per-tenant CMEK anchor: `organizations.kms_key_name` column stores the KMS key resource name for each tenant, enabling future per-tenant encryption key isolation.
 
-Two KMS keyrings are maintained per project to respect GCP location constraints:
-
-| Keyring | Location | Keys |
-|---------|----------|------|
-| Regional | `us-east1` | Cloud SQL, GCS, Vertex AI, Artifact Registry, Cloud Logging |
-| Multi-region | `us` | BigQuery (audit dataset requires US multi-region CMEK match) |
-
-Both keyrings use HSM protection level and 90-day rotation. `prevent_destroy` lifecycle rules protect all keyrings and keys from accidental deletion.
+For cloud-specific keyring/key topology details, see the [Cloud Environment Supplements](cloud/).
 
 ### Data in Transit
 
-| Path | Protocol | Certificate |
-|------|----------|------------|
-| Client → Load Balancer | TLS 1.2+ | Certificate Manager with DNS authorization |
-| Load Balancer → Cloud Run | TLS 1.2+ (mTLS capable) | Google-managed |
-| Cloud Run → Cloud SQL | TLS via Cloud SQL Connector | IAM-authenticated, private VPC |
-| Cloud Run → Vertex AI | TLS 1.2+ via PSC | Private Service Connect (no public internet) |
-| Cloud Run → GCS | TLS 1.2+ | Google-managed |
-| Cloud Run → Document AI | TLS 1.2+ | Regional, Google-managed |
-| Cloud Run → Microsoft Graph API | TLS 1.2+ | Microsoft-managed (`graph.microsoft.com`) |
+| Path | Protocol | GCP | AWS | Azure |
+|------|----------|-----|-----|-------|
+| Client → Load Balancer | TLS 1.2+ | Certificate Manager (DNS auth) | ACM (DNS validation) | Front Door managed certs |
+| LB → Container | TLS 1.2+ | Google-managed | ALB → ECS (TLS) | Front Door → Container Apps |
+| Container → Database | TLS 1.2+ | Cloud SQL Connector (IAM, private VPC) | RDS TLS (IAM, private subnet) | Azure AD auth (private endpoint) |
+| Container → AI Services | TLS 1.2+ | PSC (no public internet) | VPC endpoints | Private endpoints |
+| Container → Object Storage | TLS 1.2+ | Google-managed | AWS-managed | Azure-managed |
+| Container → Microsoft Graph | TLS 1.2+ | Microsoft-managed | Microsoft-managed | Microsoft-managed |
 
 HSTS is enforced with `max-age=63072000; includeSubDomains; preload` (2-year pinning).
 
 ### Secrets Management
 
 - **Zero secrets in container images**: All configuration via environment variables at runtime
-- **No static database passwords**: Cloud SQL IAM authentication only. The `postgres` superuser password exists in Secret Manager as break-glass only, accessible to `gcp-security-admins` group — not mounted on any service or job by default. A Cloud Monitoring alert (CRITICAL severity) fires on any access to this secret.
-- **No service account keys**: Workload Identity Federation (WIF) with OIDC for CI/CD
-- **Org policy enforcement**: `iam.disableServiceAccountKeyCreation` and `iam.disableServiceAccountKeyUpload` block SA key creation and external key import org-wide
-- **Secret rotation**: All Secret Manager secrets have a 90-day automatic rotation schedule configured via Terraform (`infra/modules/secrets/`)
-- **Secret access alerting**: Cloud Monitoring alert policy fires on any `AccessSecretVersion` call against managed secrets, enabling detection of unauthorized or unexpected secret access
+- **No static database passwords**: IAM-based database authentication only (Cloud SQL IAM / RDS IAM / Azure AD auth). The `postgres` superuser password exists in secrets management as break-glass only, accessible to security administrators — not mounted on any service or job by default. A monitoring alert (CRITICAL severity) fires on any access to this secret.
+- **No service account keys**: Workload Identity Federation (GCP WIF / AWS OIDC / Azure Workload Identity) for CI/CD — zero stored credentials
+- **Org policy enforcement**: GCP org policies block SA key creation/import. AWS SCPs restrict IAM key creation. Azure policies enforce managed identity usage.
+- **Secret rotation**: All secrets have a 90-day automatic rotation schedule configured via Terraform
+- **Secret access alerting**: Monitoring alert policies fire on any secret access, enabling detection of unauthorized or unexpected access
 - **CI guardrail**: The infra CI pipeline (`iam-auth-guardrail` job) rejects PRs that introduce `DB_USER` or `DB_PASSWORD` into atlas-migrate configs, preventing regressions to password-based auth.
 
-### Cloud SQL Database Audit Flags
+### PostgreSQL Database Audit Flags
 
-PostgreSQL database-level auditing is enforced via Terraform-managed Cloud SQL database flags:
+PostgreSQL database-level auditing is enforced via Terraform-managed database flags (Cloud SQL flags / RDS parameter groups / Azure Flexible Server parameters):
 
 | Flag | Value | Purpose |
 |------|-------|---------|
@@ -273,7 +289,7 @@ PostgreSQL database-level auditing is enforced via Terraform-managed Cloud SQL d
 | `log_min_duration_statement` | `1000` | Logs queries taking longer than 1 second (slow query detection) |
 | `cloudsql.iam_authentication` | `on` | Enables IAM-based authentication (required for keyless auth) |
 
-These flags are defined in `infra/modules/cloud-sql/main.tf` and applied uniformly across staging and production.
+These flags are defined in the cloud-specific database module (`infra/{gcp,aws,azure}/modules/`) and applied uniformly across staging and production.
 
 ### Schema future-proofing (no behavioral change today)
 
@@ -315,16 +331,16 @@ All security-relevant operations are persisted to the `audit_events` database ta
 
 ### SIEM Integration
 
-- All audit events emit structured JSON logs to Cloud Logging
+- All audit events emit structured JSON logs to cloud-native logging (Cloud Logging / CloudWatch / Azure Monitor)
 - Security-critical events (failures, auth, member changes, deletions) logged at WARN level
 - OpenTelemetry trace correlation (trace_id, span_id) for end-to-end request tracing
-- **Pub/Sub SIEM Export Pipeline**: Per-customer Pub/Sub topic + subscription for agency SIEM integration (Splunk, Sentinel, Chronicle). Supports both pull (gRPC) and push (webhook) delivery. Agency service accounts granted subscriber IAM access. Enabled per-customer via `enable_siem_export` Terraform variable.
-- BigQuery audit log sink for long-term analytics and compliance reporting
+- **SIEM Export Pipeline**: Per-customer message topic for agency SIEM integration (Splunk, Sentinel, Chronicle). GCP: Pub/Sub topic + subscription. AWS: SNS + SQS. Azure: Event Hub. Supports both pull and push delivery. Enabled per-customer via Terraform variable.
+- Long-term audit log sink for analytics and compliance reporting (BigQuery / S3 / Blob Storage)
 
 ### Observability
 
-- **Distributed Tracing**: OpenTelemetry with OTLP/gRPC export to Cloud Trace
-- **Structured Logging**: Go `slog` with JSON output for Cloud Logging
+- **Distributed Tracing**: OpenTelemetry with OTLP/gRPC export (Cloud Trace / X-Ray / Application Insights)
+- **Structured Logging**: Go `slog` with JSON output to cloud-native logging
 - **Metrics**: Database queries, slow queries, HTTP request count/duration/status, rate limit violations
 - **Sampling**: 1% production, 10% staging, 100% development
 
@@ -395,7 +411,7 @@ Beyond SHA-256 content hash deduplication (exact duplicate detection), the platf
 Documents support **immutable version history**:
 
 - Each upload creates a new version with an incrementing version number
-- Previous versions are retained in GCS with workspace-scoped paths
+- Previous versions are retained in object storage with workspace-scoped paths
 - Version metadata (uploader, timestamp, size, content hash) is stored in the database
 - Versions are immutable once created — no in-place modification
 
@@ -407,14 +423,14 @@ The app API supports **inline image generation** within streaming conversations:
 
 | Step | Detail |
 |------|--------|
-| Model | Gemini 2.0 Flash with ResponseModalities image output via Vertex AI |
+| Model | Gemini 2.0 Flash (GCP) / equivalent multimodal model (AWS/Azure) |
 | Streaming | Images generated inline during server-streaming conversation responses |
-| Storage | Generated images uploaded to GCS with workspace-scoped paths |
-| Proxy | Images served via authenticated proxy endpoint — no direct GCS URLs exposed |
+| Storage | Generated images uploaded to object storage with workspace-scoped paths |
+| Proxy | Images served via authenticated proxy endpoint — no direct storage URLs exposed |
 | Rate Limiting | Max 4 images per response, 10 MB total image payload per response |
 | Audit | Image generation events logged with image count, total bytes, and correlation ID |
 
-All generated images inherit the workspace scope of the conversation and are never directly accessible via GCS URLs.
+All generated images inherit the workspace scope of the conversation and are never directly accessible via object storage URLs.
 
 ---
 
@@ -429,7 +445,7 @@ A dedicated **Export Service** supports bulk data export for FOIA requests, gove
 | Format | Structured export package with manifest and chain-of-custody metadata |
 | Access Control | Export restricted to organization `master_admin` role with step-up MFA |
 | Audit Trail | Every export request is audit-logged with requestor ID, scope, and completion status |
-| Processing | Large exports processed via Cloud Tasks with progress tracking |
+| Processing | Large exports processed via task queue (Cloud Tasks / SQS / Service Bus) with progress tracking |
 
 Export manifests include chain-of-custody metadata (who exported, when, what scope) to satisfy federal record-keeping requirements.
 
@@ -442,7 +458,7 @@ The platform includes an **Analytics Service** providing per-organization usage 
 | Capability | Detail |
 |-----------|--------|
 | Usage Metrics | Conversation messages, document uploads, vector searches, and API calls tracked per org and workspace |
-| Cost Attribution | Vertex AI, Document AI, Cloud Storage, and compute costs attributed to org/workspace |
+| Cost Attribution | AI services, document processing, object storage, and compute costs attributed to org/workspace |
 | Dashboard | Admin-facing usage dashboard with time-series charts and per-workspace breakdowns |
 | Access Control | Analytics endpoints restricted to organization admin role; data org-scoped |
 | Export | Analytics data exportable as CSV/JSON for agency reporting systems |
@@ -453,12 +469,12 @@ The platform includes an **Analytics Service** providing per-organization usage 
 
 ### Dead Letter Queue (DLQ) Management
 
-Documents that fail processing after Cloud Tasks retry exhaustion are captured in a **Dead Letter Queue**:
+Documents that fail processing after task queue retry exhaustion are captured in a **Dead Letter Queue**:
 
 - Admin endpoint lists all DLQ items with failure reason, attempt count, and timestamps
 - Admin endpoint requeues individual or batch DLQ items for reprocessing
 - DLQ endpoints restricted to ops service with OIDC authentication
-- DLQ depth integrated with Cloud Monitoring for threshold-based alerting
+- DLQ depth integrated with cloud monitoring for threshold-based alerting
 
 ### Deep Readiness Probes (`/readyz`)
 
@@ -466,11 +482,11 @@ Beyond basic liveness checks (`/health`), the platform implements **mode-aware d
 
 | Dependency | Check | Mode-Aware |
 |-----------|-------|-----------|
-| Cloud SQL | Connection pool ping with timeout | All modes |
-| Vector Store (Vertex AI) | Index endpoint reachability | public + ops |
-| Document Service (GCS) | Bucket accessibility verification | admin + ops |
-| Cloud Tasks | Queue accessibility check | admin + ops |
-| GenText (Gemini) | Model endpoint reachability | public |
+| PostgreSQL | Connection pool ping with timeout | All modes |
+| Vector Store | Index endpoint reachability | public + ops |
+| Object Storage | Bucket/container accessibility verification | admin + ops |
+| Task Queue | Queue accessibility check | admin + ops |
+| LLM Service | Model endpoint reachability | public |
 
 Readiness checks are scoped to the server mode to prevent cascading failures across unrelated service boundaries.
 
@@ -479,14 +495,14 @@ Readiness checks are scoped to the server mode to prevent cascading failures acr
 Organization administrators can configure **self-service IP allowlists** via the admin API:
 
 - CIDR-based IP allowlists stored in organization settings (JSONB)
-- Allowlists synced to Cloud Armor WAF rules via the Cloud Armor API
-- CEL expressions match org hostname (`request.headers['host'].startsWith('<slug>.')`) + IP range for per-org enforcement
+- Allowlists synced to WAF rules via the cloud-native WAF API (Cloud Armor / WAFv2 / Front Door WAF)
+- Per-org enforcement matches org hostname + IP range
 - Sync failure is non-fatal (logged + audit event; database is source of truth)
-- Periodic reconciliation cron catches Cloud Armor drift
+- Periodic reconciliation cron catches WAF drift
 
 ### Data Loss Prevention (DLP)
 
-Cloud DLP inspect templates are deployed via Terraform (`infra/modules/dlp/`) to scan uploaded documents for sensitive data before they enter the RAG pipeline:
+DLP/PII inspect templates are deployed via Terraform to scan uploaded documents for sensitive data before they enter the RAG pipeline. GCP uses Cloud DLP, AWS uses Amazon Comprehend PII detection, and Azure uses AI Language PII detection:
 
 | Detector Category | Info Types |
 |-------------------|-----------|
@@ -497,7 +513,7 @@ Cloud DLP inspect templates are deployed via Terraform (`infra/modules/dlp/`) to
 
 DLP scanning is integrated into the document ingestion pipeline. Findings are logged with minimum likelihood thresholds and finding limits configurable via Terraform variables. An optional de-identification template can redact detected PII/credentials before RAG indexing.
 
-IAM access: the ops service account has `roles/dlp.user` for scan execution; the Terraform service account has `roles/dlp.admin` for template management.
+IAM access is scoped to minimum required permissions for scan execution and template management on each cloud platform.
 
 ### Microsoft Graph Integration (SharePoint / OneDrive Sync)
 
@@ -507,7 +523,7 @@ Organization administrators can connect Microsoft 365 tenants to ingest document
 |-----------|---------------|
 | **OAuth2 Flow** | Authorization code grant with Microsoft Entra ID (Azure AD). Admin consent required — delegated permissions only (`Files.Read.All`, `Sites.Read.All`). |
 | **CSRF Protection** | OAuth state token is HMAC-signed (SHA-256) with a derived key and 10-minute TTL. Format: `nonce:timestamp:orgID:msTenantID:hmac`. Prevents forgery and replay. |
-| **Token Storage** | Refresh tokens encrypted at rest via Cloud KMS `app_secrets` key (AES-256-GCM, HSM-backed). Stored in `graph_connections` table with org-scoped RLS. |
+| **Token Storage** | Refresh tokens encrypted at rest via cloud-native KMS (AES-256-GCM, HSM-backed). Stored in `graph_connections` table with org-scoped RLS. |
 | **Token Refresh** | Access tokens obtained on-demand using stored refresh token. No long-lived access tokens persisted. |
 | **Delta Sync** | Microsoft Graph delta queries fetch only new/changed files since last sync. Content-hash deduplication prevents re-ingesting unchanged files. |
 | **Authorization** | Connection management (create, list, revoke) restricted to org admins. Sync source configuration requires workspace admin permission. Source-level history queries require workspace document-edit permission. |
@@ -518,17 +534,17 @@ Organization administrators can connect Microsoft 365 tenants to ingest document
 
 ### Security Monitoring Alerts
 
-Automated alert policies are deployed via Terraform (`infra/modules/monitoring/`) across all projects:
+Automated alert policies are deployed via Terraform across all cloud environments:
 
 | Alert | Trigger | Severity | Purpose |
 |-------|---------|----------|---------|
-| WAF Block Spike | Elevated Cloud Armor DENY events | HIGH | Active attack or misconfigured WAF rule detection |
-| 5xx Error Rate | 5xx/total request ratio exceeds threshold (MQL ratio query) | HIGH | Service degradation or deployment regression |
-| Cloud SQL Auth Failure | `FATAL` or `password authentication failed` in Cloud SQL logs | HIGH | Brute force attempt or misconfigured SA detection |
-| IAM Privilege Escalation | `SetIamPolicy`, `CreateRole`, or `UpdateRole` API calls | CRITICAL | Unauthorized IAM changes detection |
+| WAF Block Spike | Elevated WAF DENY events | HIGH | Active attack or misconfigured WAF rule detection |
+| 5xx Error Rate | 5xx/total request ratio exceeds threshold | HIGH | Service degradation or deployment regression |
+| Database Auth Failure | Failed authentication attempts in database logs | HIGH | Brute force attempt or misconfigured identity detection |
+| IAM Privilege Escalation | IAM policy changes on sensitive resources | CRITICAL | Unauthorized IAM changes detection |
 | KMS Key Lifecycle | Key disable, destroy, or version state changes | CRITICAL | Unauthorized key operations detection |
-| Secret Access | `AccessSecretVersion` calls on managed secrets | CRITICAL | Unexpected secret access detection |
-| Break-Glass Secret Access | Access to `db-postgres-password` secret | CRITICAL | Emergency credential usage tracking |
+| Secret Access | Secret read operations on managed secrets | CRITICAL | Unexpected secret access detection |
+| Break-Glass Secret Access | Access to database superuser password secret | CRITICAL | Emergency credential usage tracking |
 
 All alerts route to configured notification channels with rate limiting to prevent alert fatigue. Staging and production environments share identical alert configurations to ensure security parity.
 
@@ -536,18 +552,18 @@ All alerts route to configured notification channels with rate limiting to preve
 
 ## 13. Data Retention & Immutability
 
-All data stores enforce a **zero-deletion policy** — no GCS lifecycle rule, BigQuery expiration, or automated process permanently deletes any data. This ensures government records, audit trails, and documents remain available for compliance, investigation, and FOIA requests indefinitely.
+All data stores enforce a **zero-deletion policy** — no object storage lifecycle deletion, audit log expiration, or automated process permanently deletes any data. This ensures government records, audit trails, and documents remain available for compliance, investigation, and FOIA requests indefinitely.
 
 ### Immutability Controls
 
-| Control | Implementation | Scope |
-|---------|---------------|-------|
-| GCS WORM Retention | `retention_policy` with `is_locked = true` (production) | Audit buckets, document bucket |
-| GCS Soft-Delete | 90-day recovery window (GCS maximum) | All buckets |
-| GCS Object Versioning | All versions preserved; archived versions tier to Coldline | All buckets |
-| BigQuery No-Expiration | `table_expiration = null`, `partition_expiration = null` | Audit datasets |
-| Terraform `prevent_destroy` | Lifecycle rule on all buckets and KMS keyrings | All stateful resources |
-| `force_destroy = false` | Prevents accidental bucket deletion even via Terraform | All buckets |
+| Control | GCP | AWS | Azure | Scope |
+|---------|-----|-----|-------|-------|
+| WORM Retention | GCS retention policy (locked) | S3 Object Lock (Governance) | Blob immutability policy | Audit + document storage |
+| Soft-Delete | 90-day GCS soft-delete | S3 versioning + MFA delete | Blob soft-delete | All storage |
+| Object Versioning | GCS versioning | S3 versioning | Blob versioning | All storage |
+| Audit Log No-Expiration | BigQuery (no expiration) | S3 (no lifecycle delete) | Blob (no lifecycle delete) | Audit datasets |
+| Terraform `prevent_destroy` | Lifecycle rule on buckets + KMS | Lifecycle rule on S3 + KMS | Lifecycle rule on storage + Key Vault | All stateful resources |
+| Force-destroy protection | `force_destroy = false` | `force_destroy = false` | `soft_delete_enabled = true` | All storage |
 
 ### Storage Tiering (Cost Optimization Without Deletion)
 
@@ -563,14 +579,14 @@ Old data tiers down for cost savings but is **never deleted**:
 
 DATA_READ and DATA_WRITE audit logs are enabled for all critical services (NIST AU-3/AU-12, CJIS 5.4):
 
-| Service | DATA_READ | DATA_WRITE |
-|---------|-----------|------------|
-| BigQuery | ✓ | ✓ |
-| Cloud SQL | ✓ | ✓ |
-| Cloud Run | ✓ | ✓ |
-| Cloud KMS | ✓ | ✓ |
-| IAM | ✓ | — |
-| Cloud Storage | ✓ | ✓ |
+| Capability | GCP | AWS | Azure |
+|-----------|-----|-----|-------|
+| Database access logging | Cloud SQL audit logs | RDS audit logs | PostgreSQL audit logs |
+| Storage access logging | GCS data access logs | S3 access logs + CloudTrail | Blob Storage diagnostic logs |
+| Container access logging | Cloud Run audit logs | ECS + CloudTrail | Container Apps audit logs |
+| KMS access logging | Cloud KMS audit logs | KMS + CloudTrail | Key Vault diagnostic logs |
+| IAM change logging | IAM audit logs | CloudTrail | Activity Log |
+| API call logging | Cloud Audit Logs | CloudTrail | Activity Log |
 
 These logs capture who accessed which data and when, providing the forensic trail required for incident investigation and compliance audits.
 
@@ -616,11 +632,11 @@ Critical findings on the main branch trigger a notification job. SARIF results a
 
 ### Container Hardening
 
-- **Distroless base image**: `gcr.io/distroless/base-debian12` — no shell, no package manager; includes glibc for BoringSSL dynamic linkage
+- **Distroless base image**: `gcr.io/distroless/base-debian12` — no shell, no package manager; includes glibc for BoringSSL dynamic linkage. Same image used across all clouds.
 - **FIPS 140-2 Go binary**: `CGO_ENABLED=1` with BoringCrypto (`GOEXPERIMENT=boringcrypto`) for FIPS 140-2 validated cryptography (BoringSSL cert #4407)
 - **nginx-unprivileged**: SPA containers run as non-root with read-only filesystem
 - **Pinned dependencies**: `go.sum`, `pnpm-lock.yaml`, `.terraform.lock.hcl` for reproducible builds
-- **Immutable tags**: Artifact Registry repositories have `immutable_tags = true`, preventing tag overwrites (tag-squatting attacks)
+- **Immutable tags**: Container registry repositories have immutable tags enabled (`immutable_tags = true` on AR/ECR/ACR), preventing tag overwrites (tag-squatting attacks)
 
 ### Image Signing & Verification (Cosign)
 
@@ -628,10 +644,10 @@ All container images are cryptographically signed using **Cosign keyless signing
 
 | Step | Action | Enforcement |
 |------|--------|------------|
-| Build | Image pushed to Artifact Registry with SHA commit tag | CI/CD |
+| Build | Image pushed to container registry with SHA commit tag | CI/CD |
 | Sign | `cosign sign --yes` with Sigstore OIDC identity (GitHub Actions OIDC token) | Automated in build job |
 | Verify | `cosign verify` checks certificate identity (`github.com/latentarchon/*`) and OIDC issuer (`token.actions.githubusercontent.com`) | Required before every deploy |
-| Deploy | Cloud Run deploy uses `image@sha256:digest` (digest-pinned, not tag-based) | CI/CD |
+| Deploy | Container deploy uses `image@sha256:digest` (digest-pinned, not tag-based) | CI/CD |
 
 This ensures:
 - **Provenance**: Every deployed image is cryptographically tied to a specific GitHub Actions workflow run
@@ -641,12 +657,12 @@ This ensures:
 
 ### CI/CD Security
 
-- **Keyless authentication**: Workload Identity Federation (WIF) — zero stored secrets
-- **Org policy enforcement**: `iam.disableServiceAccountKeyCreation` and `iam.disableServiceAccountKeyUpload` block SA key creation and import
-- **OIDC provider lock**: WIF providers locked to `latentarchon` GitHub org via attribute condition
+- **Keyless authentication**: Workload Identity Federation (GCP WIF / AWS OIDC / Azure Workload Identity) — zero stored secrets
+- **Org policy enforcement**: Cloud-native policies block static credential creation across all clouds
+- **OIDC provider lock**: Federation providers locked to `latentarchon` GitHub org via attribute condition
 - **Production gates**: All app repos require manual approval for production deployment
 - **Terraform safety**: Plans posted as PR comments, never auto-applied
-- **Digest-pinned deploys**: Cloud Run services deployed by image digest (`@sha256:...`), not by mutable tag
+- **Digest-pinned deploys**: Container services deployed by image digest (`@sha256:...`), not by mutable tag
 
 ---
 
@@ -684,40 +700,41 @@ The backend applies an even stricter policy to all API responses:
 
 | Metric | Target | Mechanism |
 |--------|--------|-----------|
-| **RPO** (Recovery Point Objective) | < 5 minutes | Cloud SQL continuous backup + point-in-time recovery |
-| **RTO** (Recovery Time Objective) | < 1 hour | Cloud Run auto-scaling + infrastructure-as-code |
+| **RPO** (Recovery Point Objective) | < 5 minutes | PostgreSQL continuous backup + point-in-time recovery |
+| **RTO** (Recovery Time Objective) | < 1 hour | Container auto-scaling + infrastructure-as-code |
 
 ### Backup Strategy
 
 | Component | Backup Method | Retention |
 |-----------|--------------|----------|
-| Cloud SQL (PostgreSQL) | Automated daily backups + continuous WAL archiving | 30 days |
-| GCS (Documents) | Object versioning + WORM retention policy + 90-day soft-delete | Indefinite (never auto-deleted) |
+| PostgreSQL | Automated daily backups + continuous WAL archiving (PITR) | 30 days |
+| Object Storage (Documents) | Versioning + WORM retention policy + soft-delete | Indefinite (never auto-deleted) |
 | Vector Search Index | Reconstructible from source chunks | N/A (rebuildable) |
-| BigQuery (Audit Logs) | CMEK-encrypted dataset, no table/partition expiration | Indefinite (never auto-deleted) |
-| GCS WORM Audit Bucket | Immutable retention-locked bucket + versioning | 2 years production (locked), 1 year staging |
-| Cloud Run Job Logs | GCS with CMEK encryption + storage tiering | Indefinite (never auto-deleted) |
-| Terraform/Migration Logs | GCS versioned buckets with storage tiering | Indefinite (never auto-deleted) |
+| Audit Logs | CMEK-encrypted long-term storage, no expiration | Indefinite (never auto-deleted) |
+| WORM Audit Storage | Immutable retention-locked storage + versioning | 2 years production (locked), 1 year staging |
+| Migration Job Logs | Encrypted storage with tiering | Indefinite (never auto-deleted) |
 | Infrastructure Config | Git (Terragrunt/Terraform IaC) | Indefinite |
 
 ### High Availability
 
-- **Cloud Run**: Multi-zone deployment with auto-scaling (0 to N instances)
-- **Cloud SQL**: Regional HA configuration with automatic failover
-- **Load Balancer**: Global anycast with health checks and automatic backend failover
-- **GCS**: Multi-region storage class available for critical documents
+| Capability | GCP | AWS | Azure |
+|-----------|-----|-----|-------|
+| Container HA | Cloud Run multi-zone (0–N) | ECS Fargate multi-AZ | Container Apps zone-redundant |
+| Database HA | Cloud SQL Regional HA (auto failover) | RDS Multi-AZ (auto failover) | Flexible Server zone-redundant |
+| Load Balancer | Global anycast + health checks | ALB multi-AZ + health checks | Front Door global + health checks |
+| Object Storage | Multi-region class available | Cross-region replication available | GRS/RA-GRS available |
 
 ### Infrastructure as Code
 
 All infrastructure is defined in Terragrunt/Terraform with:
-- Full state stored in GCS with versioning and locking
+- Full state stored in cloud-native backend (GCS / S3+DynamoDB / Azure Blob) with versioning and locking
 - CI/CD pipeline validates plans on every PR (never auto-applies)
 - Production deployments require manual approval gates
 - Drift detection on main branch pushes
 
 ### Incident Response Integration
 
-- Cloud Armor WAF provides DDoS protection and OWASP rule enforcement
+- Cloud-native WAF (Cloud Armor / WAFv2 / Front Door WAF) provides DDoS protection and OWASP rule enforcement
 - Rate limiting at both IP and per-user levels prevents abuse
 - Graceful shutdown with in-flight request completion (30-second drain)
 - Kill-on-breach capability in red team tooling for immediate containment
@@ -726,123 +743,113 @@ All infrastructure is defined in Terragrunt/Terraform with:
 
 ## 17. Organization Governance
 
-### GCP Resource Hierarchy
+### Cloud Resource Hierarchy
 
-The platform uses a **multi-project GCP architecture** based on the Google Cloud Foundation Blueprint:
+The platform uses an isolated **two-environment architecture** on each cloud, providing hard IAM boundaries, separate billing, independent audit trails, and blast-radius containment:
 
-```
-Organization (latentarchon.com)
-├── Common/
-│   ├── prod-vpc-latentarchon     (Shared VPC Host — Production)
-│   ├── staging-vpc-latentarchon  (Shared VPC Host — Staging)
-│   └── central-log-latentarchon  (Centralized Logging & Monitoring)
-├── Production/
-│   ├── latentarchon-app-prod    (App API + SPA)
-│   ├── latentarchon-admin-prod   (Admin API + Ops + Data)
-│   └── kms-proj-*                (KMS Autokey)
-├── Non-Production/
-│   ├── latentarchon-app-staging (App)
-│   ├── latentarchon-admin-staging
-│   └── kms-proj-*
-└── Development/
-    └── kms-proj-*
-```
+| Concept | GCP | AWS | Azure |
+|---------|-----|-----|-------|
+| **Top-level** | Organization | AWS Organizations | Azure AD Tenant |
+| **Environment boundary** | Project | Account | Subscription |
+| **App environment** | `latentarchon-app-*` | `latentarchon-app` | `latentarchon-app` |
+| **Admin environment** | `latentarchon-admin-*` | `latentarchon-admin` | `latentarchon-admin` |
+| **Network isolation** | Shared VPC (host + service projects) | VPC per account | VNet per subscription |
+| **KMS isolation** | Dedicated KMS projects (Autokey) | KMS per account | Key Vault per subscription |
+| **Centralized logging** | Org-level log sink → central project | CloudTrail org trail → S3 | Activity Log → central Log Analytics |
 
-Separate GCP projects provide hard IAM boundaries, separate billing, independent audit trails, and blast-radius containment.
+For the detailed resource hierarchy per cloud, see the [Cloud Environment Supplements](cloud/).
 
-### Organization Policies (Enforced)
+### Organization-Level Security Policies
 
-Fifteen organization-wide policies are enforced across all projects:
+Preventive guardrails are enforced at the organization/account/management group level:
 
-| Policy | Effect |
-|--------|--------|
-| `storage.publicAccessPrevention` | All GCS buckets prevented from being made public |
-| `storage.uniformBucketLevelAccess` | Enforces uniform bucket-level access (no legacy ACLs) |
-| `compute.requireOsLogin` | SSH access requires IAM-based OS Login (no SSH keys) |
-| `compute.vmExternalIpAccess` | VMs cannot have external IPs |
-| `compute.disableNestedVirtualization` | Prevents VM escape attack vector |
-| `compute.disableSerialPortAccess` | No serial console access to VMs |
-| `compute.requireShieldedVm` | All VMs must use Shielded VM features (Secure Boot, vTPM, integrity monitoring) |
-| `sql.restrictAuthorizedNetworks` | Cloud SQL cannot use authorized networks |
-| `sql.restrictPublicIp` | Cloud SQL instances cannot have public IPs |
-| `iam.disableServiceAccountKeyCreation` | SA key creation blocked — all workloads use WIF or attached SAs |
-| `iam.disableServiceAccountKeyUpload` | External SA key import blocked — prevents importing unmanaged keys |
-| `run.allowedIngress` | Cloud Run ingress restricted to `internal-and-cloud-load-balancing` (no direct `*.run.app` access) |
-| `compute.restrictXpnProjectLienRemoval` | Shared VPC liens cannot be removed |
-| `compute.skipDefaultNetworkCreation` | No default VPC in new projects |
-| `compute.disableVpcExternalIpv6` | No external IPv6 addresses |
+| Security Objective | GCP Org Policy | AWS SCP | Azure Policy |
+|---|---|---|---|
+| Block public storage | `storage.publicAccessPrevention` | `s3:PutBucketPolicy` deny public | Deny public blob access |
+| Block static credentials | `iam.disableServiceAccountKeyCreation` | Deny `iam:CreateAccessKey` | Deny password-based auth |
+| Enforce encryption | `gcp.restrictNonCmekServices` | Deny unencrypted S3/RDS | Deny unencrypted storage |
+| Restrict public endpoints | `sql.restrictPublicIp`, `run.allowedIngress` | Deny public RDS/ECS | Deny public PostgreSQL/Container Apps |
+| Enforce network isolation | `compute.skipDefaultNetworkCreation` | No default VPC | No default VNet |
+| Restrict egress | FQDN-based firewall policy | VPC endpoint + NAT restrictions | NSG + private endpoints |
 
-### CMEK Autokey Encryption
+GCP enforces 15+ org policies, AWS uses SCPs, and Azure uses Azure Policy assignments. All are defined in Terraform.
 
-Customer-Managed Encryption Keys (CMEK) are enforced at the folder level via **Autokey**:
+### CMEK Enforcement
 
-- Dedicated KMS projects per environment folder (Production, Non-Production, Development)
-- `gcp.restrictNonCmekServices` org policy denies 35+ GCP services from using Google-managed keys
-- `gcp.restrictCmekCryptoKeyProjects` limits which projects can host KMS keys
-- HSM-backed keys with 90-day rotation, destroy-scheduled protection, and lifecycle event alerting
+Customer-Managed Encryption Keys (CMEK) are enforced across all clouds:
 
-### Shared VPC
+- **GCP**: Autokey with dedicated KMS projects; `gcp.restrictNonCmekServices` blocks Google-managed keys
+- **AWS**: KMS CMKs required for S3, RDS, and ECS; S3 bucket policies deny unencrypted uploads
+- **Azure**: Key Vault Premium (HSM-backed) keys required for all storage and database encryption
 
-Both production and staging environments use **Shared VPC** for centralized network governance:
+All keys are HSM-backed with automatic rotation and lifecycle event alerting.
 
-- VPC host projects in the `Common` folder manage all network policies
-- Service projects (app, admin) are attached as Shared VPC service projects
-- Network policies are managed centrally; service project teams cannot modify firewall rules
-- Subnets have **VPC Flow Logs enabled** at 50% sampling with full metadata for network forensics
+### Centralized Network Governance
+
+| Capability | GCP | AWS | Azure |
+|-----------|-----|-----|-------|
+| Network isolation | Shared VPC (host + service projects) | VPC per account with VPC endpoints | VNet per subscription with private endpoints |
+| Flow logging | VPC Flow Logs (50% sampling) | VPC Flow Logs | NSG Flow Logs |
+| Egress control | FQDN-based firewall policy | VPC endpoints + NAT | Private endpoints + NAT |
+| Cross-env access | Shared VPC service project attachment | Cross-account IAM assume-role | Cross-subscription managed identity |
 
 ### Centralized Logging & Monitoring
 
-- Organization-level log sink captures all Admin Activity, System Events, Data Access, and Access Transparency logs across every project
-- Logs routed to a centralized log bucket in `central-log-latentarchon`
-- All projects enrolled in a single metrics scoping project for single-pane-of-glass monitoring
-- Cross-project alerting and unified dashboards
+- Organization-level log sinks capture all admin activity, data access, and system events across all environments
+- Logs routed to centralized storage with CMEK encryption
+- Unified monitoring dashboards and cross-environment alerting
+- All managed via Terraform
 
 ### IAM Groups
 
-IAM is managed via Google Workspace security groups for role-based access at folder/project scopes. All groups are managed via Terraform.
+IAM is managed via identity groups (Google Workspace groups / AWS IAM Identity Center groups / Azure AD groups) for role-based access. All groups are managed via Terraform.
 
 ---
 
 ## 18. Network Security
 
-### VPC Architecture
+### VPC / VNet Architecture
 
-- **Custom VPC** — `auto_create_subnetworks = false` (no default subnets)
-- **Regional routing** — traffic stays within-region
-- **Private Google Access** enabled on all subnets — services access Google APIs without public internet
-- **Private Service Connect (PSC)** — Vertex AI Vector Search accessed via deterministic internal IP (`10.10.0.5`) within the VPC
+| Capability | GCP | AWS | Azure |
+|-----------|-----|-----|-------|
+| Network type | Custom VPC (no default subnets) | VPC (no default VPC) | VNet (no default VNet) |
+| Routing | Regional | Regional (multi-AZ) | Regional (multi-zone) |
+| Private API access | Private Google Access | VPC Endpoints | Private Endpoints |
+| Private AI access | Private Service Connect (PSC) | VPC Endpoint (Bedrock, OpenSearch) | Private Endpoint (OpenAI, AI Search) |
 
-### FQDN-Based Egress Firewall (Zero Trust Network)
+### Egress Firewall (Zero Trust Network)
 
-A **network firewall policy** implements FQDN-based egress control — effectively a network-level allowlist:
+All clouds implement deny-by-default egress with explicit allowlists:
 
-| Priority | Rule | Targets |
-|----------|------|----------|
-| 100 | Google APIs (ALLOW) | `googleapis.com`, `aiplatform.googleapis.com`, `sqladmin.googleapis.com`, `storage.googleapis.com`, `identitytoolkit.googleapis.com`, `securetoken.googleapis.com`, `firebaseappcheck.googleapis.com`, and others |
-| 150 | Microsoft Graph API (ALLOW) | `graph.microsoft.com`, `login.microsoftonline.com` (OAuth2 token exchange and Graph API calls for SharePoint/OneDrive sync) |
-| 200 | Internal APIs (ALLOW) | `app.latentarchon.com`, `admin.latentarchon.com` (prod + staging) |
-| 65534 | Default DENY ALL | `0.0.0.0/0` — all protocols blocked |
+| Priority | Rule | GCP | AWS | Azure |
+|----------|------|-----|-----|-------|
+| 1 | Cloud APIs | FQDN firewall → `*.googleapis.com` | VPC Endpoints (S3, SQS, KMS, etc.) | Private Endpoints (Storage, Service Bus, etc.) |
+| 2 | Microsoft Graph | FQDN → `graph.microsoft.com`, `login.microsoftonline.com` | Security group → Microsoft FQDNs | NSG → Microsoft FQDNs |
+| 3 | Internal APIs | FQDN → `*.latentarchon.com` | Security group → ALB | NSG → Front Door |
+| Default | DENY ALL | `0.0.0.0/0` blocked | Default SG deny | Default NSG deny |
 
-**The platform cannot exfiltrate data to arbitrary external endpoints.** Only explicitly allowlisted Google APIs, Microsoft Graph API (`graph.microsoft.com` — for SharePoint/OneDrive document sync), and internal services are reachable. Email is sent via Identity Platform's server-side `sendOobCode` API, eliminating the need for external email provider egress. Microsoft Graph API egress is only enabled when the Graph integration is configured (`MSGRAPH_CLIENT_ID` environment variable present); otherwise the FQDN rule has no effect.
+**The platform cannot exfiltrate data to arbitrary external endpoints.** Only explicitly allowlisted cloud APIs, Microsoft Graph API (for SharePoint/OneDrive document sync), and internal services are reachable. Microsoft Graph API egress is only enabled when the Graph integration is configured.
 
 ### Ingress Controls
 
-- **Cloud SQL**: Only accessible from Cloud Shell admin ranges and Direct VPC Cloud Run services
-- **Cloud Tasks**: Google service IP ranges for task dispatch
-- **Internal VPC**: East-west communication within subnet and VPC Connector range
-- **No public SSH/RDP** — VMs (if any) require IAP tunneling
+- **Database**: Only accessible from container runtime services via private network (no public endpoints)
+- **Task queue**: Cloud-native service integration (no public dispatch endpoints)
+- **Internal network**: East-west communication within VPC/VNet subnets only
+- **No public SSH/RDP** — VMs (if any) require IAP tunneling (GCP), Session Manager (AWS), or Bastion (Azure)
 
-### Cloud NAT
+### NAT / Egress Gateway
 
-- Cloud Router + Cloud NAT provides outbound connectivity for private-IP Cloud Run services
-- All Cloud Run services use **Direct VPC egress** (private subnet IPs, not public IPs)
-- NAT logging enabled for troubleshooting
+| Capability | GCP | AWS | Azure |
+|-----------|-----|-----|-------|
+| NAT type | Cloud NAT | NAT Gateway (per-AZ) | NAT Gateway |
+| Container egress | Direct VPC egress (private subnet IPs) | Private subnets via NAT | VNet-integrated via NAT |
+| Logging | Cloud NAT logging | NAT Gateway flow logs | NAT Gateway metrics |
 
 ---
 
-## 19. Web Application Firewall (Cloud Armor)
+## 19. Web Application Firewall
 
-Cloud Armor WAF is deployed in front of all load-balanced services:
+Cloud-native WAF (Cloud Armor / WAFv2 / Front Door WAF) is deployed in front of all load-balanced services on every cloud:
 
 ### OWASP Top 10 Protection
 
@@ -858,9 +865,14 @@ Cloud Armor WAF is deployed in front of all load-balanced services:
 | Scanner Detection (v33-stable) | 307 | Automated Vulnerability Scanners |
 | JSON SQLi (canary) | 308 | JSON-based SQL Injection (Connect-RPC payloads) |
 
-### Adaptive Protection
+### Adaptive / Intelligent Protection
 
-Cloud Armor **Adaptive Protection** (ML-based L7 DDoS detection) is enabled on all WAF policies. Adaptive Protection uses machine learning to detect and alert on anomalous traffic patterns that may indicate application-layer DDoS attacks, automatically generating suggested rules for mitigation.
+ML-based L7 DDoS detection is enabled on all WAF policies:
+- **GCP**: Cloud Armor Adaptive Protection
+- **AWS**: WAFv2 intelligent threat mitigation + Shield Advanced
+- **Azure**: Front Door WAF bot protection + DDoS Protection
+
+Adaptive protection uses machine learning to detect and alert on anomalous traffic patterns that may indicate application-layer DDoS attacks, automatically generating suggested rules for mitigation.
 
 ### Tiered Rate Limiting
 
@@ -878,7 +890,9 @@ All rate limits use `rate_based_ban` with automatic IP banning on exceedance.
 Traffic from OFAC-embargoed countries is blocked at the WAF layer when geo-restriction is enabled:
 
 - **Denied regions**: Cuba (CU), Iran (IR), North Korea (KP), Syria (SY), Russia (RU)
-- Enforced via Cloud Armor CEL expression matching `origin.region_code`
+- GCP: Cloud Armor CEL expression matching `origin.region_code`
+- AWS: WAFv2 geographic match statement
+- Azure: Front Door geo-filtering rule
 - Configurable per-policy via Terraform variables
 
 ### Additional WAF Controls
@@ -894,15 +908,22 @@ Traffic from OFAC-embargoed countries is blocked at the WAF layer when geo-restr
 
 ### Authentication Flow
 
-Both SPAs implement a **zero-password authentication model** with mandatory MFA:
+Both SPAs implement authentication models appropriate to the cloud deployment:
 
+**GCP (magic link + MFA)**:
 ```
 User enters email → Magic link sent via Firebase → User clicks link →
   ├── If MFA enrolled: TOTP challenge → Authenticated
   └── If MFA not enrolled: Forced TOTP enrollment (QR scan) → Verified → Authenticated
 ```
 
-The `AuthGate` component enforces a strict state machine — the application does not render protected routes until MFA is complete and verified. There is no way to bypass MFA enrollment.
+**AWS / Azure (SSO/SAML only)**:
+```
+User clicks "Sign In" → Redirect to organization IdP (Okta, Entra ID, etc.) →
+  IdP authenticates (MFA delegated to IdP) → SAML assertion → Authenticated
+```
+
+The `AuthGate` component enforces a strict state machine — the application does not render protected routes until authentication (and MFA on GCP) is complete and verified.
 
 ### Content Security Policy
 
@@ -943,27 +964,28 @@ CORS is tested with unit tests and e2e tests covering allowed origins, blocked o
 
 ---
 
-## Appendix B: GCP FedRAMP Authorization
+## Appendix B: FedRAMP Authorization (All Clouds)
 
-Latent Archon is deployed exclusively on Google Cloud Platform services that hold **FedRAMP High** authorization (IL4 capable):
+Latent Archon is deployable on three FedRAMP High authorized cloud providers. All services within the authorization boundary hold **FedRAMP High** authorization (IL4 capable):
 
-| Service | FedRAMP Status |
-|---------|---------------|
-| Cloud Run | FedRAMP High |
-| Cloud SQL (PostgreSQL) | FedRAMP High |
-| Cloud Storage | FedRAMP High |
-| Cloud Load Balancing | FedRAMP High |
-| Cloud Armor | FedRAMP High |
-| Cloud KMS | FedRAMP High |
-| Cloud Logging / Monitoring | FedRAMP High |
-| Identity Platform | FedRAMP High |
-| Vertex AI | FedRAMP High |
-| Document AI | FedRAMP High |
-| Artifact Registry | FedRAMP High |
-| Cloud Tasks | FedRAMP High |
-| Certificate Manager | FedRAMP High |
+| Capability | GCP Service | AWS Service | Azure Service | FedRAMP Status |
+|-----------|------------|------------|--------------|---------------|
+| Container compute | Cloud Run | ECS Fargate | Container Apps | FedRAMP High |
+| Database | Cloud SQL (PostgreSQL) | RDS PostgreSQL | PostgreSQL Flexible Server | FedRAMP High |
+| Object storage | Cloud Storage | S3 | Blob Storage | FedRAMP High |
+| Load balancer | Cloud Load Balancing | ALB | Front Door | FedRAMP High |
+| WAF / DDoS | Cloud Armor | WAFv2 | Front Door WAF | FedRAMP High |
+| KMS | Cloud KMS | AWS KMS | Key Vault | FedRAMP High |
+| Logging / monitoring | Cloud Logging + Monitoring | CloudWatch | Azure Monitor | FedRAMP High |
+| Identity | Identity Platform | IAM (SAML) | Azure AD | FedRAMP High |
+| LLM | Vertex AI (Gemini) | Bedrock (Claude) | Azure OpenAI (GPT-4o) | FedRAMP High |
+| Document extraction | Document AI | Textract | Document Intelligence | FedRAMP High |
+| Container registry | Artifact Registry | ECR | Container Registry | FedRAMP High |
+| Task queue | Cloud Tasks | SQS | Service Bus | FedRAMP High |
+| TLS certificates | Certificate Manager | ACM | Front Door managed | FedRAMP High |
+| DLP / PII | Cloud DLP | Comprehend | AI Language | FedRAMP High |
 
-By deploying on FedRAMP-authorized infrastructure, Latent Archon inherits a substantial portion of NIST 800-53 controls at the physical, environmental, and platform layers.
+By deploying on FedRAMP-authorized infrastructure, Latent Archon inherits a substantial portion of NIST 800-53 controls at the physical, environmental, and platform layers. For detailed per-cloud service lists and authorization IDs, see the [Cloud Environment Supplements](cloud/).
 
 ---
 
@@ -974,8 +996,10 @@ Latent Archon maintains an internal red team program with automated attack suite
 | Suite | Attacks | Coverage |
 |-------|---------|----------|
 | Auth Bypass | 17 attacks | No auth, forged JWT, wrong audience, MFA bypass, TOTP replay, alg:none, session fixation |
-| Privilege Escalation | 12 attacks | Cloud SQL, GCS, Cloud Tasks, KMS, admin API, IAM escalation, SA impersonation |
+| Privilege Escalation | 12 attacks | Database, object storage, task queue, KMS, admin API, IAM escalation, identity impersonation |
 | Data Exfiltration | 15 attacks | SQL injection, IDOR, prompt injection, vector store access, path traversal, UUID enumeration |
+
+Red team attack suites are organized per cloud (`attacks/gcp/`, `attacks/aws/`, `attacks/azure/`) with a shared cloud-agnostic framework.
 
 All attacks include MITRE ATT&CK technique mapping and NIST 800-53 control correlation. Results are published as structured Markdown reports with executive summaries and remediation recommendations.
 
