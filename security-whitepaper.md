@@ -121,7 +121,7 @@ Default `PUBLIC` privileges are revoked on all tables and sequences. Only named 
 | `archon_app_ro` | App API | Cloud SQL IAM (keyless) | SELECT on reference tables; SELECT + INSERT on messages/searches/generations; INSERT on audit_events; SELECT + INSERT + UPDATE on users (profile upsert) |
 | `archon_admin_rw` | Admin API | Cloud SQL IAM (keyless) | ALL on all tables and sequences |
 | `archon_ops_rw` | Ops service | Cloud SQL IAM (keyless) | SELECT/INSERT/UPDATE on documents, versions, DLQ; full CRUD on chunks; INSERT on audit_events + generations; SELECT on reference tables |
-| `postgres` (migration only) | Atlas job (Cloud Run Job) | Password (Secret Manager) | Superuser — DDL privileges for schema migrations only. Not accessible to any runtime service. |
+| `archon_migrator` (migration only) | Atlas job (Cloud Run Job) | Cloud SQL IAM (keyless, SET ROLE) | DDL privileges for schema migrations. Owns all public tables. No static credentials in normal path. `postgres` password exists in Secret Manager as break-glass only (human admin access). |
 
 The app role **cannot** create, modify, or delete organizations, workspaces, documents, or members. Even if the app service is fully compromised, the attacker cannot ALTER tables, CREATE functions/triggers (no backdoor), or DELETE any data. Roles are granted to IAM service accounts dynamically by naming convention, ensuring environment-agnostic enforcement. Enforced via migration `20260328120000_enforce_least_privilege_db_roles.sql`.
 
