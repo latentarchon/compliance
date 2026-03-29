@@ -270,7 +270,7 @@ Implementation follows FedRAMP's recommended order:
 - ⬜ Monitored 24/7 with defined SLA
 
 **Information Resources**:
-- Planned: `security@latentarchon.com` (Google Workspace)
+- `gcp-security-admins@latentarchon.com` (per-cloud security group)
 - `policies/incident-response.md` — communication procedures
 
 **Machine-Based Validation**: N/A — inbox monitoring is human-operated.
@@ -278,7 +278,7 @@ Implementation follows FedRAMP's recommended order:
 **Non-Machine-Based Validation** (persistent):
 - Inbox checked daily; critical communications within 1 business day
 
-**Status**: ⬜ TODO — Create and configure `security@latentarchon.com` inbox.
+**Status**: ✅ DONE — Using `gcp-security-admins@latentarchon.com` (per-cloud security group, no shared `security@` inbox — reduces phishing attack surface).
 
 ---
 
@@ -660,7 +660,7 @@ See Cloud Native Architecture §3.1.
 
 **Remaining TODOs**:
 1. OSCAL SSP package generation and CI validation
-2. FedRAMP security inbox (`security@latentarchon.com`)
+2. ~~FedRAMP security inbox~~ — DONE: using `gcp-security-admins@latentarchon.com`
 3. Automated SCN significance classification
 4. Customer-facing Secure Configuration Guide
 5. Cybersecurity education persistent testing evidence

@@ -54,7 +54,7 @@ jobs:
                 body += `- \`${f.file}\` — ${f.reason}\n`;
               }
               body += `\n> **Action Required**: File a Significant Change Notification (SCN) with the FedRAMP PMO before merging.\n`;
-              body += `> Contact: security@latentarchon.com\n`;
+              body += `> Contact: gcp-security-admins@latentarchon.com\n`;
             } else {
               body += `✅ No security-critical files modified. No SCN required.\n`;
             }

@@ -205,7 +205,7 @@ func main() {
 			fmt.Println("║  A Significant Change Notification (SCN) must be filed      ║")
 			fmt.Println("║  with the FedRAMP PMO before merging.                       ║")
 			fmt.Println("║                                                             ║")
-			fmt.Println("║  Contact: security@latentarchon.com                         ║")
+			fmt.Println("║  Contact: gcp-security-admins@latentarchon.com              ║")
 			fmt.Println("╚══════════════════════════════════════════════════════════════╝")
 		} else {
 			fmt.Println("Classification: ROUTINE — no SCN required.")

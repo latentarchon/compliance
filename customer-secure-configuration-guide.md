@@ -174,7 +174,7 @@ Real-time email notifications are sent for security-relevant events:
 
 Report security incidents or vulnerabilities to:
 
-- **Email**: security@latentarchon.com
+- **Email**: gcp-security-admins@latentarchon.com
 - **Response SLA**: Acknowledgment within 1 business day, initial assessment within 72 hours
 
 For incidents affecting CUI, Latent Archon will notify the customer agency and FedRAMP PMO per the Incident Response Policy (POL-IR-001) within the timelines specified in US-CERT Federal Incident Notification Guidelines.
@@ -200,7 +200,7 @@ Agencies should perform these reviews quarterly:
 | Channel | Contact | Hours |
 |---------|---------|-------|
 | Technical Support | support@latentarchon.com | Business hours (9am-6pm ET) |
-| Security Issues | security@latentarchon.com | 24/7 monitoring |
+| Security Issues | gcp-security-admins@latentarchon.com | 24/7 monitoring |
 | Documentation | https://docs.latentarchon.com | Self-service |
 
 ---
