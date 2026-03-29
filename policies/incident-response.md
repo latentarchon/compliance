@@ -81,8 +81,16 @@ This policy covers security incidents affecting:
 | Source | What It Detects | Alert Mechanism |
 |--------|----------------|-----------------|
 | Cloud Armor WAF | OWASP attacks, DDoS, suspicious IPs | Cloud Monitoring alert policy |
+| Cloud Armor Adaptive Protection | ML-detected L7 DDoS anomalies | Cloud Monitoring alert policy |
+| WAF Block Spike Alert | Elevated Cloud Armor DENY event volume | Cloud Monitoring alert (HIGH) |
+| 5xx Error Rate Alert | 5xx/total request ratio exceeds threshold | Cloud Monitoring MQL alert (HIGH) |
+| Cloud SQL Auth Failure Alert | `FATAL` or `password authentication failed` in DB logs | Cloud Monitoring alert (HIGH) |
+| IAM Privilege Escalation Alert | `SetIamPolicy`, `CreateRole`, `UpdateRole` API calls | Cloud Monitoring alert (CRITICAL) |
+| KMS Key Lifecycle Alert | Key disable, destroy, or version state changes | Cloud Monitoring alert (CRITICAL) |
+| Secret Access Alert | `AccessSecretVersion` calls on managed secrets | Cloud Monitoring alert (CRITICAL) |
+| DLP Findings | PII, credentials, or financial data detected in uploaded documents | Cloud DLP inspect template findings log |
 | Audit Events (WARN level) | Auth failures, privilege escalation, deletions | Cloud Logging alert policy |
-| Rate Limit Violations | Brute force, API abuse | Application logging |
+| Rate Limit Violations | Brute force, API abuse (tiered: SCIM 30/min, auth 20/min, login 10/min, global 100/min) | Cloud Armor rate-based ban |
 | Red Team Dashboard | Attack request volume, IAM denials, auth failures | Cloud Monitoring dashboard |
 | Dependabot | Vulnerable dependencies | GitHub notification + PR |
 | Cloud Audit Logs | IAM changes, resource modifications, API calls | Cloud Logging alert policy |

@@ -94,19 +94,19 @@ Implementation follows FedRAMP's recommended order:
 
 **Pass/Fail Criteria**:
 - ✅ Application crypto: Go BoringCrypto (FIPS 140-2 Level 1, Cert #4407)
-- ✅ Data at rest: Cloud KMS CMEK (FIPS 140-2 Level 3) for Cloud SQL + GCS
+- ✅ Data at rest: Cloud KMS CMEK (FIPS 140-2 Level 3) for Cloud SQL, GCS, Vertex AI, Artifact Registry, BigQuery, and Cloud Logging
 - ✅ Data in transit: GFE TLS termination (FIPS 140-2 Level 1), TLS 1.2+ enforced
 - ✅ No prohibited algorithms (DES, 3DES, RC4, MD5, SHA-1 for signatures, TLS < 1.2)
 
 **Information Resources**:
 - `fedramp-ssp.md` §10 (Cryptographic Modules) — 5 modules documented
-- `infra/modules/kms/` — Terraform KMS config (AES-256, 365-day auto-rotation)
+- `infra/modules/kms/` — Terraform KMS config (AES-256, HSM-backed, 90-day auto-rotation, dual keyrings: regional `us-east1` + multi-region `us` for BigQuery)
 - `backend/Dockerfile` — `GOEXPERIMENT=boringcrypto` build flag
 - `policies/encryption.md` — POL-EN-001
 
 **Machine-Based Validation** (weekly):
 - KSI evidence script queries Cloud KMS key metadata (algorithm, rotation schedule, state)
-- Verifies CMEK bindings on Cloud SQL and GCS
+- Verifies CMEK bindings on Cloud SQL, GCS, Vertex AI, Artifact Registry, BigQuery, and Cloud Logging
 - Checks TLS policy on load balancers (minimum version, cipher suites)
 - Go binary verification: `go version -m` confirms BoringCrypto linkage
 
@@ -346,8 +346,11 @@ Implementation follows FedRAMP's recommended order:
 
 **Pass/Fail Criteria**:
 - ✅ VPC egress firewall: deny-all by default, FQDN allowlist only
-- ✅ Cloud Armor WAF: OWASP CRS, rate limiting, bot blocking
+- ✅ Cloud Armor WAF: OWASP CRS, tiered rate limiting (SCIM 30/min, auth 20/min, login 10/min, global 100/min), bot blocking
+- ✅ Cloud Armor Adaptive Protection: ML-based L7 DDoS detection enabled on all WAF policies
+- ✅ Geographic restriction: OFAC-embargoed countries (CU, IR, KP, SY, RU) blocked at WAF layer
 - ✅ No public IPs on any service (Cloud Run, Cloud SQL, Vertex AI all private)
+- ✅ Cloud Run ingress restricted via org policy (`run.allowedIngress` = internal + CLB only)
 - ✅ Private Service Connect for Vertex AI
 
 **Information Resources**:
@@ -398,7 +401,7 @@ Implementation follows FedRAMP's recommended order:
 **Pass/Fail Criteria**:
 - ✅ Cloud Run: auto-scaling, multi-zone, zero-downtime deploys
 - ✅ Cloud SQL: automated backups, PITR enabled
-- ✅ GCS: multi-region, versioning (365-day retention)
+- ✅ GCS: versioning, 90-day soft-delete, WORM retention (2yr locked production), zero auto-delete lifecycle rules
 - ✅ Global HTTPS LB: health checks, automatic failover
 
 **Machine-Based Validation** (monthly):
@@ -565,14 +568,17 @@ See Cloud Native Architecture §3.1.
 **Goal**: Automated management and rotation of secrets.
 
 **Pass/Fail Criteria**:
-- ✅ Cloud KMS: CMEK with 365-day automatic rotation
-- ✅ Secret Manager: database credentials
+- ✅ Cloud KMS: CMEK with 90-day automatic rotation (HSM-backed, `rotation_period = 7776000s`)
+- ✅ Secret Manager: database credentials with 90-day rotation schedule
+- ✅ Secret access alerting: Cloud Monitoring fires on any `AccessSecretVersion` call
 - ✅ WIF: eliminates SA key secrets entirely
-- ✅ No hardcoded secrets (org policy + gitleaks in CI)
+- ✅ No hardcoded secrets (org policy `iam.disableServiceAccountKeyCreation` + `iam.disableServiceAccountKeyUpload` + gitleaks in CI)
 
 **Machine-Based Validation** (weekly):
-- Query KMS key rotation schedules
-- Verify Secret Manager secret versions and access patterns
+- Query KMS key rotation schedules (verify 90-day period)
+- Verify Secret Manager secret versions, rotation schedules, and access patterns
+- Verify secret access alert policies are active
+- Verify KMS key lifecycle alert policies are active
 - gitleaks scan on every commit
 
 **Status**: ✅ Implemented.
@@ -583,7 +589,11 @@ See Cloud Native Architecture §3.1.
 
 **Pass/Fail Criteria**:
 - ✅ Docker image digests (SHA-256) in Artifact Registry
-- ✅ SBOM generated per build (CycloneDX)
+- ✅ Cosign keyless image signing (Sigstore OIDC) — every image cryptographically signed in CI
+- ✅ Cosign signature verification required before every Cloud Run deploy
+- ✅ Digest-pinned deploys (`image@sha256:...`) — no mutable tag references
+- ✅ Artifact Registry immutable tags enabled (prevents tag overwrites)
+- ✅ SBOM generated per build (CycloneDX + SPDX)
 - ✅ Terraform state uses checksums
 - ✅ Atlas migration checksums (atlas.sum)
 
@@ -603,6 +613,9 @@ See Cloud Native Architecture §3.1.
 - ✅ Risk register (12 entries, inherent/residual scoring)
 - ✅ Dependabot on all 9 repos
 - ✅ SBOM per build
+- ✅ Cosign keyless image signing + verification in CI/CD pipeline
+- ✅ Trivy hard fail gate (CRITICAL/HIGH block deploy)
+- ✅ Artifact Registry immutable tags + CMEK encryption
 
 **Information Resources**:
 - `supply-chain-risk-management-plan.md`

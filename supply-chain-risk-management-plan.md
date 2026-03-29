@@ -88,6 +88,9 @@ This plan covers all external components within or supporting the authorization 
   - Gitleaks prevents credential exposure in commits
   - GitHub Actions pinned by SHA (not mutable tags)
   - Least-privilege IAM for CI/CD service accounts
+  - Cosign keyless image signing (Sigstore OIDC) — every image cryptographically tied to its build workflow
+  - Cosign signature verification required before every deploy — prevents deploying unsigned or tampered images
+  - Digest-pinned deploys (`image@sha256:...`) — eliminates tag mutability risk
 - **Residual Risk**: Low
 
 ### 3.4 Risk: Compromised Container Base Image
@@ -97,8 +100,10 @@ This plan covers all external components within or supporting the authorization 
 - **Mitigations**:
   - Distroless images (minimal attack surface — no shell, no package manager)
   - Images pinned by digest (immutable reference)
-  - Trivy scanning on every build
+  - Trivy scanning on every build (hard fail gate: CRITICAL/HIGH block deploy)
   - Multi-stage builds (build dependencies not included in runtime image)
+  - Artifact Registry immutable tags enabled (prevents tag overwrites / tag-squatting)
+  - Cosign keyless signing provides cryptographic provenance for every built image
 - **Residual Risk**: Low
 
 ### 3.5 Risk: Dependency License Violation
@@ -136,9 +141,12 @@ Per the Vendor Risk Management Policy (POL-VR-001):
 ### 4.3 Build Pipeline Security
 
 1. **Workload Identity Federation**: No static service account keys; short-lived tokens via OIDC
-2. **Immutable Artifacts**: Container images stored in Artifact Registry with digest verification
-3. **Security Gates**: Build fails if any scanner detects Critical/High findings
-4. **Audit Trail**: All CI/CD runs logged in GitHub Actions with full output retention
+2. **Immutable Artifacts**: Container images stored in Artifact Registry with immutable tags enabled and CMEK encryption (HSM-backed, 90-day rotation)
+3. **Security Gates**: Build fails if Trivy detects Critical/High vulnerabilities (`exit-code: 1`)
+4. **Image Signing**: All images signed with Cosign keyless signing (Sigstore OIDC identity from GitHub Actions)
+5. **Signature Verification**: `cosign verify` required before every Cloud Run deploy — checks certificate identity (`github.com/latentarchon/*`) and OIDC issuer (`token.actions.githubusercontent.com`)
+6. **Digest-Pinned Deploys**: Cloud Run services deployed by `image@sha256:digest`, not by mutable tag
+7. **Audit Trail**: All CI/CD runs logged in GitHub Actions with full output retention
 
 ### 4.4 Infrastructure Supply Chain
 

@@ -172,6 +172,8 @@ All environments are managed via Terraform/Terragrunt. No manual GCP console cha
 | Customer IdP (Okta, Azure AD) | Inbound | SAML 2.0 / HTTPS | 443 | SSO authentication | Customer-operated |
 | Customer IdP (SCIM) | Inbound | HTTPS REST | 443 | Automated user provisioning | Customer-operated |
 | Customer Browser | Inbound | HTTPS | 443 | SPA access | N/A |
+| Microsoft Graph API | Outbound | HTTPS REST | 443 | SharePoint/OneDrive document sync (delta queries, file download) | Microsoft FedRAMP High |
+| Microsoft Entra ID (Azure AD) | Outbound | HTTPS (OAuth2) | 443 | OAuth2 authorization code grant for Graph API token exchange | Microsoft FedRAMP High |
 | Cloudflare DNS | Outbound | DNS/HTTPS | 53/443 | Authoritative DNS with DNSSEC | FedRAMP Moderate |
 | GCP APIs | Outbound | HTTPS | 443 | All GCP service APIs (via FQDN egress firewall allowlist) | FedRAMP High (inherited) |
 | GitHub | Outbound | HTTPS | 443 | CI/CD source code, Dependabot | N/A |
@@ -183,9 +185,11 @@ All outbound traffic from VPC is **denied by default**. An FQDN-based egress fir
 - `*.googleapis.com` — GCP API access
 - `*.gcr.io`, `*.pkg.dev` — Container registry
 - `*.cloudfunctions.net` — Cloud Functions (if needed)
+- `graph.microsoft.com` — Microsoft Graph API (SharePoint/OneDrive document sync)
+- `login.microsoftonline.com` — Microsoft Entra ID (OAuth2 token exchange)
 - Cloudflare DNS endpoints
 
-All other egress is blocked. This is enforced via Terraform-managed firewall rules.
+All other egress is blocked. Microsoft Graph API egress is only active when the integration is configured (`MSGRAPH_CLIENT_ID` present). This is enforced via Terraform-managed firewall rules.
 
 ---
 
@@ -325,6 +329,8 @@ All database roles operate under PostgreSQL Row-Level Security (RLS). RLS polici
 
 External (outside boundary):
   • Customer IdP (Okta/Azure AD) — SAML 2.0 inbound
+  • Microsoft Graph API — SharePoint/OneDrive document sync (outbound HTTPS)
+  • Microsoft Entra ID — OAuth2 token exchange (outbound HTTPS)
   • Cloudflare DNS — DNSSEC-signed authoritative DNS
   • Customer browsers — HTTPS only
   • GCP FedRAMP High infrastructure — inherited controls
@@ -370,6 +376,44 @@ Cloud Tasks queue → Ops Service (Cloud Run):
     ▼
 Audit event logged (user_id, org_id, workspace_id, action,
                     ip_address, user_agent, metadata JSONB)
+```
+
+### 8.2.1 Data Flow Diagram — Microsoft Graph Document Sync
+
+```
+Admin Console (HTTPS/TLS 1.2+)
+    │
+    ▼
+Admin API — Org Admin authorization check
+    │
+    ├─► Generate HMAC-signed OAuth state token (nonce:timestamp:orgID:tenantID:hmac)
+    │   (SHA-256 derived key, 10-minute TTL)
+    │
+    ▼
+Redirect → Microsoft Entra ID (login.microsoftonline.com)
+    │   OAuth2 authorization code grant, admin consent
+    │
+    ▼
+Callback → Admin API:
+    ├─► Verify HMAC state signature + TTL
+    ├─► Exchange authorization code for tokens (graph.microsoft.com)
+    ├─► Encrypt refresh token via Cloud KMS (app_secrets key, AES-256-GCM)
+    ├─► Store in graph_connections (org-scoped, RLS-protected)
+    ├─► Store client_id for connection identification
+    │
+    ▼
+Sync Trigger (manual via Admin API):
+    ├─► Org admin or workspace admin authorization check
+    ├─► Decrypt refresh token (Cloud KMS)
+    ├─► Obtain access token from Microsoft Entra ID
+    ├─► Microsoft Graph delta query (only new/changed files)
+    ├─► File download → Standard ingestion pipeline
+    │   (malware scan → DLP → OCR → chunking → embedding)
+    ├─► SHA-256 dedup prevents re-ingesting unchanged files
+    │
+    ▼
+Sync log persisted (graph_sync_log table)
+Audit event logged
 ```
 
 ### 8.3 Data Flow Diagram — App / RAG Query
@@ -453,6 +497,8 @@ Cloud Logging (structured JSON → Cloud Logging → optional SIEM export via Pu
 | Cloud SQL | 5432 | TCP/TLS | Internal VPC | Database connections | Yes |
 | ClamAV REST | 8080 | TCP/TLS | Internal VPC | Malware scanning (internal-only Cloud Run) | Yes |
 | Vertex AI PSC | 443 | TCP/TLS | Internal VPC | Vector search and LLM via Private Service Connect | Yes |
+| Microsoft Graph API | 443 | TCP/TLS 1.2+ | Outbound | SharePoint/OneDrive document sync (`graph.microsoft.com`) | Yes |
+| Microsoft Entra ID | 443 | TCP/TLS 1.2+ | Outbound | OAuth2 token exchange (`login.microsoftonline.com`) | Yes |
 
 **All inbound traffic flows through Cloud Armor WAF and Global HTTPS Load Balancer. No services have public IP addresses. All internal communication uses TLS.**
 
@@ -464,6 +510,7 @@ Cloud Logging (structured JSON → Cloud Logging → optional SIEM export via Pu
 |--------|----------|-------|----------|-------|
 | Google BoringCrypto (Go) | FIPS 140-2 Level 1 (Cert #4407) | All Go application cryptography | AES-256, SHA-256/384/512 | Enabled via `GOEXPERIMENT=boringcrypto` build flag |
 | Google Cloud KMS | FIPS 140-2 Level 3 | CMEK for Cloud SQL and GCS | AES-256 | Automatic key rotation (365 days) |
+| Google Cloud KMS (`app_secrets`) | FIPS 140-2 Level 3 | Encryption of Microsoft Graph OAuth refresh tokens | AES-256-GCM | HSM-backed, 90-day rotation |
 | Google Front End (GFE) | FIPS 140-2 Level 1 | TLS termination at load balancer | TLS 1.2+, ECDHE, AES-256-GCM | Google-managed certificates |
 | Cloud SQL Encryption | FIPS 140-2 Level 1 | Data at rest encryption | AES-256 | Google-managed or CMEK |
 | Cloud Storage Encryption | FIPS 140-2 Level 1 | Object encryption at rest | AES-256-GCM | Google-managed or CMEK |

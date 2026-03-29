@@ -160,6 +160,10 @@ All infrastructure is defined in Terragrunt/Terraform and stored in version cont
 | Stripped binary | `-ldflags="-w -s"`, no debug symbols |
 | Trimmed paths | `-trimpath`, no local filesystem paths |
 | No secrets | All configuration via environment variables |
+| Immutable tags | Artifact Registry `immutable_tags = true` — prevents tag overwrites (tag-squatting) |
+| Image signing | Cosign keyless signing (Sigstore OIDC) — every image cryptographically signed in CI |
+| Signature verification | `cosign verify` required before every Cloud Run deploy |
+| Digest-pinned deploys | Cloud Run deployed by `image@sha256:digest`, not by mutable tag |
 
 ### 7.2 Browser Security
 
@@ -179,8 +183,9 @@ SPA responses include `Permissions-Policy: camera=(), microphone=(), geolocation
 ### 8.1 Keyless Authentication
 
 - All CI/CD uses Workload Identity Federation (WIF) — zero stored secrets
-- Org policy `iam.disableServiceAccountKeyCreation` enforces this
+- Org policies `iam.disableServiceAccountKeyCreation` and `iam.disableServiceAccountKeyUpload` enforce keyless auth
 - OIDC providers locked to `latentarchon` GitHub organization
+- Cloud Run ingress restricted via org policy `run.allowedIngress` (internal + CLB only)
 
 ### 8.2 Pipeline Security
 

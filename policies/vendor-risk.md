@@ -34,7 +34,7 @@ This policy applies to:
 | Tier | Criteria | Examples | Review Frequency |
 |------|----------|---------|-----------------|
 | **Critical** | Processes or stores customer data; single point of failure | GCP (Cloud Run, Cloud SQL, GCS, Vertex AI, Identity Platform) | Continuous + Annual deep review |
-| **High** | Has access to production systems or code; integral to operations | GitHub (source control, CI/CD), Go/Node runtime | Semi-annual |
+| **High** | Has access to production systems or code; integral to operations | GitHub (source control, CI/CD), Microsoft (Graph API), Go/Node runtime | Semi-annual |
 | **Medium** | Supports development or has indirect data access | Dependabot, development tooling, monitoring integrations | Annual |
 | **Low** | No data access; easily replaceable | Documentation tools, design tools, project management | Biennial |
 
@@ -50,6 +50,20 @@ GCP is Latent Archon's sole infrastructure provider. Risk is managed through:
 | **BAA** | Available for HIPAA-regulated workloads |
 | **Data Processing Terms** | Google Cloud Data Processing Addendum in effect |
 | **Vendor Lock-in Mitigation** | PostgreSQL (portable), standard container images, Terraform IaC (multi-cloud capable), Connect-RPC (protocol-agnostic) |
+
+### 3.3 High Tier Vendor: Microsoft (Graph API / Entra ID)
+
+Microsoft Graph API and Microsoft Entra ID (Azure AD) are used for SharePoint/OneDrive document ingestion via OAuth2 authorization code grant. Risk is managed through:
+
+| Control | Implementation |
+|---------|---------------|
+| **FedRAMP Authorization** | Microsoft Azure holds FedRAMP High authorization |
+| **SOC 2 Type II** | Annual audit reports reviewed |
+| **Permissions Scope** | Read-only delegated permissions only (`Files.Read.All`, `Sites.Read.All`) — no write access to customer Microsoft 365 data |
+| **Token Security** | OAuth refresh tokens encrypted via Cloud KMS (AES-256-GCM, HSM-backed) before database storage; client secret injected as runtime env var only |
+| **Data Residency** | Documents downloaded from Microsoft 365 are stored exclusively in US GCP regions; no Microsoft-side data persistence by the integration |
+| **Network Isolation** | `graph.microsoft.com` and `login.microsoftonline.com` added to FQDN egress firewall allowlist; all other egress blocked |
+| **Vendor Lock-in Mitigation** | Integration is optional per-org; documents enter standard pipeline after download; no proprietary format dependencies |
 
 ---
 
@@ -175,6 +189,7 @@ Open-source dependencies are managed as a supply chain risk:
 | Subprocessor | Service | Data Access | FedRAMP |
 |-------------|---------|-------------|---------|
 | Google Cloud Platform | Infrastructure (compute, storage, AI, identity) | Customer documents, messages, embeddings | High |
+| Microsoft | Graph API (SharePoint/OneDrive sync), Entra ID (OAuth2) | Read-only access to customer Microsoft 365 documents (downloaded and stored in GCP) | High |
 | GitHub | Source control, CI/CD | Source code (no customer data) | SOC 2 |
 
 ### 7.2 Subprocessor Changes

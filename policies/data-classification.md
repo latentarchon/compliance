@@ -47,7 +47,7 @@ This policy applies to all data created, received, processed, stored, or transmi
 |-----------|---------|-----------|-----------|-----------|
 | Uploaded documents | GCS (CMEK) | AES-256 at rest, TLS in transit | Per-workspace bucket prefix | Customer-controlled (purge on account deletion) |
 | Document chunks & metadata | Cloud SQL (CMEK) | AES-256 at rest, TLS in transit | PostgreSQL RLS (FORCE) | Customer-controlled |
-| Document embeddings | Vertex AI Vector Search | AES-256 at rest, gRPC+TLS via PSC | Workspace-scoped token restrictions | Customer-controlled |
+| Document embeddings | Vertex AI Vector Search (CMEK) | AES-256 at rest (CMEK via Cloud KMS, HSM-backed, 90-day rotation), gRPC+TLS via PSC | Workspace-scoped token restrictions | Customer-controlled |
 | Conversation messages | Cloud SQL (CMEK) | AES-256 at rest, TLS in transit | PostgreSQL RLS (FORCE) | Customer-controlled |
 | AI-generated images | GCS (CMEK) | AES-256 at rest, TLS in transit | Per-workspace path | Customer-controlled |
 
@@ -67,11 +67,14 @@ This policy applies to all data created, received, processed, stored, or transmi
 | Data Type | Storage | Retention |
 |-----------|---------|-----------|
 | Application audit events | Cloud SQL | Indefinite (compliance requirement) |
-| Cloud Audit Logs | Cloud Logging | 365 days |
+| BigQuery audit dataset | BigQuery (CMEK via US multi-region KMS keyring) | Indefinite (no table/partition expiration) |
+| GCS WORM audit bucket | GCS (locked retention, versioned, CMEK) | 2-year locked retention (production), 1-year (staging) |
+| Cloud Audit Logs (Admin Activity) | Cloud Logging | Always on, indefinite |
+| Cloud Audit Logs (Data Access) | Cloud Logging | Enabled for BigQuery, Cloud SQL, Cloud Run, KMS, IAM, GCS |
 | Cloud Run access logs | Cloud Logging | 30 days (default) |
-| Terraform state | GCS (versioned) | Indefinite |
+| Terraform state | GCS (versioned, CMEK) | Indefinite |
 | CI/CD build logs | GitHub Actions | 90 days |
-| Container images | Artifact Registry | Current + 5 previous versions |
+| Container images | Artifact Registry (CMEK) | Current + 5 previous versions |
 | Red team attack logs | GCS (versioned, red-infra project) | 365 days |
 
 ---
@@ -105,8 +108,10 @@ This policy applies to all data created, received, processed, stored, or transmi
 
 | Data Category | Minimum Retention | Maximum Retention | Basis |
 |---------------|-------------------|-------------------|-------|
-| Customer documents & messages | Customer-controlled | Account deletion + 30 days | Customer agreement |
-| Application audit events | 3 years | Indefinite | NIST AU-11, compliance |
+| Customer documents & messages | Customer-controlled | Indefinite (WORM retention: 2yr locked production, 1yr staging) | Customer agreement + WORM policy |
+| Application audit events | Indefinite | Indefinite | NIST AU-11, CJIS §5.4, zero-deletion policy |
+| BigQuery audit dataset | Indefinite | Indefinite (no table/partition expiration, CMEK) | NIST AU-11, zero-deletion policy |
+| GCS WORM audit logs | 2 years (locked) | Indefinite (tiered to COLDLINE, never deleted) | NIST AU-9, CJIS §5.4 |
 | Cloud Audit Logs | 365 days | 365 days (configurable) | GCP default + policy |
 | Infrastructure state (Terraform) | Indefinite | Indefinite | Operational need |
 | Source code | Indefinite | Indefinite | Business record |
@@ -131,7 +136,7 @@ This policy applies to all data created, received, processed, stored, or transmi
 | Data Type | Disposal Method | Verification |
 |-----------|----------------|-------------|
 | Cloud SQL records | `DELETE` with cascading constraints; PITR logs expire per backup retention | Query verification |
-| GCS objects | Object deletion; versions expire per lifecycle policy | Lifecycle policy audit |
+| GCS objects | Object deletion after WORM retention period expires; no auto-delete lifecycle rules; versions tier to COLDLINE but never auto-delete; 90-day soft-delete recovery window | Lifecycle policy audit + retention policy verification |
 | Vector embeddings | Index removal via Vertex AI API | API confirmation |
 | Identity Platform accounts | Firebase Admin SDK deletion | Admin console verification |
 | Local copies | Secure erase (overwrite) | N/A |

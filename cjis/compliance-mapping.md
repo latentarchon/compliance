@@ -86,8 +86,9 @@ In addition to the standard incident reporting channels (US-CERT, FedRAMP PMO), 
 |-------------|----------------|----------|
 | Audit events logged | All security-relevant events logged to `audit_events` table and Cloud Logging | `fedramp-ssp.md` §8.2, §8.3 |
 | Audit records include: user ID, event type, date/time, success/fail | Audit events include: `user_id`, `action`, `created_at`, `ip_address`, `user_agent`, `metadata` JSONB | Database schema `audit_events` |
-| Audit log integrity | Cloud Logging with immutable export; database audit events with append-only INSERT permission for service roles | `policies/access-control.md` §6.2 |
-| Audit log retention (minimum 1 year) | Cloud Logging: 365-day retention; database: indefinite | `fedramp-ssp.md` §8 |
+| Audit log integrity | Cloud Logging immutable; GCS WORM audit buckets with locked retention policy (production); BigQuery CMEK-encrypted; database append-only INSERT for service roles; `force_destroy = false` on all buckets; 90-day soft-delete recovery | `policies/access-control.md` §6.2 |
+| Audit log retention (minimum 1 year) | Zero-deletion policy: BigQuery indefinite (no expiration), GCS WORM 2-year locked (production), Cloud Logging 30-day hot + GCS cold archive indefinite, database indefinite. All storage tiers down (NEARLINE→COLDLINE) but never deletes. | `fedramp-ssp.md` §8, `security-whitepaper.md` §13 |
+| Data Access audit logging | DATA_READ + DATA_WRITE enabled for BigQuery, Cloud SQL, Cloud Run, Cloud KMS, IAM, and Cloud Storage (NIST AU-3/AU-12) | `infra/modules/audit-logs/main.tf` |
 | Audit log review | Continuous automated monitoring + quarterly manual review | `continuous-monitoring-plan.md` |
 | Session logging (logon/logoff) | All authentication events audit-logged; session timeouts enforced server-side | `policies/access-control.md` §4 |
 

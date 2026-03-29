@@ -60,21 +60,24 @@ The following are explicitly prohibited:
 
 | Service | Encryption | Key Type | Rotation |
 |---------|-----------|----------|----------|
-| **Cloud SQL (PostgreSQL)** | AES-256 | CMEK via Cloud KMS | Automatic, 365-day schedule |
-| **Cloud Storage (GCS)** | AES-256 | CMEK via Cloud KMS | Automatic, 365-day schedule |
-| **Vertex AI Vector Search** | AES-256 | Google-managed | Google-managed rotation |
-| **Artifact Registry** | AES-256 | Google-managed | Google-managed rotation |
-| **Cloud Logging** | AES-256 | Google-managed | Google-managed rotation |
+| **Cloud SQL (PostgreSQL)** | AES-256 | CMEK via Cloud KMS (HSM) | Automatic, 90-day schedule |
+| **Cloud Storage (GCS)** | AES-256 | CMEK via Cloud KMS (HSM) | Automatic, 90-day schedule |
+| **Vertex AI Vector Search** | AES-256 | CMEK via Cloud KMS (HSM) | Automatic, 90-day schedule |
+| **Artifact Registry** | AES-256 | CMEK via Cloud KMS (HSM) | Automatic, 90-day schedule |
+| **BigQuery (Audit Logs)** | AES-256 | CMEK via Cloud KMS (HSM) | Automatic, 90-day schedule |
+| **Cloud Logging** | AES-256 | CMEK via Cloud KMS (HSM) | Automatic, 90-day schedule |
 | **Terraform State (GCS)** | AES-256 | Google-managed | Google-managed rotation |
 
 ### 4.2 Customer-Managed Encryption Keys (CMEK)
 
 - Cloud KMS keys are provisioned via Terraform (`infra/modules/kms/`)
-- Separate keys per data class (database vs. object storage)
+- Six dedicated keys per project keyring: Cloud SQL, GCS, BigQuery, Cloud Logging, Vertex AI, and Artifact Registry
+- All keys use HSM protection level (FIPS 140-2 Level 3) with `GOOGLE_SYMMETRIC_ENCRYPTION` algorithm
 - Per-tenant CMEK anchor: `organizations.kms_key_name` column stores the KMS key resource name for each tenant, enabling future per-tenant encryption key isolation
-- Key access restricted to service accounts that require encryption/decryption
+- Key access restricted to service agent accounts via `roles/cloudkms.cryptoKeyEncrypterDecrypter` grants
 - KMS audit logging enabled for all key operations
-- Key destruction requires manual approval with 24-hour scheduled destruction delay
+- Key lifecycle event alerts: Cloud Monitoring fires on key disable, destroy, or version state changes
+- Key destruction has a 30-day scheduled destruction delay (`destroy_scheduled_duration = 2592000s`) providing a safety window to cancel accidental destruction
 
 ---
 
@@ -147,10 +150,10 @@ This links the BoringSSL FIPS 140-2 validated module (Certificate #4407) for all
 | **Generation** | Keys generated within Cloud KMS (HSM-backed, FIPS 140-2 Level 3) |
 | **Distribution** | No key distribution — KMS performs encryption/decryption server-side |
 | **Storage** | Keys never leave KMS; key material is non-exportable |
-| **Rotation** | Automatic rotation on 365-day schedule; new key version created, old versions remain for decryption |
+| **Rotation** | Automatic rotation on 90-day schedule (`rotation_period = 7776000s`); new key version created, old versions remain for decryption |
 | **Revocation** | Key version disabled in KMS; re-encryption with new key required |
-| **Destruction** | Scheduled destruction with 24-hour delay; requires manual approval |
-| **Audit** | All KMS operations logged in Cloud Audit Logs |
+| **Destruction** | Scheduled destruction with 30-day delay (`destroy_scheduled_duration = 2592000s`); Cloud Monitoring alert fires on any destroy/disable event |
+| **Audit** | All KMS operations logged in Cloud Audit Logs; key lifecycle alert policy monitors for unauthorized changes |
 
 ---
 

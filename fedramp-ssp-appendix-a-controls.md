@@ -113,7 +113,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 
 **Implementation**: Information flow is controlled at multiple layers:
 
-- **Network**: VPC with private IP only (no public IPs on any service). FQDN-based egress firewall with default-deny-all and explicit allowlist for Google APIs only. Cloud Armor WAF with OWASP Core Rule Set.
+- **Network**: VPC with private IP only (no public IPs on any service). FQDN-based egress firewall with default-deny-all and explicit allowlist for Google APIs and Microsoft Graph API (`graph.microsoft.com`, `login.microsoftonline.com` for SharePoint/OneDrive document sync). Cloud Armor WAF with OWASP Core Rule Set.
 - **Application**: RLS enforces workspace-scoped data access. Vector store token restrictions prevent cross-workspace search. The auth interceptor prevents cross-org request routing via DB-backed subdomain validation.
 - **Per-Org IP Allowlisting**: Organization administrators configure CIDR-based IP allowlists via `UpdateOrganizationSettings`. Allowlists are synced to Cloud Armor WAF rules using CEL expressions matching org hostname + IP range. This enables agencies to restrict access to government/VPN IP ranges.
 
@@ -141,6 +141,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 - **GCP IAM**: The Terraform service account has exactly 15 specific roles (no `roles/editor` or `roles/owner`). Each Cloud Run service account has scoped permissions for only the APIs it needs. Workload Identity Federation eliminates static service account keys.
 - **Database**: Four distinct PostgreSQL roles with minimum necessary grants, enforced via Atlas migration. Default `PUBLIC` privileges are revoked on all tables and sequences. `archon_app_ro` is read-only on reference data (SELECT + INSERT only for app persistence). `archon_ops_rw` is scoped to document processing tables (cannot touch org/member/invite data). Audit table is INSERT-only for non-admin roles. Schema migrations run under an `archon_migrator` role assumed via IAM auth (`SET ROLE`) — no static credentials are used in the normal migration path. A `postgres` superuser password exists in Secret Manager as a break-glass mechanism, accessible only to human security administrators and not mounted on any service or job by default.
 - **Application**: RBAC enforces per-RPC authorization. Viewers cannot modify data. Editors cannot manage members. Only admins can manage workspaces.
+- **Microsoft Graph**: Connection management (create, list, revoke) restricted to org admins. Sync source configuration requires workspace admin permission. Source-level sync history queries require workspace document-edit permission. OAuth refresh tokens encrypted via Cloud KMS before storage.
 
 ### AC-6(1): Authorize Access to Security Functions
 
@@ -355,7 +356,7 @@ The event types are reviewed annually and updated as new features are added.
 - **Responsibility**: Inherited (GCP)
 - **Status**: Implemented
 
-**Implementation**: Cloud Logging provides auto-scaling log storage with no capacity limits. Application audit events are stored in the Cloud SQL `audit_events` table with configurable retention. GCS export provides long-term archival storage with lifecycle policies.
+**Implementation**: Cloud Logging provides auto-scaling log storage with no capacity limits. Application audit events are stored in the Cloud SQL `audit_events` table with no automatic expiration (indefinite retention). BigQuery audit dataset uses no table or partition expiration (CMEK-encrypted via US multi-region KMS keyring). GCS WORM audit buckets provide immutable long-term archival with locked retention policies (2 years in production). All storage uses cost-optimized tiering (STANDARD → NEARLINE → COLDLINE) with zero deletion.
 
 ### AU-5: Response to Audit Logging Process Failures
 
@@ -404,7 +405,7 @@ The event types are reviewed annually and updated as new features are added.
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: Audit records are protected through multiple mechanisms: (1) The `audit_events` database table grants INSERT-only access to the `app_ro` role — no application role can UPDATE or DELETE audit records; (2) Cloud Logging records are immutable once written; (3) GCS export uses versioning with 365-day retention; (4) Access to raw audit data requires `master_admin` role at the application level or GCP IAM privileges at the infrastructure level.
+**Implementation**: Audit records are protected through multiple mechanisms: (1) The `audit_events` database table grants INSERT-only access to the `app_ro` role — no application role can UPDATE or DELETE audit records; (2) Cloud Logging records are immutable once written; (3) GCS WORM audit buckets use locked retention policies (`is_locked = true` in production) preventing object deletion before the retention period expires — retention cannot be shortened or removed, even by project owners; (4) BigQuery audit dataset has no table/partition expiration and is CMEK-encrypted; (5) All GCS buckets have `force_destroy = false` and object versioning enabled; (6) 90-day soft-delete recovery window (GCS maximum) on all buckets; (7) Access to raw audit data requires `master_admin` role at the application level or GCP IAM privileges at the infrastructure level.
 
 ### AU-9(4): Access by Subset of Privileged Users
 
@@ -418,7 +419,7 @@ The event types are reviewed annually and updated as new features are added.
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: Audit records are retained at three tiers: (1) Cloud Logging: 30 days (configurable via log bucket retention); (2) Database `audit_events` table: configurable per customer (default 365 days); (3) GCS export: 365 days with lifecycle policies. Forensic preservation holds can exempt specific audit data from automated purge.
+**Implementation**: Audit records are retained indefinitely with a zero-deletion policy across all tiers: (1) Cloud Logging: 30 days in hot storage (configurable via log bucket retention); (2) Database `audit_events` table: indefinite retention (no automatic expiration); (3) BigQuery audit dataset: indefinite retention (no table or partition expiration, CMEK-encrypted); (4) GCS WORM audit buckets: 2-year locked retention in production (1-year unlocked in staging), with object versioning and 90-day soft-delete; (5) All GCS lifecycle rules tier storage class for cost optimization (NEARLINE at 90 days, COLDLINE at 365 days) but never delete objects. No automated process permanently deletes any audit data. Forensic preservation holds can additionally exempt specific data from any future policy changes.
 
 ### AU-12: Audit Record Generation
 
@@ -426,6 +427,8 @@ The event types are reviewed annually and updated as new features are added.
 - **Status**: Implemented
 
 **Implementation**: Audit events are generated by the application via `internal/audit/logger.go` using `EventAsync()` for non-blocking persistence. Events are generated at all three Cloud Run services (app, admin, ops) for their respective operations. Every service generates audit events for authentication, authorization, and data access operations within its scope.
+
+At the infrastructure level, GCP Data Access audit logging is enabled for all critical services: BigQuery (DATA_READ + DATA_WRITE), Cloud SQL (DATA_READ + DATA_WRITE), Cloud Run (DATA_READ + DATA_WRITE), Cloud KMS (DATA_READ + DATA_WRITE), IAM (DATA_READ), and Cloud Storage (DATA_READ + DATA_WRITE). These logs capture who accessed which GCP resource and when, providing the forensic trail required for incident investigation. Admin Activity logs are always on by default.
 
 ---
 
@@ -764,7 +767,7 @@ Password complexity and rotation policies are enforced by Identity Platform for 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Authenticators are protected as follows: (1) TOTP secrets are stored encrypted in Identity Platform (Google-managed encryption); (2) SCIM tokens are SHA-256 hashed before storage — plaintext tokens are never persisted; (3) No static service account keys exist — all service authentication uses Workload Identity Federation (keyless); (4) JWT signing keys are managed by Google and not accessible to application code.
+**Implementation**: Authenticators are protected as follows: (1) TOTP secrets are stored encrypted in Identity Platform (Google-managed encryption); (2) SCIM tokens are SHA-256 hashed before storage — plaintext tokens are never persisted; (3) No static service account keys exist — all service authentication uses Workload Identity Federation (keyless); (4) JWT signing keys are managed by Google and not accessible to application code; (5) Microsoft Graph OAuth refresh tokens are encrypted at rest via Cloud KMS `app_secrets` key (AES-256-GCM, HSM-backed) before database storage — plaintext tokens are never persisted. The OAuth client secret (`MSGRAPH_CLIENT_SECRET`) is injected as a runtime environment variable and never stored in the database.
 
 ### IA-6: Authentication Feedback
 
@@ -1400,7 +1403,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: External services used by the system: (1) **GCP** (Critical vendor, FedRAMP High authorized): Cloud Run, Cloud SQL, GCS, Vertex AI, Cloud Armor, Identity Platform, Cloud KMS, Cloud Tasks, Cloud Logging, Cloud Monitoring; (2) **Cloudflare** (DNS, FedRAMP Moderate): Authoritative DNS with DNSSEC; (3) **GitHub** (High vendor): Source code management, CI/CD. Vendor monitoring is conducted per the Vendor Risk Policy with quarterly reviews for Critical vendors.
+**Implementation**: External services used by the system: (1) **GCP** (Critical vendor, FedRAMP High authorized): Cloud Run, Cloud SQL, GCS, Vertex AI, Cloud Armor, Identity Platform, Cloud KMS, Cloud Tasks, Cloud Logging, Cloud Monitoring; (2) **Cloudflare** (DNS, FedRAMP Moderate): Authoritative DNS with DNSSEC; (3) **GitHub** (High vendor): Source code management, CI/CD; (4) **Microsoft** (High vendor, FedRAMP High authorized): Microsoft Graph API and Microsoft Entra ID (Azure AD) for SharePoint/OneDrive document sync via OAuth2 authorization code grant. Only delegated read-only permissions are requested (`Files.Read.All`, `Sites.Read.All`). OAuth refresh tokens are encrypted via Cloud KMS before storage. Vendor monitoring is conducted per the Vendor Risk Policy with quarterly reviews for Critical vendors.
 
 ### SA-10: Developer Configuration Management
 
@@ -1507,7 +1510,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: All data in transit is protected by TLS 1.2+ using FIPS 140-2 validated cryptographic modules (Google Front End). HSTS headers with 2-year max-age and preload flag prevent protocol downgrade attacks. Internal service-to-service communication within GCP uses Google's encrypted inter-data-center protocol (ALTS). Private Service Connect provides encrypted private connectivity to Vertex AI.
+**Implementation**: All data in transit is protected by TLS 1.2+ using FIPS 140-2 validated cryptographic modules (Google Front End). HSTS headers with 2-year max-age and preload flag prevent protocol downgrade attacks. Internal service-to-service communication within GCP uses Google's encrypted inter-data-center protocol (ALTS). Private Service Connect provides encrypted private connectivity to Vertex AI. Outbound connections to Microsoft Graph API (`graph.microsoft.com`) and Microsoft Entra ID (`login.microsoftonline.com`) for SharePoint/OneDrive document sync use TLS 1.2+ with Microsoft-managed certificates.
 
 ### SC-8(1): Cryptographic Protection
 
@@ -1528,7 +1531,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Key management uses Cloud KMS: (1) CMEK keys for Cloud SQL and GCS encryption (AES-256, automatic rotation every 365 days); (2) Per-tenant CMEK anchor via `organizations.kms_key_name` column for future per-tenant encryption key isolation; (3) JWT signing keys managed by Google Identity Platform (automatic rotation); (4) SCIM tokens are random 32-byte values, SHA-256 hashed before storage; (5) No static service account keys — all service authentication uses Workload Identity Federation; (6) TLS certificate keys managed by Google Certificate Manager (automatic renewal). See Security Whitepaper: "Schema future-proofing".
+**Implementation**: Key management uses Cloud KMS: (1) CMEK keys for Cloud SQL and GCS encryption (AES-256, automatic rotation every 365 days); (2) Per-tenant CMEK anchor via `organizations.kms_key_name` column for future per-tenant encryption key isolation; (3) JWT signing keys managed by Google Identity Platform (automatic rotation); (4) SCIM tokens are random 32-byte values, SHA-256 hashed before storage; (5) No static service account keys — all service authentication uses Workload Identity Federation; (6) TLS certificate keys managed by Google Certificate Manager (automatic renewal); (7) Cloud KMS `app_secrets` key (AES-256-GCM, HSM-backed, 90-day rotation) encrypts Microsoft Graph OAuth refresh tokens before database storage. See Security Whitepaper: "Schema future-proofing".
 
 ### SC-12(1): Availability
 
@@ -1598,7 +1601,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: All data at rest is encrypted: (1) Cloud SQL: AES-256 encryption with CMEK (Cloud KMS-managed keys, automatic rotation every 365 days, FIPS 140-2 Level 3 HSMs); (2) Cloud Storage: AES-256-GCM with CMEK; (3) Cloud Logging: Google-managed encryption; (4) Terraform state: Encrypted in GCS with versioning. Cryptographic erasure is supported by rotating CMEK keys.
+**Implementation**: All data at rest is encrypted with Customer-Managed Encryption Keys (CMEK) backed by Cloud KMS HSMs (FIPS 140-2 Level 3): (1) Cloud SQL: AES-256 with CMEK (90-day auto-rotation); (2) Cloud Storage: AES-256-GCM with CMEK; (3) BigQuery audit datasets: AES-256 with CMEK via US multi-region KMS keyring (location must match dataset); (4) Vertex AI: CMEK; (5) Artifact Registry: CMEK; (6) Cloud Logging: CMEK via regional KMS keyring; (7) Terraform state: Encrypted in GCS with versioning and CMEK; (8) Microsoft Graph OAuth refresh tokens: AES-256-GCM with Cloud KMS `app_secrets` key (HSM-backed, 90-day rotation) — application-level encryption before database storage, providing defense-in-depth on top of Cloud SQL CMEK. Two KMS keyrings per project: regional (`us-east1`) for Cloud SQL/GCS/Vertex AI/AR/Logging, and multi-region (`us`) for BigQuery. All keys use HSM protection, 90-day rotation, and `prevent_destroy` lifecycle rules. Cryptographic erasure is supported by rotating CMEK keys.
 
 ### SC-28(1): Cryptographic Protection
 
@@ -1753,7 +1756,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Information retention follows the Data Classification & Retention Policy: (1) Customer documents: retained for duration of service agreement + configurable retention period; (2) Audit logs: 365 days (Cloud SQL) + 30 days (Cloud Logging), configurable per customer; (3) User PII: purged 90 days after account closure; (4) System logs: 30 days in Cloud Logging. Disposal is automated via Cloud Scheduler and GCS lifecycle policies. Cryptographic erasure is available via CMEK key rotation.
+**Implementation**: Information retention follows a zero-deletion policy for government compliance: (1) Customer documents: retained indefinitely with WORM retention policy (2-year locked in production, 1-year in staging), object versioning, and 90-day soft-delete recovery window; (2) Audit logs: indefinite retention in BigQuery (no table/partition expiration, CMEK-encrypted) + GCS WORM audit buckets (locked 2-year retention in production) + Cloud SQL `audit_events` table (no automatic expiration); (3) All GCS buckets: zero auto-delete lifecycle rules — old data tiers to NEARLINE (90 days) then COLDLINE (365 days) for cost optimization but is never deleted; (4) `force_destroy = false` on all buckets prevents accidental deletion via Terraform; (5) User PII: purged 90 days after account closure per privacy policy, with forensic preservation holds available for active investigations. No automated process permanently deletes any government record, audit trail, or document. Cryptographic erasure is available via CMEK key rotation for end-of-life data destruction when required by contract.
 
 ### SI-16: Memory Protection
 

@@ -53,7 +53,9 @@ This plan covers monitoring of all security controls within the authorization bo
 | **Application Audit Logger** | Authentication, authorization, data access, role changes, SCIM events | WARN-level events → email notifications |
 | **Dependabot** | Dependency vulnerabilities across all repositories | GitHub alerts + automated PRs |
 | **Drata** | Control implementation status, evidence freshness, personnel compliance | Dashboard + weekly sync report |
-| **CI/CD Security Pipeline** | SAST findings, container vulnerabilities, secret exposure | Build failure + PR blocking |
+| **CI/CD Security Pipeline** | SAST findings, container vulnerabilities, secret exposure, image signing (Cosign) | Build failure + PR blocking |
+| **Cloud DLP** | PII, credentials, and financial data in uploaded documents (pre-RAG scanning) | DLP findings logged; optional redaction via de-identify template |
+| **Security Alert Policies** | WAF block spikes, 5xx error rate, Cloud SQL auth failures, IAM privilege escalation, KMS key lifecycle, secret access | Cloud Monitoring alert → notification channels |
 | **KSI Evidence Collector** | GCP firewall rules, Cloud Run services, Cloud Armor, KMS rotation, log sinks, container images, SQL backups, GCS versioning | Weekly CI artifact (365-day retention) |
 | **SCN Classifier** | Security-critical file changes in PRs (30+ patterns) | PR comment (advisory, non-blocking) |
 | **OSCAL Validator** | SSP structural conformance to OSCAL v1.1.3 schema | PR check (advisory, non-blocking) |
@@ -123,6 +125,13 @@ Refer to the Incident Response Policy (POL-IR-001) for detailed procedures.
 | Unexpected GCP resource changes | Cloud Audit Logs | Unauthorized change investigation |
 | SCIM token creation/revocation | Application audit logger | Notification to org admin |
 | ClamAV malware detection | Upload handler | File quarantine + investigation |
+| DLP findings (PII/credentials in uploads) | Cloud DLP inspect template | Logged findings; optional redaction; review for data handling |
+| WAF block spike | Cloud Monitoring alert (Cloud Armor DENY events) | Active attack assessment; WAF rule review |
+| 5xx error rate spike | Cloud Monitoring MQL alert (ratio > threshold) | Service health investigation; rollback assessment |
+| Cloud SQL auth failures | Cloud Monitoring alert (FATAL/password failures) | Brute force assessment; SA credential review |
+| IAM privilege escalation | Cloud Monitoring alert (SetIamPolicy/CreateRole/UpdateRole) | Unauthorized change investigation; revert if unapproved |
+| KMS key lifecycle event | Cloud Monitoring alert (key disable/destroy/version change) | Verify authorized operation; escalate if unauthorized |
+| Secret access | Cloud Monitoring alert (AccessSecretVersion) | Verify authorized access; investigate unexpected callers |
 | Break-glass secret access (db-postgres-password) | Cloud Monitoring log-based metric + CRITICAL alert | Immediate investigation; verify authorized break-glass operation; rotate password if unauthorized |
 | Database DDL/role changes | pgAudit (`ddl,role,write`) via Cloud SQL flags | Review for unauthorized schema modifications |
 | Slow queries (>1s) | `log_min_duration_statement=1000` Cloud SQL flag | Performance investigation; potential abuse detection |

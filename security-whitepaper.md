@@ -163,12 +163,16 @@ Client (SPA)
 ### Document Ingestion Pipeline
 
 ```
-Upload → Size Check (50 MB) → Type Allowlist → Magic-Byte Validation
+[Manual Upload]  Upload → Size Check (50 MB) → Type Allowlist → Magic-Byte Validation
+[Graph Sync]     Microsoft Graph Delta Query → File Download → Type/Size Check
+       ↓
   → ClamAV Malware Scan → SHA-256 Dedup → GCS Upload (workspace-scoped path)
-  → DB Insert → Cloud Tasks Queue → Document AI OCR
-  → Chunking (800-token segments) → Embedding (Vertex AI)
+  → DB Insert → Cloud Tasks Queue → DLP Inspection (PII/credential detection)
+  → Document AI OCR → Chunking (800-token segments) → Embedding (Vertex AI)
   → Vector Search Index (workspace-scoped)
 ```
+
+Documents from Microsoft 365 (SharePoint, OneDrive) enter the same pipeline as manual uploads. The Graph sync path downloads files via Microsoft Graph API delta queries, then feeds them through the identical malware scan → DLP → embed pipeline. Content-hash deduplication prevents re-ingesting unchanged files.
 
 ### RAG Conversation Flow
 
@@ -178,6 +182,22 @@ User Message → Workspace Access Verification → Query Embedding
   → Prompt Construction (server-controlled system prompt + context + history)
   → Gemini Streaming Response → SSE to Client
   → Async: Message Persistence + Audit Event
+```
+
+### Microsoft Graph Sync Flow
+
+```
+Admin Console → Initiate OAuth2 (Microsoft Entra ID)
+  → HMAC-signed CSRF state token (10-min TTL)
+  → Admin consent → Authorization code callback
+  → Token exchange → Refresh token encrypted via Cloud KMS (HSM-backed)
+  → Stored in graph_connections (org-scoped, RLS-protected)
+
+Sync Trigger (manual or scheduled):
+  → Decrypt refresh token (Cloud KMS) → Obtain access token
+  → Microsoft Graph Delta Query (only new/changed files)
+  → File download → Standard ingestion pipeline
+  → Sync audit log (graph_sync_log table)
 ```
 
 ### Cross-Project Data Flow
@@ -195,12 +215,24 @@ Only one narrow IAM grant crosses the project boundary:
 
 | Layer | Mechanism | Key Management |
 |-------|-----------|---------------|
-| Cloud SQL (PostgreSQL) | AES-256 | Google-managed + optional CMEK via Cloud KMS |
-| Cloud Storage (GCS) | AES-256 | Google-managed + optional CMEK via Cloud KMS |
-| Vertex AI Vector Search | AES-256 | Google-managed |
-| Audit Logs | AES-256 | Google-managed |
+| Cloud SQL (PostgreSQL) | AES-256 | CMEK via Cloud KMS (HSM-backed, 90-day rotation) |
+| Microsoft Graph OAuth Tokens | AES-256-GCM | Cloud KMS `app_secrets` key (HSM-backed, 90-day rotation) |
+| Cloud Storage (GCS) | AES-256 | CMEK via Cloud KMS (HSM-backed, 90-day rotation) |
+| Vertex AI Vector Search | AES-256 | CMEK via Cloud KMS (HSM-backed, 90-day rotation) |
+| Artifact Registry | AES-256 | CMEK via Cloud KMS (HSM-backed, 90-day rotation) |
+| BigQuery (Audit Logs) | AES-256 | CMEK via Cloud KMS (HSM-backed, 90-day rotation) |
+| Cloud Logging | AES-256 | CMEK via Cloud KMS (HSM-backed, 90-day rotation) |
 
-Cloud KMS is provisioned in the infrastructure for customer-managed encryption key (CMEK) support. Per-tenant CMEK anchor: `organizations.kms_key_name` column stores the KMS key resource name for each tenant, enabling future per-tenant encryption key isolation. Key rotation is automated.
+All data-at-rest encryption uses Customer-Managed Encryption Keys (CMEK) backed by Cloud KMS HSMs (FIPS 140-2 Level 3). Keys rotate automatically every 90 days. Each service has a dedicated CMEK key within the project keyring, with service agent IAM grants scoped to the minimum required (`roles/cloudkms.cryptoKeyEncrypterDecrypter`). Key lifecycle events (disable, destroy, version state changes) trigger Cloud Monitoring alerts. Per-tenant CMEK anchor: `organizations.kms_key_name` column stores the KMS key resource name for each tenant, enabling future per-tenant encryption key isolation.
+
+Two KMS keyrings are maintained per project to respect GCP location constraints:
+
+| Keyring | Location | Keys |
+|---------|----------|------|
+| Regional | `us-east1` | Cloud SQL, GCS, Vertex AI, Artifact Registry, Cloud Logging |
+| Multi-region | `us` | BigQuery (audit dataset requires US multi-region CMEK match) |
+
+Both keyrings use HSM protection level and 90-day rotation. `prevent_destroy` lifecycle rules protect all keyrings and keys from accidental deletion.
 
 ### Data in Transit
 
@@ -212,6 +244,7 @@ Cloud KMS is provisioned in the infrastructure for customer-managed encryption k
 | Cloud Run → Vertex AI | TLS 1.2+ via PSC | Private Service Connect (no public internet) |
 | Cloud Run → GCS | TLS 1.2+ | Google-managed |
 | Cloud Run → Document AI | TLS 1.2+ | Regional, Google-managed |
+| Cloud Run → Microsoft Graph API | TLS 1.2+ | Microsoft-managed (`graph.microsoft.com`) |
 
 HSTS is enforced with `max-age=63072000; includeSubDomains; preload` (2-year pinning).
 
@@ -220,7 +253,9 @@ HSTS is enforced with `max-age=63072000; includeSubDomains; preload` (2-year pin
 - **Zero secrets in container images**: All configuration via environment variables at runtime
 - **No static database passwords**: Cloud SQL IAM authentication only. The `postgres` superuser password exists in Secret Manager as break-glass only, accessible to `gcp-security-admins` group — not mounted on any service or job by default. A Cloud Monitoring alert (CRITICAL severity) fires on any access to this secret.
 - **No service account keys**: Workload Identity Federation (WIF) with OIDC for CI/CD
-- **Org policy enforcement**: `iam.disableServiceAccountKeyCreation` blocks SA key creation org-wide
+- **Org policy enforcement**: `iam.disableServiceAccountKeyCreation` and `iam.disableServiceAccountKeyUpload` block SA key creation and external key import org-wide
+- **Secret rotation**: All Secret Manager secrets have a 90-day automatic rotation schedule configured via Terraform (`infra/modules/secrets/`)
+- **Secret access alerting**: Cloud Monitoring alert policy fires on any `AccessSecretVersion` call against managed secrets, enabling detection of unauthorized or unexpected secret access
 - **CI guardrail**: The infra CI pipeline (`iam-auth-guardrail` job) rejects PRs that introduce `DB_USER` or `DB_PASSWORD` into atlas-migrate configs, preventing regressions to password-based auth.
 
 ### Cloud SQL Database Audit Flags
@@ -276,6 +311,7 @@ All security-relevant operations are persisted to the `audit_events` database ta
 - **Document**: upload, delete, metadata_update
 - **Admin**: bootstrap, role_escalation
 - **SCIM**: user_create, user_replace, user_patch, user_deactivate, group_member_add, group_member_remove
+- **Graph**: connection_initiated, connection_completed, connection_revoked, sync_source_added, sync_source_removed, sync_triggered
 
 ### SIEM Integration
 
@@ -448,9 +484,108 @@ Organization administrators can configure **self-service IP allowlists** via the
 - Sync failure is non-fatal (logged + audit event; database is source of truth)
 - Periodic reconciliation cron catches Cloud Armor drift
 
+### Data Loss Prevention (DLP)
+
+Cloud DLP inspect templates are deployed via Terraform (`infra/modules/dlp/`) to scan uploaded documents for sensitive data before they enter the RAG pipeline:
+
+| Detector Category | Info Types |
+|-------------------|-----------|
+| **PII** | `PERSON_NAME`, `EMAIL_ADDRESS`, `PHONE_NUMBER`, `US_SOCIAL_SECURITY_NUMBER`, `US_INDIVIDUAL_TAXPAYER_IDENTIFICATION_NUMBER`, `DATE_OF_BIRTH`, `STREET_ADDRESS` |
+| **Credentials** | `AUTH_TOKEN`, `AWS_CREDENTIALS`, `GCP_API_KEY`, `GCP_CREDENTIALS`, `PASSWORD`, `ENCRYPTION_KEY` |
+| **Financial** | `CREDIT_CARD_NUMBER`, `US_BANK_ROUTING_MICR`, `IBAN_CODE`, `SWIFT_CODE` |
+| **Custom regex** | Configurable per-deployment (e.g., internal case numbers, badge IDs) |
+
+DLP scanning is integrated into the document ingestion pipeline. Findings are logged with minimum likelihood thresholds and finding limits configurable via Terraform variables. An optional de-identification template can redact detected PII/credentials before RAG indexing.
+
+IAM access: the ops service account has `roles/dlp.user` for scan execution; the Terraform service account has `roles/dlp.admin` for template management.
+
+### Microsoft Graph Integration (SharePoint / OneDrive Sync)
+
+Organization administrators can connect Microsoft 365 tenants to ingest documents from SharePoint sites and OneDrive drives directly into Archon workspaces:
+
+| Capability | Implementation |
+|-----------|---------------|
+| **OAuth2 Flow** | Authorization code grant with Microsoft Entra ID (Azure AD). Admin consent required — delegated permissions only (`Files.Read.All`, `Sites.Read.All`). |
+| **CSRF Protection** | OAuth state token is HMAC-signed (SHA-256) with a derived key and 10-minute TTL. Format: `nonce:timestamp:orgID:msTenantID:hmac`. Prevents forgery and replay. |
+| **Token Storage** | Refresh tokens encrypted at rest via Cloud KMS `app_secrets` key (AES-256-GCM, HSM-backed). Stored in `graph_connections` table with org-scoped RLS. |
+| **Token Refresh** | Access tokens obtained on-demand using stored refresh token. No long-lived access tokens persisted. |
+| **Delta Sync** | Microsoft Graph delta queries fetch only new/changed files since last sync. Content-hash deduplication prevents re-ingesting unchanged files. |
+| **Authorization** | Connection management (create, list, revoke) restricted to org admins. Sync source configuration requires workspace admin permission. Source-level history queries require workspace document-edit permission. |
+| **Ingestion Pipeline** | Downloaded files enter the standard pipeline: malware scan → DLP inspection → OCR → chunking → embedding → vector index. No bypass path. |
+| **Audit Trail** | All Graph operations logged: `connection_initiated`, `connection_completed`, `connection_revoked`, `sync_source_added`, `sync_source_removed`, `sync_triggered`. |
+| **Credential Isolation** | `MSGRAPH_CLIENT_ID` and `MSGRAPH_CLIENT_SECRET` are environment variables injected at runtime. The client secret is never stored in the database — only the encrypted refresh token. |
+| **Network Egress** | `graph.microsoft.com` and `login.microsoftonline.com` added to the FQDN egress firewall allowlist only when Graph integration is configured. |
+
+### Security Monitoring Alerts
+
+Automated alert policies are deployed via Terraform (`infra/modules/monitoring/`) across all projects:
+
+| Alert | Trigger | Severity | Purpose |
+|-------|---------|----------|---------|
+| WAF Block Spike | Elevated Cloud Armor DENY events | HIGH | Active attack or misconfigured WAF rule detection |
+| 5xx Error Rate | 5xx/total request ratio exceeds threshold (MQL ratio query) | HIGH | Service degradation or deployment regression |
+| Cloud SQL Auth Failure | `FATAL` or `password authentication failed` in Cloud SQL logs | HIGH | Brute force attempt or misconfigured SA detection |
+| IAM Privilege Escalation | `SetIamPolicy`, `CreateRole`, or `UpdateRole` API calls | CRITICAL | Unauthorized IAM changes detection |
+| KMS Key Lifecycle | Key disable, destroy, or version state changes | CRITICAL | Unauthorized key operations detection |
+| Secret Access | `AccessSecretVersion` calls on managed secrets | CRITICAL | Unexpected secret access detection |
+| Break-Glass Secret Access | Access to `db-postgres-password` secret | CRITICAL | Emergency credential usage tracking |
+
+All alerts route to configured notification channels with rate limiting to prevent alert fatigue. Staging and production environments share identical alert configurations to ensure security parity.
+
 ---
 
-## 13. Supply Chain Security
+## 13. Data Retention & Immutability
+
+All data stores enforce a **zero-deletion policy** — no GCS lifecycle rule, BigQuery expiration, or automated process permanently deletes any data. This ensures government records, audit trails, and documents remain available for compliance, investigation, and FOIA requests indefinitely.
+
+### Immutability Controls
+
+| Control | Implementation | Scope |
+|---------|---------------|-------|
+| GCS WORM Retention | `retention_policy` with `is_locked = true` (production) | Audit buckets, document bucket |
+| GCS Soft-Delete | 90-day recovery window (GCS maximum) | All buckets |
+| GCS Object Versioning | All versions preserved; archived versions tier to Coldline | All buckets |
+| BigQuery No-Expiration | `table_expiration = null`, `partition_expiration = null` | Audit datasets |
+| Terraform `prevent_destroy` | Lifecycle rule on all buckets and KMS keyrings | All stateful resources |
+| `force_destroy = false` | Prevents accidental bucket deletion even via Terraform | All buckets |
+
+### Storage Tiering (Cost Optimization Without Deletion)
+
+Old data tiers down for cost savings but is **never deleted**:
+
+| Age | Storage Class | Cost Reduction |
+|-----|--------------|----------------|
+| 0–90 days | STANDARD | Baseline |
+| 90–365 days | NEARLINE | ~50% |
+| 365+ days | COLDLINE | ~75% |
+
+### Data Access Audit Logging
+
+DATA_READ and DATA_WRITE audit logs are enabled for all critical services (NIST AU-3/AU-12, CJIS 5.4):
+
+| Service | DATA_READ | DATA_WRITE |
+|---------|-----------|------------|
+| BigQuery | ✓ | ✓ |
+| Cloud SQL | ✓ | ✓ |
+| Cloud Run | ✓ | ✓ |
+| Cloud KMS | ✓ | ✓ |
+| IAM | ✓ | — |
+| Cloud Storage | ✓ | ✓ |
+
+These logs capture who accessed which data and when, providing the forensic trail required for incident investigation and compliance audits.
+
+### Document Retention Policy
+
+| Environment | Retention Period | Locked |
+|-------------|-----------------|--------|
+| Staging | 1 year (365 days) | No (for testing flexibility) |
+| Production | 2 years (730 days) | Yes (irreversible) |
+
+Retention policies prevent object deletion before the minimum period expires. Production retention is **locked** — it cannot be shortened or removed, even by project owners.
+
+---
+
+## 14. Supply Chain Security
 
 ### Software Bill of Materials (SBOM)
 
@@ -473,7 +608,7 @@ SBOM artifacts are retained for 90 days and attached to each workflow run.
 | govulncheck | Go dependency CVEs (Go advisory DB) | PRs + every deploy |
 | Semgrep | SAST + secrets + OWASP Top 10 (Go rulesets) | PRs + weekly |
 | Trivy (filesystem) | Dependency CVEs in source tree | PRs + weekly |
-| Trivy (container) | OS + app CVEs in built image | Every container build |
+| Trivy (container) | OS + app CVEs in built image (hard fail gate: CRITICAL/HIGH block deploy) | Every container build |
 | npm audit | npm dependency CVEs (high/critical) | Every SPA build |
 | Gitleaks | Secret scanning across git history | PRs + push to main + weekly |
 
@@ -485,18 +620,37 @@ Critical findings on the main branch trigger a notification job. SARIF results a
 - **FIPS 140-2 Go binary**: `CGO_ENABLED=1` with BoringCrypto (`GOEXPERIMENT=boringcrypto`) for FIPS 140-2 validated cryptography (BoringSSL cert #4407)
 - **nginx-unprivileged**: SPA containers run as non-root with read-only filesystem
 - **Pinned dependencies**: `go.sum`, `pnpm-lock.yaml`, `.terraform.lock.hcl` for reproducible builds
+- **Immutable tags**: Artifact Registry repositories have `immutable_tags = true`, preventing tag overwrites (tag-squatting attacks)
+
+### Image Signing & Verification (Cosign)
+
+All container images are cryptographically signed using **Cosign keyless signing** (Sigstore OIDC):
+
+| Step | Action | Enforcement |
+|------|--------|------------|
+| Build | Image pushed to Artifact Registry with SHA commit tag | CI/CD |
+| Sign | `cosign sign --yes` with Sigstore OIDC identity (GitHub Actions OIDC token) | Automated in build job |
+| Verify | `cosign verify` checks certificate identity (`github.com/latentarchon/*`) and OIDC issuer (`token.actions.githubusercontent.com`) | Required before every deploy |
+| Deploy | Cloud Run deploy uses `image@sha256:digest` (digest-pinned, not tag-based) | CI/CD |
+
+This ensures:
+- **Provenance**: Every deployed image is cryptographically tied to a specific GitHub Actions workflow run
+- **Tamper detection**: Any image modification after signing invalidates the signature
+- **No tag mutability risk**: Digest pinning + immutable tags prevent tag-squatting attacks
+- **Supply chain attestation**: Sigstore transparency log provides a public, append-only record of all signing events
 
 ### CI/CD Security
 
 - **Keyless authentication**: Workload Identity Federation (WIF) — zero stored secrets
-- **Org policy enforcement**: `iam.disableServiceAccountKeyCreation` blocks SA key creation
+- **Org policy enforcement**: `iam.disableServiceAccountKeyCreation` and `iam.disableServiceAccountKeyUpload` block SA key creation and import
 - **OIDC provider lock**: WIF providers locked to `latentarchon` GitHub org via attribute condition
 - **Production gates**: All app repos require manual approval for production deployment
 - **Terraform safety**: Plans posted as PR comments, never auto-applied
+- **Digest-pinned deploys**: Cloud Run services deployed by image digest (`@sha256:...`), not by mutable tag
 
 ---
 
-## 14. Security Headers
+## 15. Security Headers
 
 ### SPA (nginx)
 
@@ -524,7 +678,7 @@ The backend applies an even stricter policy to all API responses:
 
 ---
 
-## 15. Disaster Recovery & Business Continuity
+## 16. Disaster Recovery & Business Continuity
 
 ### Recovery Objectives
 
@@ -536,11 +690,14 @@ The backend applies an even stricter policy to all API responses:
 ### Backup Strategy
 
 | Component | Backup Method | Retention |
-|-----------|--------------|-----------|
+|-----------|--------------|----------|
 | Cloud SQL (PostgreSQL) | Automated daily backups + continuous WAL archiving | 30 days |
-| GCS (Documents) | Object versioning + lifecycle policies | 365 days |
+| GCS (Documents) | Object versioning + WORM retention policy + 90-day soft-delete | Indefinite (never auto-deleted) |
 | Vector Search Index | Reconstructible from source chunks | N/A (rebuildable) |
-| Audit Logs | Cloud Logging export to GCS | 365 days |
+| BigQuery (Audit Logs) | CMEK-encrypted dataset, no table/partition expiration | Indefinite (never auto-deleted) |
+| GCS WORM Audit Bucket | Immutable retention-locked bucket + versioning | 2 years production (locked), 1 year staging |
+| Cloud Run Job Logs | GCS with CMEK encryption + storage tiering | Indefinite (never auto-deleted) |
+| Terraform/Migration Logs | GCS versioned buckets with storage tiering | Indefinite (never auto-deleted) |
 | Infrastructure Config | Git (Terragrunt/Terraform IaC) | Indefinite |
 
 ### High Availability
@@ -567,7 +724,7 @@ All infrastructure is defined in Terragrunt/Terraform with:
 
 ---
 
-## 16. Organization Governance
+## 17. Organization Governance
 
 ### GCP Resource Hierarchy
 
@@ -595,17 +752,22 @@ Separate GCP projects provide hard IAM boundaries, separate billing, independent
 
 ### Organization Policies (Enforced)
 
-Ten organization-wide policies are enforced across all projects:
+Fifteen organization-wide policies are enforced across all projects:
 
 | Policy | Effect |
 |--------|--------|
 | `storage.publicAccessPrevention` | All GCS buckets prevented from being made public |
+| `storage.uniformBucketLevelAccess` | Enforces uniform bucket-level access (no legacy ACLs) |
 | `compute.requireOsLogin` | SSH access requires IAM-based OS Login (no SSH keys) |
 | `compute.vmExternalIpAccess` | VMs cannot have external IPs |
 | `compute.disableNestedVirtualization` | Prevents VM escape attack vector |
 | `compute.disableSerialPortAccess` | No serial console access to VMs |
+| `compute.requireShieldedVm` | All VMs must use Shielded VM features (Secure Boot, vTPM, integrity monitoring) |
 | `sql.restrictAuthorizedNetworks` | Cloud SQL cannot use authorized networks |
 | `sql.restrictPublicIp` | Cloud SQL instances cannot have public IPs |
+| `iam.disableServiceAccountKeyCreation` | SA key creation blocked — all workloads use WIF or attached SAs |
+| `iam.disableServiceAccountKeyUpload` | External SA key import blocked — prevents importing unmanaged keys |
+| `run.allowedIngress` | Cloud Run ingress restricted to `internal-and-cloud-load-balancing` (no direct `*.run.app` access) |
 | `compute.restrictXpnProjectLienRemoval` | Shared VPC liens cannot be removed |
 | `compute.skipDefaultNetworkCreation` | No default VPC in new projects |
 | `compute.disableVpcExternalIpv6` | No external IPv6 addresses |
@@ -641,7 +803,7 @@ IAM is managed via Google Workspace security groups for role-based access at fol
 
 ---
 
-## 17. Network Security
+## 18. Network Security
 
 ### VPC Architecture
 
@@ -657,10 +819,11 @@ A **network firewall policy** implements FQDN-based egress control — effective
 | Priority | Rule | Targets |
 |----------|------|----------|
 | 100 | Google APIs (ALLOW) | `googleapis.com`, `aiplatform.googleapis.com`, `sqladmin.googleapis.com`, `storage.googleapis.com`, `identitytoolkit.googleapis.com`, `securetoken.googleapis.com`, `firebaseappcheck.googleapis.com`, and others |
+| 150 | Microsoft Graph API (ALLOW) | `graph.microsoft.com`, `login.microsoftonline.com` (OAuth2 token exchange and Graph API calls for SharePoint/OneDrive sync) |
 | 200 | Internal APIs (ALLOW) | `app.latentarchon.com`, `admin.latentarchon.com` (prod + staging) |
 | 65534 | Default DENY ALL | `0.0.0.0/0` — all protocols blocked |
 
-**The platform cannot exfiltrate data to any external endpoint.** Only explicitly allowlisted Google APIs and internal services are reachable. Email is sent via Identity Platform's server-side `sendOobCode` API, eliminating the need for external email provider egress.
+**The platform cannot exfiltrate data to arbitrary external endpoints.** Only explicitly allowlisted Google APIs, Microsoft Graph API (`graph.microsoft.com` — for SharePoint/OneDrive document sync), and internal services are reachable. Email is sent via Identity Platform's server-side `sendOobCode` API, eliminating the need for external email provider egress. Microsoft Graph API egress is only enabled when the Graph integration is configured (`MSGRAPH_CLIENT_ID` environment variable present); otherwise the FQDN rule has no effect.
 
 ### Ingress Controls
 
@@ -677,7 +840,7 @@ A **network firewall policy** implements FQDN-based egress control — effective
 
 ---
 
-## 18. Web Application Firewall (Cloud Armor)
+## 19. Web Application Firewall (Cloud Armor)
 
 Cloud Armor WAF is deployed in front of all load-balanced services:
 
@@ -695,9 +858,31 @@ Cloud Armor WAF is deployed in front of all load-balanced services:
 | Scanner Detection (v33-stable) | 307 | Automated Vulnerability Scanners |
 | JSON SQLi (canary) | 308 | JSON-based SQL Injection (Connect-RPC payloads) |
 
+### Adaptive Protection
+
+Cloud Armor **Adaptive Protection** (ML-based L7 DDoS detection) is enabled on all WAF policies. Adaptive Protection uses machine learning to detect and alert on anomalous traffic patterns that may indicate application-layer DDoS attacks, automatically generating suggested rules for mitigation.
+
+### Tiered Rate Limiting
+
+| Tier | Path Pattern | Limit | Ban Duration | Purpose |
+|------|-------------|-------|-------------|--------|
+| SCIM provisioning | `/scim/v2/*` | 30 req/60s | 10 min | IdP provisioning is low-volume |
+| Auth endpoints | `/api/auth/*` | 20 req/60s | 10 min | Brute force / credential stuffing prevention |
+| Login / magic link | `/api/auth/login`, `/api/auth/magic-link`, `/api/auth/verify-otp` | 10 req/60s | 15 min | Account takeover prevention |
+| Global | All paths | 100 req/60s | 5 min | General abuse prevention |
+
+All rate limits use `rate_based_ban` with automatic IP banning on exceedance.
+
+### Geographic Restriction (OFAC Compliance)
+
+Traffic from OFAC-embargoed countries is blocked at the WAF layer when geo-restriction is enabled:
+
+- **Denied regions**: Cuba (CU), Iran (IR), North Korea (KP), Syria (SY), Russia (RU)
+- Enforced via Cloud Armor CEL expression matching `origin.region_code`
+- Configurable per-policy via Terraform variables
+
 ### Additional WAF Controls
 
-- **Rate Limiting**: Configurable requests-per-interval threshold with automatic IP ban on exceedance
 - **HTTP Method Enforcement**: Only GET, POST, OPTIONS allowed; TRACE, DELETE, PATCH blocked at WAF
 - **Origin Header Restriction**: Requests with disallowed `Origin` headers denied
 - **Bot Blocking**: Empty/missing `User-Agent` denied; known scanner/attack tools (curl, wget, sqlmap, nikto, nmap, nuclei, etc.) blocked
@@ -705,7 +890,7 @@ Cloud Armor WAF is deployed in front of all load-balanced services:
 
 ---
 
-## 19. Frontend Security
+## 20. Frontend Security
 
 ### Authentication Flow
 
