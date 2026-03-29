@@ -43,7 +43,7 @@ Sources of risk identification:
 
 | Source | Frequency | Examples |
 |--------|-----------|---------|
-| Threat intelligence | Continuous | CVE advisories, GCP security bulletins, CISA alerts |
+| Threat intelligence | Continuous | CVE advisories, CSP security bulletins, CISA alerts |
 | Vulnerability scanning | Continuous (CI) | Dependabot, Trivy, GoSec, govulncheck, Semgrep |
 | Red team testing | Monthly | 44-attack automated suite (auth bypass, escalation, exfiltration) |
 | Architecture reviews | On change | New service, new data flow, new vendor |
@@ -138,11 +138,11 @@ The authoritative risk register is maintained in **Drata** and synced automatica
 | 2 | Data Exfiltration via App Vulnerability | Security | 15 (3×5) | 5 (1×5) | RLS, WAF, SAST, input validation |
 | 3 | Supply Chain Compromise | Security | 12 (3×4) | 4 (1×4) | SBOM, Dependabot, Trivy, distroless |
 | 4 | Cloud Infrastructure Misconfiguration | Operational | 12 (3×4) | 4 (1×4) | IaC, org policies, drift detection |
-| 5 | Denial of Service | Operational | 9 (3×3) | 4 (2×2) | Cloud Armor, auto-scaling, rate limiting |
+| 5 | Denial of Service | Operational | 9 (3×3) | 4 (2×2) | WAF, auto-scaling, rate limiting |
 | 6 | Insider Threat | Security | 10 (2×5) | 4 (1×4) | Least privilege, audit logging, PR review |
-| 7 | Encryption Key Compromise | Security | 5 (1×5) | 5 (1×5) | Cloud KMS HSM, auto-rotation, IAM |
-| 8 | Vendor/Third-Party Breach | Third-Party | 10 (2×5) | 6 (2×3) | Single-cloud, encryption, vendor monitoring |
-| 9 | Data Loss / DR Failure | Operational | 10 (2×5) | 3 (1×3) | PITR, GCS versioning, multi-zone HA |
+| 7 | Encryption Key Compromise | Security | 5 (1×5) | 5 (1×5) | Cloud KMS (HSM-backed), auto-rotation, IAM |
+| 8 | Vendor/Third-Party Breach | Third-Party | 10 (2×5) | 6 (2×3) | Per-customer single-cloud, encryption, vendor monitoring |
+| 9 | Data Loss / DR Failure | Operational | 10 (2×5) | 3 (1×3) | PITR, object storage versioning, multi-zone HA |
 | 10 | Regulatory Non-Compliance | Compliance | 8 (2×4) | 4 (1×4) | Drata monitoring, SSP, formal policies |
 | 11 | AI/ML Model Misuse / Prompt Injection | Security | 9 (3×3) | 4 (2×2) | Scoped retrieval, input validation, audit |
 | 12 | CI/CD Pipeline Compromise | Security | 10 (2×5) | 4 (1×4) | WIF, branch protection, prod gates |

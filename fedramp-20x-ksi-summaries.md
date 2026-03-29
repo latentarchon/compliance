@@ -39,7 +39,7 @@ Implementation follows FedRAMP's recommended order:
 **Goal**: Define and document the complete authorization boundary for the LA-DIP system.
 
 **Pass/Fail Criteria**:
-- ✅ All GCP projects, services, and data flows are documented in the SSP
+- ✅ All cloud environments (GCP projects / AWS accounts / Azure subscriptions), services, and data flows are documented in the SSP
 - ✅ Authorization boundary diagram includes all components within scope
 - ✅ External interconnections are documented with data flow direction and protocol
 
@@ -51,14 +51,14 @@ Implementation follows FedRAMP's recommended order:
 
 **Machine-Based Validation** (weekly):
 - `terragrunt plan` drift detection (GitHub Actions, `infra/.github/workflows/terragrunt-ci.yml`)
-- Compares live GCP state against declared IaC configuration
+- Compares live cloud state against declared IaC configuration
 - Any drift = FAIL (undocumented resources exist outside boundary)
 
 **Non-Machine-Based Validation** (quarterly):
-- Manual review of SSP boundary diagram against live GCP Console
-- Verify no new projects, services, or interconnections exist undocumented
+- Manual review of SSP boundary diagram against live cloud console
+- Verify no new environments, services, or interconnections exist undocumented
 
-**Status**: ✅ Implemented — SSP documents all 2 GCP projects, 6 Cloud Run services, and supporting infrastructure.
+**Status**: ✅ Implemented — SSP documents all cloud environments, container services, and supporting infrastructure per cloud. See [Cloud Environment Supplements](cloud/) for per-cloud details.
 
 ---
 
@@ -94,19 +94,19 @@ Implementation follows FedRAMP's recommended order:
 
 **Pass/Fail Criteria**:
 - ✅ Application crypto: Go BoringCrypto (FIPS 140-2 Level 1, Cert #4407)
-- ✅ Data at rest: Cloud KMS CMEK (FIPS 140-2 Level 3) for Cloud SQL, GCS, Vertex AI, Artifact Registry, BigQuery, and Cloud Logging
-- ✅ Data in transit: GFE TLS termination (FIPS 140-2 Level 1), TLS 1.2+ enforced
+- ✅ Data at rest: CMEK via cloud KMS (FIPS 140-2 Level 3) for database, object storage, AI services, container registry, and logging
+- ✅ Data in transit: Load balancer TLS termination (FIPS 140-2 Level 1), TLS 1.2+ enforced
 - ✅ No prohibited algorithms (DES, 3DES, RC4, MD5, SHA-1 for signatures, TLS < 1.2)
 
 **Information Resources**:
 - `fedramp-ssp.md` §10 (Cryptographic Modules) — 5 modules documented
-- `infra/modules/kms/` — Terraform KMS config (AES-256, HSM-backed, 90-day auto-rotation, dual keyrings: regional `us-east1` + multi-region `us` for BigQuery)
+- `infra/*/modules/kms/` — Terraform KMS config per cloud (AES-256, HSM-backed, auto-rotation)
 - `backend/Dockerfile` — `GOEXPERIMENT=boringcrypto` build flag
 - `policies/encryption.md` — POL-EN-001
 
 **Machine-Based Validation** (weekly):
-- KSI evidence script queries Cloud KMS key metadata (algorithm, rotation schedule, state)
-- Verifies CMEK bindings on Cloud SQL, GCS, Vertex AI, Artifact Registry, BigQuery, and Cloud Logging
+- KSI evidence script queries cloud KMS key metadata (algorithm, rotation schedule, state)
+- Verifies CMEK bindings on database, object storage, AI services, container registry, and logging
 - Checks TLS policy on load balancers (minimum version, cipher suites)
 - Go binary verification: `go version -m` confirms BoringCrypto linkage
 
@@ -198,10 +198,10 @@ Implementation follows FedRAMP's recommended order:
 - `compliance/continuous-monitoring-plan.md`
 
 **Machine-Based Validation** (weekly/monthly):
-- CP-4 tests: monthly (Cloud SQL backup, GCS versioning, Cloud Run health, KMS keys)
+- CP-4 tests: monthly (database backup, storage versioning, container health, KMS keys)
 - Red team: monthly (auth bypass, escalation, exfiltration suites)
 - Drift detection: weekly (terragrunt plan comparison)
-- KSI evidence: weekly (GCP API queries → JSON evidence)
+- KSI evidence: weekly (cloud API queries → JSON evidence)
 
 **Non-Machine-Based Validation** (quarterly):
 - PVA effectiveness review and trend analysis
@@ -227,7 +227,7 @@ Implementation follows FedRAMP's recommended order:
 
 **Machine-Based Validation** (weekly):
 - Terraform drift detection verifies configs haven't diverged from IaC
-- Cloud Armor policy evaluation via GCP API
+- WAF policy evaluation via cloud API
 
 **Non-Machine-Based Validation** (per release):
 - Review new features for security configuration implications
@@ -345,24 +345,24 @@ Implementation follows FedRAMP's recommended order:
 **Goal**: All information resources configured to limit inbound and outbound traffic.
 
 **Pass/Fail Criteria**:
-- ✅ VPC egress firewall: deny-all by default, FQDN allowlist only
-- ✅ Cloud Armor WAF: OWASP CRS, tiered rate limiting (SCIM 30/min, auth 20/min, login 10/min, global 100/min), bot blocking
-- ✅ Cloud Armor Adaptive Protection: ML-based L7 DDoS detection enabled on all WAF policies
+- ✅ VPC/VNet egress controls: deny-all by default, explicit allowlists only
+- ✅ WAF (Cloud Armor / WAFv2 / Front Door WAF): OWASP CRS, tiered rate limiting, bot blocking
+- ✅ Adaptive/intelligent DDoS protection: ML-based L7 detection enabled on all WAF policies
 - ✅ Geographic restriction: OFAC-embargoed countries (CU, IR, KP, SY, RU) blocked at WAF layer
-- ✅ No public IPs on any service (Cloud Run, Cloud SQL, Vertex AI all private)
-- ✅ Cloud Run ingress restricted via org policy (`run.allowedIngress` = internal + CLB only)
-- ✅ Private Service Connect for Vertex AI
+- ✅ No public IPs on any service (containers, database, AI services all private)
+- ✅ Container ingress restricted to internal + load balancer only
+- ✅ Private endpoints for AI services
 
 **Information Resources**:
-- `infra/modules/vpc/` — VPC + egress firewall rules
-- `infra/modules/cloud-armor/` — WAF policies
-- `infra/modules/load-balancer/` — HTTPS LB with TLS termination
+- `infra/*/modules/vpc/` or `infra/*/modules/vnet/` — Network + egress firewall rules per cloud
+- `infra/*/modules/cloud-armor/` or WAF modules — WAF policies per cloud
+- `infra/*/modules/load-balancer/` or LB modules — HTTPS LB with TLS termination per cloud
 - `fedramp-ssp.md` §8.4 (Network Architecture)
 
 **Machine-Based Validation** (weekly):
-- KSI evidence script: query VPC firewall rules, Cloud Armor policies, LB configs
+- KSI evidence script: query network firewall/security group/NSG rules, WAF policies, LB configs per cloud
 - Verify no public IPs exist on any compute resource
-- Verify egress firewall rules match IaC
+- Verify egress controls match IaC
 
 **Status**: ✅ Implemented.
 
@@ -371,10 +371,10 @@ Implementation follows FedRAMP's recommended order:
 **Goal**: Minimal attack surface with lateral movement minimized.
 
 **Pass/Fail Criteria**:
-- ✅ Serverless-only (Cloud Run) — no VMs to patch
+- ✅ Serverless/managed containers only (Cloud Run / ECS Fargate / Container Apps) — no VMs to patch
 - ✅ Minimal container images (distroless/alpine base)
 - ✅ No SSH, no direct database access from internet
-- ✅ Two-project isolation (blast radius containment)
+- ✅ Two-environment isolation (blast radius containment)
 
 **Machine-Based Validation** (weekly):
 - Container image scan (Trivy) — no unnecessary packages
@@ -388,9 +388,9 @@ Implementation follows FedRAMP's recommended order:
 
 **Pass/Fail Criteria**:
 - ✅ VPC with private subnets
-- ✅ Cloud SQL via VPC peering (private IP only)
-- ✅ Vertex AI via Private Service Connect
-- ✅ Cross-project access via narrow IAM grants (not network peering)
+- ✅ Database via private network (private IP only)
+- ✅ AI services via private endpoints
+- ✅ Cross-environment access via narrow IAM grants (not network peering)
 
 **Status**: ✅ Implemented.
 
@@ -399,10 +399,10 @@ Implementation follows FedRAMP's recommended order:
 **Goal**: Resources optimized for high availability and rapid recovery.
 
 **Pass/Fail Criteria**:
-- ✅ Cloud Run: auto-scaling, multi-zone, zero-downtime deploys
-- ✅ Cloud SQL: automated backups, PITR enabled
-- ✅ GCS: versioning, 90-day soft-delete, WORM retention (2yr locked production), zero auto-delete lifecycle rules
-- ✅ Global HTTPS LB: health checks, automatic failover
+- ✅ Container services: auto-scaling, multi-zone, zero-downtime deploys
+- ✅ Database: automated backups, PITR enabled
+- ✅ Object storage: versioning, soft-delete, WORM retention (production), zero auto-delete lifecycle rules
+- ✅ Load balancer: health checks, automatic failover
 
 **Machine-Based Validation** (monthly):
 - CP-4 automated tests verify backup/recovery capabilities
@@ -421,15 +421,15 @@ Implementation follows FedRAMP's recommended order:
 - ✅ TOTP MFA enforced on all data endpoints (auth interceptor)
 - ✅ Step-up MFA for sensitive operations
 - ✅ MFA enrollment required before accessing workspace data
-- ✅ Backend rejects JWTs without `sign_in_second_factor` claim
+- ✅ GCP: Backend rejects JWTs without `sign_in_second_factor` claim; AWS/Azure: MFA delegated to customer IdP
 
 **Information Resources**:
 - `backend/cmd/server/connect_interceptors.go` — MFA enforcement in auth interceptor
-- `infra/modules/identity-platform/` — TOTP MFA enabled on all tenants
+- `infra/gcp/modules/identity-platform/` — TOTP MFA enabled on all GCP tenants
 - `fedramp-ssp.md` §7.2 (Authentication Requirements)
 
 **Machine-Based Validation** (weekly):
-- Query Identity Platform: verify MFA enabled on all tenants
+- GCP: Query Identity Platform verify MFA enabled on all tenants; AWS/Azure: verify SAML-only auth configuration
 - Application audit logs: no data access without MFA claim
 
 **Status**: ✅ Implemented.
@@ -452,14 +452,14 @@ Implementation follows FedRAMP's recommended order:
 **Pass/Fail Criteria**:
 - ✅ RBAC: 4-tier role model (master_admin, admin, editor, viewer)
 - ✅ PostgreSQL RLS: workspace-scoped data isolation
-- ✅ GCP IAM: 15 specific roles for terraform-sa (no Owner/Editor)
-- ✅ WIF: keyless CI/CD auth (no SA keys — org policy enforced)
+- ✅ Cloud IAM: least-privilege roles for terraform/deploy identities (no Owner/Editor/Contributor)
+- ✅ WIF/OIDC: keyless CI/CD auth (no static keys — org policy enforced)
 - ✅ Database roles: archon_app_ro, archon_admin_rw, archon_ops_rw (enforced via migration; default PUBLIC revoked)
-- ✅ Migration-user isolation: Atlas job uses Cloud SQL IAM auth with `SET ROLE archon_migrator` (no static credentials). `postgres` superuser password in Secret Manager as break-glass only, accessible to `gcp-security-admins` group (not mounted on any service or job by default).
+- ✅ Migration-user isolation: Atlas job uses IAM-based DB auth with `SET ROLE archon_migrator` (no static credentials). `postgres` superuser password in secrets management as break-glass only, accessible to security admins (not mounted on any service or job by default).
 
 **Machine-Based Validation** (weekly):
-- Query IAM policy bindings on all projects
-- Verify no SA keys exist (org policy audit)
+- Query IAM policy bindings on all cloud environments
+- Verify no static keys exist (org/account policy audit)
 - Verify RLS policies active on all tables
 - Verify PUBLIC privileges revoked on all tables (query `information_schema.role_table_grants`)
 - Verify DB role grants match expected (archon-app → archon_app_ro, archon-admin → archon_admin_rw, archon-ops → archon_ops_rw)
@@ -471,10 +471,10 @@ Implementation follows FedRAMP's recommended order:
 **Goal**: Appropriately secure auth for non-user accounts and services.
 
 **Pass/Fail Criteria**:
-- ✅ WIF for CI/CD (OIDC, no SA keys)
-- ✅ Service-to-service: GCP IAM + OIDC tokens
-- ✅ Cloud Tasks: OIDC-authenticated task dispatch
-- ✅ Org policy `iam.disableServiceAccountKeyCreation` enforced
+- ✅ WIF/OIDC for CI/CD (no static keys)
+- ✅ Service-to-service: cloud IAM + OIDC tokens
+- ✅ Task queue: OIDC-authenticated task dispatch
+- ✅ Cloud-native policies block static key creation
 
 **Status**: ✅ Implemented.
 
@@ -513,9 +513,9 @@ Implementation follows FedRAMP's recommended order:
 **Goal**: Centralized, tamper-resistant logging of events.
 
 **Pass/Fail Criteria**:
-- ✅ Cloud Logging: centralized, immutable, structured JSON
+- ✅ Cloud-native logging (Cloud Logging / CloudWatch / Azure Monitor): centralized, immutable, structured JSON
 - ✅ Application audit_events table: user actions with IP, user-agent, metadata, session_id, mfa_method
-- ✅ Cloud Audit Logs: admin activity + data access (GCP API calls)
+- ✅ Cloud audit logs: admin activity + data access (cloud API calls)
 - ✅ Log sink to GCS for long-term retention
 - ⬜ Formal SIEM tool integration (Cloud Logging serves as SIEM equivalent)
 
@@ -525,8 +525,8 @@ Implementation follows FedRAMP's recommended order:
 - `fedramp-ssp.md` §8.4 (Cloud Logging → optional SIEM export)
 
 **Machine-Based Validation** (weekly):
-- Verify Cloud Logging is enabled on all projects
-- Verify log sink configurations match IaC
+- Verify cloud-native logging is enabled on all environments
+- Verify log sink/export configurations match IaC
 - Verify audit_events table is being populated
 - Verify Cloud SQL database audit flags are active (`cloudsql.enable_pgaudit=on`, `pgaudit.log=ddl,role,write`, `log_statement=ddl`, `log_connections=on`, `log_disconnections=on`, `log_lock_waits=on`, `log_min_duration_statement=1000`)
 - Verify break-glass secret access alert policy is active (CRITICAL severity, fires on any `db-postgres-password` Secret Manager access)
@@ -557,8 +557,8 @@ See Cloud Native Architecture §3.1.
 **Goal**: Machine-based resources managed via automation.
 
 **Pass/Fail Criteria**:
-- ✅ 100% of infrastructure managed by Terraform/Terragrunt (14 modules)
-- ✅ No manual GCP Console changes (gcloud guardrail wrapper enforced)
+- ✅ 100% of infrastructure managed by Terraform/Terragrunt (per-cloud modules)
+- ✅ No manual cloud console changes
 - ✅ Configuration baselines version-controlled in Git
 
 **Status**: ✅ Implemented.
@@ -568,9 +568,9 @@ See Cloud Native Architecture §3.1.
 **Goal**: Automated management and rotation of secrets.
 
 **Pass/Fail Criteria**:
-- ✅ Cloud KMS: CMEK with 90-day automatic rotation (HSM-backed, `rotation_period = 7776000s`)
-- ✅ Secret Manager: database credentials with 90-day rotation schedule
-- ✅ Secret access alerting: Cloud Monitoring fires on any `AccessSecretVersion` call
+- ✅ Cloud KMS / AWS KMS / Key Vault: CMEK with automatic rotation (HSM-backed)
+- ✅ Secrets management: database credentials with rotation schedule
+- ✅ Secret access alerting: monitoring fires on any secret access
 - ✅ WIF: eliminates SA key secrets entirely
 - ✅ No hardcoded secrets (org policy `iam.disableServiceAccountKeyCreation` + `iam.disableServiceAccountKeyUpload` + gitleaks in CI)
 
@@ -588,11 +588,11 @@ See Cloud Native Architecture §3.1.
 **Goal**: Cryptographic methods validate integrity of machine-based resources.
 
 **Pass/Fail Criteria**:
-- ✅ Docker image digests (SHA-256) in Artifact Registry
+- ✅ Docker image digests (SHA-256) in container registry (AR / ECR / ACR)
 - ✅ Cosign keyless image signing (Sigstore OIDC) — every image cryptographically signed in CI
-- ✅ Cosign signature verification required before every Cloud Run deploy
+- ✅ Cosign signature verification required before every container deploy
 - ✅ Digest-pinned deploys (`image@sha256:...`) — no mutable tag references
-- ✅ Artifact Registry immutable tags enabled (prevents tag overwrites)
+- ✅ Container registry immutable tags enabled (prevents tag overwrites)
 - ✅ SBOM generated per build (CycloneDX + SPDX)
 - ✅ Terraform state uses checksums
 - ✅ Atlas migration checksums (atlas.sum)
@@ -609,13 +609,13 @@ See Cloud Native Architecture §3.1.
 
 **Pass/Fail Criteria**:
 - ✅ Supply Chain Risk Management Plan documented
-- ✅ Vendor risk register (2 vendors: GCP Critical, GitHub High)
+- ✅ Vendor risk register (4 vendors: GCP/AWS/Azure Critical, GitHub High)
 - ✅ Risk register (12 entries, inherent/residual scoring)
 - ✅ Dependabot on all 9 repos
 - ✅ SBOM per build
 - ✅ Cosign keyless image signing + verification in CI/CD pipeline
 - ✅ Trivy hard fail gate (CRITICAL/HIGH block deploy)
-- ✅ Artifact Registry immutable tags + CMEK encryption
+- ✅ Container registry immutable tags + CMEK encryption
 
 **Information Resources**:
 - `supply-chain-risk-management-plan.md`
@@ -634,7 +634,7 @@ See Cloud Native Architecture §3.1.
 
 **Pass/Fail Criteria**:
 - ✅ Contingency plan documented
-- ✅ Automated CP-4 tests monthly (Cloud SQL backup/PITR, GCS versioning, Cloud Run health, KMS keys, Artifact Registry)
+- ✅ Automated CP-4 tests monthly (database backup/PITR, storage versioning, container health, KMS keys, container registry)
 - ✅ RTO/RPO defined per component
 - ✅ Test reports uploaded to Drata
 

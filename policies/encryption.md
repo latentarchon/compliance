@@ -19,8 +19,8 @@ This policy establishes requirements for cryptographic protection of data at res
 
 This policy applies to all data processed, stored, or transmitted by Latent Archon systems, including:
 
-- Customer documents and messages stored in Cloud SQL and GCS
-- Vector embeddings in Vertex AI Vector Search
+- Customer documents and messages stored in managed PostgreSQL and object storage
+- Vector embeddings in vector search services
 - Data in transit between all system components
 - Secrets and credentials
 - Backups and archived data
@@ -60,23 +60,23 @@ The following are explicitly prohibited:
 
 | Service | Encryption | Key Type | Rotation |
 |---------|-----------|----------|----------|
-| **Cloud SQL (PostgreSQL)** | AES-256 | CMEK via Cloud KMS (HSM) | Automatic, 90-day schedule |
-| **Cloud Storage (GCS)** | AES-256 | CMEK via Cloud KMS (HSM) | Automatic, 90-day schedule |
-| **Vertex AI Vector Search** | AES-256 | CMEK via Cloud KMS (HSM) | Automatic, 90-day schedule |
-| **Artifact Registry** | AES-256 | CMEK via Cloud KMS (HSM) | Automatic, 90-day schedule |
-| **BigQuery (Audit Logs)** | AES-256 | CMEK via Cloud KMS (HSM) | Automatic, 90-day schedule |
-| **Cloud Logging** | AES-256 | CMEK via Cloud KMS (HSM) | Automatic, 90-day schedule |
-| **Terraform State (GCS)** | AES-256 | Google-managed | Google-managed rotation |
+| **PostgreSQL** (Cloud SQL / RDS / PostgreSQL Flex) | AES-256 | CMEK via cloud KMS (HSM) | Automatic, 90-day schedule |
+| **Object Storage** (GCS / S3 / Blob) | AES-256 | CMEK via cloud KMS (HSM) | Automatic, 90-day schedule |
+| **Vector Search** (Vertex AI / OpenSearch / AI Search) | AES-256 | CMEK via cloud KMS (HSM) | Automatic, 90-day schedule |
+| **Container Registry** (AR / ECR / ACR) | AES-256 | CMEK via cloud KMS (HSM) | Automatic, 90-day schedule |
+| **Audit Log Storage** | AES-256 | CMEK via cloud KMS (HSM) | Automatic, 90-day schedule |
+| **Cloud Logging** | AES-256 | CMEK via cloud KMS (HSM) | Automatic, 90-day schedule |
+| **Terraform State** | AES-256 | Cloud-managed | Cloud-managed rotation |
 
 ### 4.2 Customer-Managed Encryption Keys (CMEK)
 
-- Cloud KMS keys are provisioned via Terraform (`infra/modules/kms/`)
-- Six dedicated keys per project keyring: Cloud SQL, GCS, BigQuery, Cloud Logging, Vertex AI, and Artifact Registry
-- All keys use HSM protection level (FIPS 140-2 Level 3) with `GOOGLE_SYMMETRIC_ENCRYPTION` algorithm
+- Cloud KMS / AWS KMS / Key Vault keys are provisioned via Terraform (`infra/*/modules/kms/`)
+- Dedicated keys per environment for database, storage, logging, AI services, and container registry
+- All keys use HSM protection level (FIPS 140-2 Level 3)
 - Per-tenant CMEK anchor: `organizations.kms_key_name` column stores the KMS key resource name for each tenant, enabling future per-tenant encryption key isolation
-- Key access restricted to service agent accounts via `roles/cloudkms.cryptoKeyEncrypterDecrypter` grants
+- Key access restricted to service identities via least-privilege IAM grants
 - KMS audit logging enabled for all key operations
-- Key lifecycle event alerts: Cloud Monitoring fires on key disable, destroy, or version state changes
+- Key lifecycle event alerts: cloud monitoring fires on key disable, destroy, or version state changes
 - Key destruction has a 30-day scheduled destruction delay (`destroy_scheduled_duration = 2592000s`) providing a safety window to cancel accidental destruction
 
 ---
@@ -87,24 +87,24 @@ The following are explicitly prohibited:
 
 | Path | Protocol | Certificate |
 |------|----------|-------------|
-| Client → Load Balancer | TLS 1.2+ | Google-managed certificate via Certificate Manager |
+| Client → Load Balancer | TLS 1.2+ | Cloud-managed certificate (auto-provisioned) |
 | All HTTPS endpoints | TLS 1.2+ | HSTS enforced (2-year max-age, includeSubDomains, preload) |
 
 ### 5.2 Internal Traffic
 
 | Path | Protocol | Notes |
 |------|----------|-------|
-| Load Balancer → Cloud Run | HTTPS (TLS) | Google-managed internal TLS |
-| Cloud Run → Cloud SQL | TLS via Cloud SQL Proxy | IAM-authenticated, private IP |
-| Cloud Run → GCS | HTTPS (TLS) | Google internal encryption |
-| Cloud Run → Vertex AI | gRPC + TLS via PSC | Private Service Connect (no public endpoint) |
-| Cloud Run → Cloud Tasks | HTTPS (TLS) | Google internal encryption |
-| Cloud Run → Document AI | HTTPS (TLS) | Google internal encryption |
-| Cloud Run → Identity Platform | HTTPS (TLS) | Google internal encryption |
+| Load Balancer → Container Service | HTTPS (TLS) | Cloud-managed internal TLS |
+| Container → Database | TLS (IAM-authenticated, private IP) | Cloud-managed |
+| Container → Object Storage | HTTPS (TLS) | Cloud-managed |
+| Container → AI Services | gRPC/HTTPS + TLS via private endpoint | No public endpoint |
+| Container → Task Queue | HTTPS (TLS) | Cloud-managed |
+| Container → Document Extraction | HTTPS (TLS) | Cloud-managed |
+| Container → Identity Provider | HTTPS (TLS) | Cloud-managed |
 
 ### 5.3 Certificate Management
 
-- TLS certificates are managed by Google Certificate Manager (auto-provisioned, auto-renewed)
+- TLS certificates are managed by the cloud provider's certificate service (auto-provisioned, auto-renewed)
 - No manual certificate management required
 - Certificate transparency logging enabled by default
 
@@ -127,18 +127,18 @@ This links the BoringSSL FIPS 140-2 validated module (Certificate #4407) for all
 
 | Secret Type | Storage | Access |
 |-------------|---------|--------|
-| Database credentials | Cloud SQL IAM authentication (no passwords) | Per-service-account IAM grants |
+| Database credentials | IAM-based database authentication (no passwords) | Per-service-identity IAM grants |
 | API keys (Firebase, etc.) | GitHub Actions secrets + Cloud Run env vars | WIF-authenticated deployment only |
 | HMAC signing keys | Environment variables (injected at deploy) | Per-service, never in source code |
 | SCIM bearer tokens | SHA-256 hashed in database | Only hash stored, token shown once on creation |
-| TOTP secrets | Encrypted in Identity Platform | Per-user, managed by Identity Platform |
+| TOTP secrets | Encrypted in identity provider | Per-user, managed by identity provider |
 
 ### 6.3 Secret Handling Rules
 
 - **Never** store secrets in source code, container images, or Terraform state
 - All secrets injected via environment variables at deployment time
 - Service account keys are **prohibited** — org policy `iam.disableServiceAccountKeyCreation` enforces this
-- Workload Identity Federation provides keyless authentication from CI/CD to GCP
+- Workload Identity Federation / OIDC provides keyless authentication from CI/CD to cloud provider
 - Gitleaks runs in CI to detect accidental secret commits
 
 ---
@@ -147,22 +147,22 @@ This links the BoringSSL FIPS 140-2 validated module (Certificate #4407) for all
 
 | Phase | Process |
 |-------|---------|
-| **Generation** | Keys generated within Cloud KMS (HSM-backed, FIPS 140-2 Level 3) |
+| **Generation** | Keys generated within cloud KMS (HSM-backed, FIPS 140-2 Level 3) |
 | **Distribution** | No key distribution — KMS performs encryption/decryption server-side |
 | **Storage** | Keys never leave KMS; key material is non-exportable |
 | **Rotation** | Automatic rotation on 90-day schedule (`rotation_period = 7776000s`); new key version created, old versions remain for decryption |
 | **Revocation** | Key version disabled in KMS; re-encryption with new key required |
 | **Destruction** | Scheduled destruction with 30-day delay (`destroy_scheduled_duration = 2592000s`); Cloud Monitoring alert fires on any destroy/disable event |
-| **Audit** | All KMS operations logged in Cloud Audit Logs; key lifecycle alert policy monitors for unauthorized changes |
+| **Audit** | All KMS operations logged in cloud audit logs; key lifecycle alert policy monitors for unauthorized changes |
 
 ---
 
 ## 8. Backup Encryption
 
-- Cloud SQL automated backups inherit CMEK encryption from the database instance
+- Database automated backups inherit CMEK encryption from the database instance
 - Point-in-time recovery (PITR) logs are encrypted with the same CMEK key
-- GCS object versions are encrypted with the bucket's CMEK key
-- Terraform state files in GCS are encrypted at rest (Google-managed keys)
+- Object storage versions are encrypted with the same CMEK key
+- Terraform state files are encrypted at rest (cloud-managed keys)
 
 ---
 
@@ -172,7 +172,7 @@ This links the BoringSSL FIPS 140-2 validated module (Certificate #4407) for all
 |----------|-----------|-------|
 | KMS key usage audit | Monthly | Engineering |
 | TLS configuration scan | Quarterly | Engineering |
-| Certificate expiration monitoring | Continuous (automated) | GCP Certificate Manager |
+| Certificate expiration monitoring | Continuous (automated) | Cloud certificate manager |
 | Secret scanning (Gitleaks) | On every commit (CI) | Engineering |
 | FIPS compliance verification | On each build (BoringCrypto) | CI/CD |
 | Encryption policy review | Annual | Security Lead |
@@ -184,7 +184,7 @@ This links the BoringSSL FIPS 140-2 validated module (Certificate #4407) for all
 - Unencrypted data storage or transmission is a critical policy violation
 - Use of prohibited cryptographic algorithms triggers immediate remediation
 - Secrets found in source code require emergency rotation and incident response
-- GCP org policies enforce encryption requirements at the infrastructure level
+- Cloud-native org/account policies enforce encryption requirements at the infrastructure level
 
 ---
 

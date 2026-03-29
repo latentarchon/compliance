@@ -21,7 +21,7 @@ This policy applies to:
 
 - All Latent Archon employees, contractors, and partners with access to production systems
 - All customer-facing platform access (end users, org admins)
-- GCP infrastructure, CI/CD pipelines, source code repositories
+- Cloud infrastructure (GCP / AWS / Azure), CI/CD pipelines, source code repositories
 - Third-party integrations and service accounts
 
 ---
@@ -32,11 +32,11 @@ This policy applies to:
 
 | Account Type | Authorization | Provisioning | Deprovisioning |
 |-------------|--------------|--------------|----------------|
-| **Employee (GCP IAM)** | CEO/CTO approval | Manual via Terraform | Same-day on termination |
+| **Employee (Cloud IAM)** | CEO/CTO approval | Manual via Terraform | Same-day on termination |
 | **CI/CD Service Account** | Engineering lead approval | Terraform (WIF, no keys) | Terraform destroy |
 | **Customer Org Admin** | Customer authorization + Latent Archon provisioning | Identity Platform tenant creation | SCIM or manual |
 | **Customer End User** | Org admin invite | Magic link or SSO/SCIM JIT | SCIM DELETE or org admin removal |
-| **Database Role** | Infrastructure as code | Cloud SQL IAM authentication | Terraform |
+| **Database Role** | Infrastructure as code | IAM-based database authentication | Terraform |
 
 ### 3.2 Provisioning Requirements
 
@@ -47,18 +47,18 @@ This policy applies to:
 - **Every user must belong to an organization** — the auth interceptor rejects orgless users on all non-AuthService RPCs
 - **Every organization must have a unique, DNS-safe slug** — validated against RFC 1123 regex (`^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$`) and a reserved-slug blocklist at creation time
 - Service accounts use Workload Identity Federation (WIF) — no static keys
-- Org policy `iam.disableServiceAccountKeyCreation` enforces this at the GCP organization level
+- Cloud-native org policies enforce keyless auth at the organization/account level
 
 ### 3.3 Account Closure & Deprovisioning
 
 - Employee accounts must be disabled within 4 hours of termination notification
 - Customer user removal cascades: org membership removal atomically removes all workspace memberships
 - SCIM DELETE immediately deprovisions federated users
-- Firebase Admin SDK `DisableUser()` revokes all active sessions on deprovisioning
+- Identity provider admin SDK revokes all active sessions on deprovisioning
 - **Self-service account closure**: Users may close their own account via the `CloseAccount` RPC; organization administrators may also close member accounts
 - Account closure requires recent MFA verification (step-up authentication within 15 minutes)
-- All Firebase authentication tokens are revoked immediately upon closure
-- Data associated with closed accounts is permanently purged within 90 days via an automated daily Cloud Scheduler job, except where subject to a forensic preservation hold
+- All authentication tokens are revoked immediately upon closure
+- Data associated with closed accounts is permanently purged within 90 days via an automated daily scheduled job, except where subject to a forensic preservation hold
 - Quarterly access reviews verify all active accounts remain authorized
 
 ### 3.4 Automated Account Management
@@ -94,7 +94,7 @@ This policy applies to:
 | Magic link (email) | Primary passwordless auth | Time-limited, single-use |
 | Password + TOTP | Traditional auth | Identity Platform password policies |
 | SAML SSO | Enterprise federation | Customer IdP (Okta, Azure AD, etc.) |
-| Google OIDC | Service-to-service | Cloud Tasks, Cloud Scheduler callbacks |
+| OIDC | Service-to-service | Task queue and scheduled job callbacks |
 
 ### 4.4 Failed Authentication
 
@@ -186,12 +186,12 @@ Each pool's membership is established through that pool's own authentication, wi
 
 ## 7. Infrastructure Access
 
-### 7.1 GCP IAM
+### 7.1 Cloud IAM
 
-- Terraform service account uses 15 specific roles (least privilege)
-- Employee access via IAM with org-level `roles/owner` restricted to CEO
+- Terraform service identity uses least-privilege roles per cloud provider
+- Employee access via IAM with org/account-level owner restricted to CEO
 - No direct SSH access to any compute resources (serverless model)
-- Cloud SQL access via IAM authentication only (no passwords)
+- Database access via IAM authentication only (no passwords)
 
 ### 7.2 CI/CD Access
 
@@ -215,18 +215,18 @@ Each pool's membership is established through that pool's own authentication, wi
 Organization administrators can configure CIDR-based IP allowlists enforced at the WAF layer:
 
 - Self-service configuration via `UpdateOrganizationSettings` RPC with CIDR validation
-- Allowlists synced to Cloud Armor deny rules (priority 50–99) via GCP Compute API
-- CEL expressions match org hostname (`request.headers['host'].startsWith('<slug>.')`) + IP range for per-org enforcement
-- Full reconciliation logic (add/update/remove) ensures Cloud Armor rules stay in sync with database state
+- Allowlists synced to WAF deny rules via cloud API
+- Rules match org hostname + IP range for per-org enforcement
+- Full reconciliation logic (add/update/remove) ensures WAF rules stay in sync with database state
 - Sync failure is non-fatal — database is source of truth; logged and audit-recorded
-- Periodic reconciliation cron catches Cloud Armor drift
+- Periodic reconciliation cron catches WAF drift
 
 ### 8.2 Remote Access
 
 - All platform access is remote by design (cloud-native SaaS)
 - TLS 1.2+ enforced on all connections
 - HSTS with 2-year max-age and preload
-- Cloud Armor WAF with OWASP Core Rule Set
+- WAF with OWASP Core Rule Set (Cloud Armor / WAFv2 / Front Door WAF)
 - CORS strict origin allowlist (localhost only in development)
 
 ---

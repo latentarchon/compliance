@@ -19,7 +19,7 @@ This policy establishes requirements for maintaining the continuity of Latent Ar
 
 This policy applies to:
 
-- All production and staging infrastructure (GCP Cloud Run, Cloud SQL, GCS, Vertex AI, Identity Platform)
+- All production and staging infrastructure on whichever cloud hosts the deployment (GCP, AWS, or Azure)
 - All customer data (documents, messages, embeddings, account data)
 - All supporting systems (CI/CD, monitoring, DNS, load balancers)
 - All personnel involved in incident response and recovery
@@ -32,9 +32,9 @@ This policy applies to:
 
 | Tier | Services | RPO | RTO | Justification |
 |------|----------|-----|-----|---------------|
-| **Tier 1 — Critical** | Cloud SQL (database), GCS (document storage), Identity Platform (auth) | < 5 minutes | < 1 hour | Customer data and authentication — any loss is unacceptable |
-| **Tier 2 — Essential** | Cloud Run services (app API, admin API, ops), Load Balancers, Cloud Armor | 0 (stateless) | < 4 hours | Stateless services rebuilt from container images + Terraform |
-| **Tier 3 — Supporting** | Vertex AI (Vector Search + LLM), Document AI, Cloud Tasks, Ops Service | < 24 hours | < 8 hours | AI/search features; system usable without them (degraded mode) |
+| **Tier 1 — Critical** | Database (PostgreSQL), Document storage, Authentication | < 5 minutes | < 1 hour | Customer data and authentication — any loss is unacceptable |
+| **Tier 2 — Essential** | Container services (app API, admin API, ops), Load Balancers, WAF | 0 (stateless) | < 4 hours | Stateless services rebuilt from container images + Terraform |
+| **Tier 3 — Supporting** | AI services (Vector Search + LLM), Document extraction, Task queue, Ops Service | < 24 hours | < 8 hours | AI/search features; system usable without them (degraded mode) |
 | **Tier 4 — Non-critical** | Staging environments, CI/CD, monitoring dashboards, Drata sync | N/A | < 24 hours | Operational tooling; no customer impact |
 
 ### 3.2 Availability Target
@@ -46,7 +46,7 @@ This policy applies to:
 
 ## 4. Backup Strategy
 
-### 4.1 Cloud SQL (Primary Database)
+### 4.1 Database (Primary Data Store)
 
 | Feature | Configuration |
 |---------|--------------|
@@ -54,37 +54,41 @@ This policy applies to:
 | **Point-in-time recovery** | Enabled, WAL-based, < 5 minute granularity |
 | **High availability** | Multi-zone (regional) deployment |
 | **Failover** | Automatic failover to standby instance |
-| **Encryption** | CMEK (AES-256 via Cloud KMS) |
+| **Encryption** | CMEK (AES-256 via cloud KMS) |
 | **Cross-region backup** | Configurable (not currently enabled — single-region deployment) |
 
-### 4.2 Cloud Storage (Documents)
+Cloud-specific service: Cloud SQL (GCP) / RDS PostgreSQL (AWS) / PostgreSQL Flexible Server (Azure).
+
+### 4.2 Object Storage (Documents)
 
 | Feature | Configuration |
 |---------|--------------|
 | **Object versioning** | Enabled, 365-day retention |
 | **Lifecycle policies** | Old versions auto-archived after 90 days, deleted after 365 days |
-| **Encryption** | CMEK (AES-256 via Cloud KMS) |
+| **Encryption** | CMEK (AES-256 via cloud KMS) |
 | **Soft delete** | 30-day soft delete before permanent removal |
-| **Redundancy** | Regional (us-east1) with automatic replication across zones |
+| **Redundancy** | Regional with automatic replication across zones |
+
+Cloud-specific service: GCS (GCP) / S3 (AWS) / Blob Storage (Azure).
 
 ### 4.3 Infrastructure Configuration
 
 | Asset | Backup Method | Recovery Method |
 |-------|--------------|-----------------|
-| **Terraform state** | GCS with versioning and state locking | `terraform init` from versioned state |
+| **Terraform state** | Cloud storage with versioning and state locking | `terraform init` from versioned state |
 | **Terragrunt configs** | Git (GitHub) | Clone and apply |
 | **Application source code** | Git (GitHub) | Clone and build |
-| **Container images** | Artifact Registry (current + 5 previous) | Pull from AR |
+| **Container images** | Container registry (current + 5 previous) | Pull from registry |
 | **Database schema** | Migration files in Git (Atlas) | Apply migrations to fresh database |
 | **DNS configuration** | Terraform-managed | Terraform apply |
-| **SSL certificates** | Google Certificate Manager (auto-managed) | Auto-provisioned on new LB |
+| **SSL certificates** | Cloud-managed certificates (auto-managed) | Auto-provisioned on new LB |
 
 ### 4.4 Backup Verification
 
 | Activity | Frequency | Owner | Method |
 |----------|-----------|-------|--------|
-| Cloud SQL backup restore test | Quarterly | Engineering | Restore to staging instance, verify data integrity |
-| GCS version recovery test | Semi-annual | Engineering | Restore specific objects, verify checksums |
+| Database backup restore test | Quarterly | Engineering | Restore to staging instance, verify data integrity |
+| Storage version recovery test | Semi-annual | Engineering | Restore specific objects, verify checksums |
 | Full infrastructure rebuild test | Annual | Engineering | `terragrunt apply` to fresh project |
 | PITR recovery test | Semi-annual | Engineering | Restore to specific timestamp, verify data |
 
@@ -92,67 +96,64 @@ This policy applies to:
 
 ## 5. Disaster Recovery Procedures
 
-### 5.1 Scenario: Cloud SQL Database Failure
+### 5.1 Scenario: Database Failure
 
-**Detection**: Health check failures on `/health` endpoint → Cloud Run service unhealthy → alert
+**Detection**: Health check failures on `/health` endpoint → container service unhealthy → alert
 
 **Recovery**:
-1. Verify Cloud SQL instance status in GCP Console
+1. Verify database instance status in cloud console
 2. If primary unavailable: automatic failover to HA standby (< 60 seconds)
 3. If regional failure: restore from PITR backup to new instance
-4. Update `DB_CONNECTION_NAME` in Cloud Run configs if instance name changed
+4. Update database connection config in container environment variables if instance name changed
 5. Verify data integrity: row counts, audit event continuity, RLS enforcement
 6. Resume service
 
 **Time estimate**: Automatic failover < 1 min, PITR restore < 30 min
 
-### 5.2 Scenario: Cloud Run Service Failure
+### 5.2 Scenario: Container Service Failure
 
-**Detection**: Health check failures, load balancer 5xx errors, Cloud Monitoring alerts
+**Detection**: Health check failures, load balancer 5xx errors, cloud monitoring alerts
 
 **Recovery**:
-1. Cloud Run auto-heals by replacing failed instances (automatic)
-2. If deployment-related: roll back to previous image revision
-   ```
-   gcloud run services update-traffic SERVICE --to-revisions=PREVIOUS_REVISION=100
-   ```
-3. If persistent: redeploy from Artifact Registry latest known-good image
+1. Container platform auto-heals by replacing failed instances (automatic)
+2. If deployment-related: roll back to previous revision (GCP: `gcloud run services update-traffic`; AWS: ECS task definition rollback; Azure: Container Apps revision revert)
+3. If persistent: redeploy from container registry latest known-good image
 4. Verify via health check and smoke test
 
 **Time estimate**: Auto-heal < 30 seconds, rollback < 5 min
 
-### 5.3 Scenario: GCS Bucket Data Loss
+### 5.3 Scenario: Object Storage Data Loss
 
 **Detection**: Application errors on document access, user-reported missing documents
 
 **Recovery**:
-1. List object versions: `gsutil ls -a gs://BUCKET/path/`
-2. Restore specific version: `gsutil cp gs://BUCKET/path#VERSION gs://BUCKET/path`
+1. List object versions using cloud-native CLI (gsutil / aws s3api / az storage blob)
+2. Restore specific version from versioning history
 3. For bulk restore: script to restore latest non-deleted version of all objects
 4. Verify document count matches database records
 
 **Time estimate**: Single object < 1 min, bulk restore < 1 hour
 
-### 5.4 Scenario: Vertex AI Vector Search Index Corruption
+### 5.4 Scenario: Vector Search Index Corruption
 
 **Detection**: Search quality degradation, embedding retrieval errors
 
 **Recovery**:
-1. Rebuild index from source documents in Cloud SQL + GCS
+1. Rebuild index from source documents in database + object storage
 2. Re-embed all document chunks using embedding model
 3. Create new index, deploy to endpoint
-4. Update index ID in Cloud Run environment variables
+4. Update index ID in container environment variables
 5. Verify search quality with test queries
 
 **Time estimate**: < 4 hours (depending on corpus size)
 
-### 5.5 Scenario: Full Regional Failure (us-east1)
+### 5.5 Scenario: Full Regional Failure
 
 **Recovery**:
 1. Provision new infrastructure in alternate region using Terragrunt
-2. Restore Cloud SQL from cross-region backup (if configured) or PITR
-3. Restore GCS data from regional redundancy
-4. Rebuild all Cloud Run services from Artifact Registry images
+2. Restore database from cross-region backup (if configured) or PITR
+3. Restore storage data from regional redundancy
+4. Rebuild all container services from registry images
 5. Update DNS records to point to new load balancer IPs
 6. Re-index vector search from restored data
 
@@ -184,13 +185,13 @@ This policy applies to:
 
 | Vendor | Risk | Mitigation |
 |--------|------|-----------|
-| **GCP** | Regional outage | Multi-zone HA (current), cross-region DR (planned) |
+| **GCP / AWS / Azure** | Regional outage | Multi-zone HA (current), cross-region DR (planned) |
 | **GitHub** | Service outage | Local git clones, GitHub archive export |
 | **Drata** | Service outage | Compliance docs stored locally in Git |
 
 ### 7.3 Financial Continuity
 
-- GCP committed use discounts or reserved capacity for production workloads
+- Cloud provider committed use discounts or reserved capacity for production workloads
 - Business insurance covering cyber incidents and business interruption
 - 6-month operating reserve maintained
 
@@ -201,9 +202,9 @@ This policy applies to:
 | Test Type | Frequency | Scope | Owner |
 |-----------|-----------|-------|-------|
 | **Tabletop exercise** | Semi-annual | Walk through DR scenarios | CEO + Engineering |
-| **Backup restore test** | Quarterly | Cloud SQL + GCS restore to staging | Engineering |
-| **Infrastructure rebuild** | Annual | Full Terragrunt apply to test project | Engineering |
-| **Failover test** | Annual | Cloud SQL HA failover | Engineering |
+| **Backup restore test** | Quarterly | Database + storage restore to staging | Engineering |
+| **Infrastructure rebuild** | Annual | Full Terragrunt apply to test environment | Engineering |
+| **Failover test** | Annual | Database HA failover | Engineering |
 | **Communication test** | Semi-annual | Notification procedures | Security Lead |
 
 ---

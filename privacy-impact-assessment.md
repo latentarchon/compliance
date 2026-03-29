@@ -13,7 +13,7 @@
 
 ### 1.1 System Description
 
-Latent Archon is a multi-tenant SaaS document intelligence platform that enables government agencies to securely upload, process, search, and interact with documents using AI-powered retrieval-augmented generation (RAG). The system is hosted on Google Cloud Platform (FedRAMP High authorized).
+Latent Archon is a multi-tenant SaaS document intelligence platform that enables government agencies to securely upload, process, search, and interact with documents using AI-powered retrieval-augmented generation (RAG). The system is deployable on Google Cloud Platform, Amazon Web Services, or Microsoft Azure (all FedRAMP High authorized). Each customer deployment runs on a single cloud provider.
 
 ### 1.2 Purpose of the PIA
 
@@ -31,13 +31,13 @@ This PIA identifies and evaluates privacy risks associated with the collection, 
 | **Display name** | User registration / SAML SSO / SCIM | UI display, audit attribution | Duration of account + 90 days |
 | **IP address** | HTTP request headers | Audit logging, Cloud Armor security, IP allowlisting | 365 days (audit log) |
 | **User agent string** | HTTP request headers | Audit logging, anomaly detection | 365 days (audit log) |
-| **TOTP MFA seed** | MFA enrollment (Identity Platform) | Second-factor authentication | Duration of account (managed by Identity Platform) |
-| **Firebase UID** | Identity Platform token | Session management, RBAC | Duration of account |
+| **TOTP MFA seed** | MFA enrollment (GCP: Identity Platform) | Second-factor authentication | Duration of account (managed by identity provider) |
+| **Auth UID** | Identity provider token | Session management, RBAC | Duration of account |
 | **IdP external ID** | SAML assertion / SCIM | Federated identity mapping | Duration of account |
 
 ### 2.2 PII in Customer Documents
 
-Customer agencies upload documents that may contain any category of PII depending on agency mission. Latent Archon does not parse or extract PII from documents — documents are processed for text extraction (Document AI OCR) and semantic embedding (Vertex AI) only. The system treats all document content as CUI.
+Customer agencies upload documents that may contain any category of PII depending on agency mission. Latent Archon does not parse or extract PII from documents — documents are processed for text extraction (Document AI / Textract / Document Intelligence) and semantic embedding only. The system treats all document content as CUI.
 
 | PII Category | System Awareness | Protection |
 |-------------|-----------------|------------|
@@ -54,28 +54,28 @@ Customer agencies upload documents that may contain any category of PII dependin
 1. **Account Registration**: Email and display name collected via Identity Platform sign-up flow (app or admin app)
 2. **SAML SSO**: Email, name, and IdP-assigned attributes received in SAML assertion
 3. **SCIM Provisioning**: Email, name, external ID, and group memberships pushed by customer IdP
-4. **HTTP Requests**: IP address and user agent captured automatically by Cloud Armor and application audit logger
+4. **HTTP Requests**: IP address and user agent captured automatically by WAF and application audit logger
 5. **Document Upload**: Customer-uploaded documents may contain arbitrary PII
 
 ### 3.2 PII Storage Locations
 
 | Location | PII Stored | Encryption | Access Control |
 |----------|-----------|------------|----------------|
-| **Cloud SQL (PostgreSQL)** | Email, name, Firebase UID, external ID, audit events (IP, UA) | CMEK AES-256 (FIPS 140-2 L3 HSM) | RLS + DB role separation |
-| **Identity Platform** | Email, name, MFA seed, password hash | Google-managed encryption | Firebase Admin SDK (SA-scoped) |
-| **Cloud Storage** | Document files (may contain PII) | CMEK AES-256 | Workspace-scoped object paths + IAM |
-| **Vertex AI** | Document text embeddings (may encode PII semantics) | Google-managed encryption | Workspace-scoped vector tokens |
-| **Cloud Logging** | IP addresses, user agents, request metadata | Google-managed encryption | IAM (logging.viewer) |
+| **PostgreSQL** (Cloud SQL / RDS / PostgreSQL Flex) | Email, name, auth UID, external ID, audit events (IP, UA) | CMEK AES-256 (FIPS 140-2 L3 HSM) | RLS + DB role separation |
+| **Identity Provider** (Identity Platform / SAML IdP / Azure AD) | Email, name, MFA seed, password hash | Provider-managed encryption | Admin SDK / SAML (SA-scoped) |
+| **Object Storage** (GCS / S3 / Blob) | Document files (may contain PII) | CMEK AES-256 | Workspace-scoped object paths + IAM |
+| **Vector Store** (Vertex AI / OpenSearch / AI Search) | Document text embeddings (may encode PII semantics) | Provider-managed encryption | Workspace-scoped vector tokens |
+| **Cloud Logging** (Cloud Logging / CloudWatch / Azure Monitor) | IP addresses, user agents, request metadata | Provider-managed encryption | IAM (logging viewer role) |
 
 ### 3.3 PII Sharing
 
 | Recipient | PII Shared | Purpose | Mechanism |
 |-----------|-----------|---------|-----------|
-| **Google Cloud Platform** | All stored PII (as infrastructure provider) | Infrastructure hosting | GCP Data Processing Terms |
+| **Cloud Provider** (GCP / AWS / Azure) | All stored PII (as infrastructure provider) | Infrastructure hosting | CSP Data Processing Terms |
 | **Customer Agency Admins** | Member emails, names, audit events | Organization management | Admin API (RBAC-gated) |
-| **Customer SIEM** | Audit events (IP, UA, email) | Security monitoring | Pub/Sub export (opt-in) |
+| **Customer SIEM** | Audit events (IP, UA, email) | Security monitoring | Log export (opt-in) |
 
-PII is **never** shared with: marketing platforms, analytics services, third-party AI providers (Vertex AI is first-party GCP), or other customer organizations.
+PII is **never** shared with: marketing platforms, analytics services, third-party AI providers (all AI services are first-party cloud provider services), or other customer organizations.
 
 ---
 
@@ -91,7 +91,7 @@ PII is **never** shared with: marketing platforms, analytics services, third-par
   - RBAC with least privilege
   - MFA required for all users
   - Per-org session timeouts (configurable)
-  - Per-org IP allowlisting via Cloud Armor
+  - Per-org IP allowlisting via WAF (Cloud Armor / WAFv2 / Front Door WAF)
 - **Residual Risk**: Low
 
 ### 4.2 Risk: PII Exposure via AI/Search
@@ -110,8 +110,8 @@ PII is **never** shared with: marketing platforms, analytics services, third-par
 - **Likelihood**: Medium
 - **Impact**: Low
 - **Mitigations**:
-  - Audit log retention: 365 days in Cloud SQL (configurable), 30 days in Cloud Logging
-  - Automated log rotation and deletion via Cloud Scheduler
+  - Audit log retention: 365 days in PostgreSQL (configurable), 30 days in cloud logging
+  - Automated log rotation and deletion via scheduled job
   - Customer agencies can configure shorter retention periods
 - **Residual Risk**: Low
 
@@ -121,8 +121,8 @@ PII is **never** shared with: marketing platforms, analytics services, third-par
 - **Impact**: Medium
 - **Mitigations**:
   - All backups encrypted with CMEK (same keys as primary data)
-  - Cloud SQL PITR backups retained 30 days then auto-deleted
-  - GCS object versions retained 365 days then auto-deleted
+  - Database PITR backups retained 30 days then auto-deleted
+  - Object storage versions retained 365 days then auto-deleted
   - Cryptographic erasure available via CMEK key rotation
 - **Residual Risk**: Low
 
@@ -133,7 +133,7 @@ PII is **never** shared with: marketing platforms, analytics services, third-par
 - **Mitigations**:
   - No standing production database access for any personnel
   - Break-glass access requires CEO approval and is audit-logged
-  - All GCP IAM actions logged in Cloud Audit Logs
+  - All cloud IAM actions logged in cloud audit logs
   - Background screening for all personnel
   - Personnel sanctions for policy violations
 - **Residual Risk**: Low

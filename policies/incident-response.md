@@ -22,7 +22,7 @@ This policy covers security incidents affecting:
 - Latent Archon production and staging environments
 - Customer data (documents, messages, workspace content)
 - Authentication and identity systems
-- Infrastructure (GCP projects, networking, compute)
+- Infrastructure (cloud environments, networking, compute)
 - CI/CD pipelines and source code repositories
 - Third-party integrations
 
@@ -80,21 +80,21 @@ This policy covers security incidents affecting:
 
 | Source | What It Detects | Alert Mechanism |
 |--------|----------------|-----------------|
-| Cloud Armor WAF | OWASP attacks, DDoS, suspicious IPs | Cloud Monitoring alert policy |
-| Cloud Armor Adaptive Protection | ML-detected L7 DDoS anomalies | Cloud Monitoring alert policy |
-| WAF Block Spike Alert | Elevated Cloud Armor DENY event volume | Cloud Monitoring alert (HIGH) |
-| 5xx Error Rate Alert | 5xx/total request ratio exceeds threshold | Cloud Monitoring MQL alert (HIGH) |
-| Cloud SQL Auth Failure Alert | `FATAL` or `password authentication failed` in DB logs | Cloud Monitoring alert (HIGH) |
-| IAM Privilege Escalation Alert | `SetIamPolicy`, `CreateRole`, `UpdateRole` API calls | Cloud Monitoring alert (CRITICAL) |
-| KMS Key Lifecycle Alert | Key disable, destroy, or version state changes | Cloud Monitoring alert (CRITICAL) |
-| Secret Access Alert | `AccessSecretVersion` calls on managed secrets | Cloud Monitoring alert (CRITICAL) |
-| DLP Findings | PII, credentials, or financial data detected in uploaded documents | Cloud DLP inspect template findings log |
-| Audit Events (WARN level) | Auth failures, privilege escalation, deletions | Cloud Logging alert policy |
-| Rate Limit Violations | Brute force, API abuse (tiered: SCIM 30/min, auth 20/min, login 10/min, global 100/min) | Cloud Armor rate-based ban |
-| Red Team Dashboard | Attack request volume, IAM denials, auth failures | Cloud Monitoring dashboard |
+| WAF | OWASP attacks, DDoS, suspicious IPs | Cloud monitoring alert policy |
+| WAF Adaptive Protection | ML-detected L7 DDoS anomalies | Cloud monitoring alert policy |
+| WAF Block Spike Alert | Elevated WAF DENY event volume | Cloud monitoring alert (HIGH) |
+| 5xx Error Rate Alert | 5xx/total request ratio exceeds threshold | Cloud monitoring alert (HIGH) |
+| Database Auth Failure Alert | `FATAL` or `password authentication failed` in DB logs | Cloud monitoring alert (HIGH) |
+| IAM Privilege Escalation Alert | `SetIamPolicy`, `CreateRole`, `UpdateRole` API calls | Cloud monitoring alert (CRITICAL) |
+| KMS Key Lifecycle Alert | Key disable, destroy, or version state changes | Cloud monitoring alert (CRITICAL) |
+| Secret Access Alert | Secret access calls on managed secrets | Cloud monitoring alert (CRITICAL) |
+| DLP Findings | PII, credentials, or financial data detected in uploaded documents | DLP inspect template findings log |
+| Audit Events (WARN level) | Auth failures, privilege escalation, deletions | Cloud logging alert policy |
+| Rate Limit Violations | Brute force, API abuse (tiered: SCIM 30/min, auth 20/min, login 10/min, global 100/min) | WAF rate-based ban |
+| Red Team Dashboard | Attack request volume, IAM denials, auth failures | Cloud monitoring dashboard |
 | Dependabot | Vulnerable dependencies | GitHub notification + PR |
-| Cloud Audit Logs | IAM changes, resource modifications, API calls | Cloud Logging alert policy |
-| Identity Platform | Brute force, suspicious sign-ins | Firebase alerts |
+| Cloud Audit Logs | IAM changes, resource modifications, API calls | Cloud logging alert policy |
+| Identity Provider | Brute force, suspicious sign-ins | Provider alerts |
 | Security Email Notifications | Role escalation, auth failures, member changes, SCIM events, document deletions | Real-time email to org admins |
 
 ### 5.2 Manual Detection
@@ -122,24 +122,24 @@ This policy covers security incidents affecting:
 
 | Category | Containment Action |
 |----------|-------------------|
-| **Auth Bypass** | Revoke compromised tokens; disable affected user accounts via Firebase Admin SDK; rotate affected secrets |
-| **Privilege Escalation** | Revoke IAM grants; disable service accounts; block affected IP ranges in Cloud Armor |
-| **Data Exfiltration** | Block source IP in Cloud Armor; revoke affected user sessions; enable enhanced logging |
-| **Injection Attack** | Update Cloud Armor WAF rules; deploy application patch; enable request body logging |
-| **DDoS** | Adjust Cloud Armor rate limits; enable adaptive protection; contact GCP support |
+| **Auth Bypass** | Revoke compromised tokens; disable affected user accounts via identity provider admin SDK; rotate affected secrets |
+| **Privilege Escalation** | Revoke IAM grants; disable service accounts; block affected IP ranges in WAF |
+| **Data Exfiltration** | Block source IP in WAF; revoke affected user sessions; enable enhanced logging |
+| **Injection Attack** | Update WAF rules; deploy application patch; enable request body logging |
+| **DDoS** | Adjust WAF rate limits; enable adaptive protection; contact CSP support |
 | **Supply Chain** | Pin affected dependency; revert to known-good version; audit recent deployments |
 
 #### Platform-Specific Actions
 
-- **Cloud Run**: Deploy previous revision (instant rollback via traffic split)
-- **Cloud SQL**: Enable enhanced audit logging; snapshot current state
-- **Cloud Armor**: Add emergency IP block rules; adjust rate limits
-- **Identity Platform**: Disable affected IDP pool; revoke all sessions for affected org
+- **Container service**: Deploy previous revision (instant rollback via traffic split)
+- **Database**: Enable enhanced audit logging; snapshot current state
+- **WAF**: Add emergency IP block rules; adjust rate limits
+- **Identity provider**: Disable affected IDP pool; revoke all sessions for affected org
 - **Kill Switch**: Red team tooling includes kill-on-breach capability for immediate containment
 
 ### Phase 3: Eradication (2–24 hours)
 
-1. **Identify** root cause via audit logs, Cloud Logging, and distributed traces (OpenTelemetry)
+1. **Identify** root cause via audit logs, cloud logging, and distributed traces (OpenTelemetry)
 2. **Remove** attacker access (revoke all compromised credentials, tokens, sessions)
 3. **Patch** vulnerability (deploy fix via standard CI/CD pipeline)
 4. **Verify** fix (run targeted red team attack suite against the vulnerability)
@@ -150,7 +150,7 @@ This policy covers security incidents affecting:
 1. **Restore** normal operations (re-enable disabled services/accounts)
 2. **Validate** system integrity:
    - Database: Compare checksums, verify RLS policies intact
-   - GCS: Verify object versions, check for unauthorized uploads
+   - Object storage: Verify object versions, check for unauthorized uploads
    - Vector Store: Verify workspace scoping, rebuild index if necessary
    - IAM: Audit all grants, verify service account permissions
 3. **Monitor** enhanced logging for recurrence (minimum 72 hours)
@@ -186,10 +186,10 @@ Every SEV-1 and SEV-2 incident requires a written report containing:
 
 ### 7.2 Evidence Preservation
 
-- Cloud Logging exports preserved for minimum 365 days
+- Cloud logging exports preserved for minimum 365 days
 - Database audit events preserved indefinitely
-- GCS object versions preserved per lifecycle policy
-- Terraform state versions preserved in GCS
+- Object storage versions preserved per lifecycle policy
+- Terraform state versions preserved in cloud storage
 - Screenshots and screen recordings of dashboards during incident
 
 ### 7.3 Forensic Preservation Holds
@@ -289,7 +289,7 @@ In addition to US-CERT, the **FedRAMP PMO** must be notified:
 | US-CERT / CISA | soc@us-cert.gov | Email + web form |
 | FedRAMP PMO | info@fedramp.gov | Email |
 | Agency ISSO | Per customer contract | Email + phone |
-| GCP Security | security@google.com | Email (for inherited infra incidents) |
+| CSP Security | Per-provider security contact | Email (for inherited infra incidents) |
 
 ---
 
@@ -317,11 +317,11 @@ In addition to US-CERT, the **FedRAMP PMO** must be notified:
 
 | Tool | Purpose | Access |
 |------|---------|--------|
-| Cloud Logging | Log search, analysis, alerting | GCP Console |
-| Cloud Monitoring | Metrics, dashboards, alert policies | GCP Console |
-| Cloud Armor | WAF rules, IP blocking, rate limiting | GCP Console |
-| Firebase Console | User management, session revocation | Firebase Console |
-| Terraform/Terragrunt | Infrastructure state, rollback | CLI + GCS state |
+| Cloud Logging | Log search, analysis, alerting | Cloud console |
+| Cloud Monitoring | Metrics, dashboards, alert policies | Cloud console |
+| WAF | WAF rules, IP blocking, rate limiting | Cloud console |
+| Identity Provider Console | User management, session revocation | Provider console |
+| Terraform/Terragrunt | Infrastructure state, rollback | CLI + cloud storage state |
 | Red Team CLI | Attack suite execution, validation | `redteam/cmd/redteam/` |
 | GitHub | Code history, deployment logs | github.com/latentarchon |
 

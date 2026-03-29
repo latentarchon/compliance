@@ -17,13 +17,26 @@ policies/                          # 11 governance policies (NIST 800-53 aligned
   risk-management.md               # POL-RM-001 — Risk assessment, register, appetite
   acceptable-use.md                # POL-AU-001 — Acceptable/prohibited use
   security-awareness-training.md   # POL-AT-001 — Training requirements
-  physical-security.md             # POL-PE-001 — Physical security (GCP inherited)
+  physical-security.md             # POL-PE-001 — Physical security (CSP inherited)
+cloud/                             # Cloud-specific supplements (per-provider details)
+  gcp.md                           # GCP service mapping and FedRAMP authorization
+  aws.md                           # AWS service mapping and FedRAMP authorization
+  azure.md                         # Azure service mapping and FedRAMP authorization
+  service-mapping.md               # Cross-cloud service equivalence table
 drata/                             # Drata API integration CLI tool (Go)
 sales/                             # Sales and procurement collateral
   capability-statement.md
   pipeline-targets.md
 security-whitepaper.md             # Customer-facing security architecture whitepaper
+fedramp-ssp.md                     # FedRAMP System Security Plan
+fedramp-20x-ksi-summaries.md       # FedRAMP 20x Key Security Indicator summaries
 ssp-lite-nist-800-53.md            # SSP-Lite NIST 800-53 Moderate control mapping
+configuration-management-plan.md   # Configuration management plan
+continuous-monitoring-plan.md      # Continuous monitoring plan
+contingency-plan.md                # Contingency / disaster recovery plan
+privacy-impact-assessment.md       # Privacy impact assessment
+supply-chain-risk-management-plan.md # Supply chain risk management plan
+vulnerability-scanning-strategy.md # Vulnerability scanning strategy (DOC-VS-001)
 ```
 
 ## Policy Inventory
@@ -41,14 +54,16 @@ ssp-lite-nist-800-53.md            # SSP-Lite NIST 800-53 Moderate control mappi
 | POL-RM-001 | Risk Management | RA-1, RA-2, RA-3, PM-9 | Risk assessment, treatment |
 | POL-AU-001 | Acceptable Use | PL-4, AC-8, AT-2 | System use, prohibited activities |
 | POL-AT-001 | Security Awareness & Training | AT-1 through AT-4 | Training, awareness program |
-| POL-PE-001 | Physical Security | PE-1 through PE-6, MA-1 | Physical controls (GCP inherited) |
+| POL-PE-001 | Physical Security | PE-1 through PE-6, MA-1 | Physical controls (CSP inherited) |
 
 ## Audience
 
 | Document | Audience | Purpose |
 |----------|----------|---------|
 | `policies/*` | Internal / ATO package | Written governance policies for NIST compliance |
+| `cloud/*` | Internal / ATO package | Cloud-specific implementation details per CSP |
 | `security-whitepaper.md` | Customers / procurement | Technical security architecture overview |
+| `fedramp-ssp.md` | ATO / compliance officers | FedRAMP System Security Plan |
 | `ssp-lite-nist-800-53.md` | ATO / compliance officers | Control-by-control NIST 800-53 mapping |
 | `sales/capability-statement.md` | Contracting officers | Company capability one-pager |
 | `drata/` | Engineering | Automated Drata compliance sync tool |

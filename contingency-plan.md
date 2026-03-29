@@ -14,11 +14,11 @@
 
 ### 1.1 Purpose
 
-This Information System Contingency Plan (ISCP) establishes procedures to recover the Latent Archon Document Intelligence Platform following a disruption. The plan addresses service degradation, component failure, and regional disaster scenarios for a cloud-native SaaS system operating on Google Cloud Platform.
+This Information System Contingency Plan (ISCP) establishes procedures to recover the Latent Archon Document Intelligence Platform following a disruption. The plan addresses service degradation, component failure, and regional disaster scenarios for a cloud-native SaaS system deployable on Google Cloud Platform, Amazon Web Services, or Microsoft Azure.
 
 ### 1.2 Applicability
 
-This plan applies to all components within the Latent Archon authorization boundary as defined in the System Security Plan (SSP-LA-001), including Cloud Run services, Cloud SQL database, Cloud Storage, Vertex AI, Identity Platform, and supporting infrastructure.
+This plan applies to all components within the Latent Archon authorization boundary as defined in the System Security Plan (SSP-LA-001), including container services, managed PostgreSQL database, object storage, AI/LLM services, identity platform, and supporting infrastructure on whichever cloud provider hosts the deployment.
 
 ### 1.3 Scope
 
@@ -35,24 +35,24 @@ The ISCP covers:
 
 ### 2.1 System Description
 
-Latent Archon is a multi-tenant document intelligence SaaS platform hosted on GCP. The system consists of:
-- **3 Cloud Run services**: archon-app (user-facing), archon-admin (admin API), archon-ops (background processing)
-- **Cloud SQL PostgreSQL 15**: Primary data store with RLS
-- **Cloud Storage**: Document file storage
-- **Vertex AI**: Vector search and LLM inference
-- **Identity Platform**: Authentication (two pools: app and admin)
-- **Cloud Armor**: WAF and DDoS protection
-- **Cloud KMS**: Encryption key management
+Latent Archon is a multi-tenant document intelligence SaaS platform deployable on GCP, AWS, or Azure. The system consists of:
+- **3 container services**: archon-app (user-facing), archon-admin (admin API), archon-ops (background processing)
+- **Managed PostgreSQL 15**: Primary data store with RLS (Cloud SQL / RDS / PostgreSQL Flexible Server)
+- **Object storage**: Document file storage (GCS / S3 / Blob Storage)
+- **AI services**: Vector search and LLM inference (Vertex AI / Bedrock+OpenSearch / Azure OpenAI+AI Search)
+- **Identity**: Authentication with two pools: app and admin (Identity Platform / SAML federation / Azure AD)
+- **WAF**: DDoS and application-layer protection (Cloud Armor / WAFv2 / Front Door WAF)
+- **KMS**: Encryption key management (Cloud KMS / AWS KMS / Key Vault)
 
-All infrastructure is managed via Terraform/Terragrunt, enabling reproducible deployment to any GCP region.
+All infrastructure is managed via Terraform/Terragrunt, enabling reproducible deployment to any region on any supported cloud.
 
 ### 2.2 Recovery Objectives
 
 | Service Tier | Components | RPO | RTO | Description |
 |-------------|------------|-----|-----|-------------|
-| **Tier 1 — Critical** | Database (Cloud SQL), Document Storage (GCS), Authentication (Identity Platform) | < 5 min | < 1 hr | Customer data and authentication — any loss is unacceptable |
-| **Tier 2 — Essential** | Cloud Run APIs (app, admin, ops), Load Balancers, Cloud Armor | 0 (stateless) | < 4 hr | Stateless services rebuilt from container images + Terraform |
-| **Tier 3 — Supporting** | Vertex AI (Vector Search + LLM), Document AI, Cloud Tasks, Ops Service | < 24 hr | < 8 hr | AI/search features; system usable without them (degraded mode) |
+| **Tier 1 — Critical** | Database (PostgreSQL), Document Storage, Authentication | < 5 min | < 1 hr | Customer data and authentication — any loss is unacceptable |
+| **Tier 2 — Essential** | Container APIs (app, admin, ops), Load Balancers, WAF | 0 (stateless) | < 4 hr | Stateless services rebuilt from container images + Terraform |
+| **Tier 3 — Supporting** | AI services (Vector Search + LLM), Document extraction, Task queue, Ops Service | < 24 hr | < 8 hr | AI/search features; system usable without them (degraded mode) |
 | **Tier 4 — Non-Critical** | CI/CD pipelines, Monitoring dashboards, Drata sync | N/A | < 24 hr | Operational tooling; does not affect customer service |
 
 ---
@@ -103,63 +103,63 @@ The Contingency Plan Coordinator (CEO) has sole authority to activate the ISCP. 
 
 ### 5.1 Scenario 1: Cloud SQL Database Failure
 
-**Trigger**: Database unresponsive, connection failures from all Cloud Run services
+**Trigger**: Database unresponsive, connection failures from all container services
 **Impact**: Tier 1 — All API operations fail, authentication succeeds but data access blocked
 
 **Recovery Steps**:
 
-1. **Assess** (5 min): Check Cloud SQL instance status in GCP Console. Determine if failure is instance-level or storage-level.
-2. **If instance healthy but connections exhausted**: Restart Cloud Run services to clear connection pools.
+1. **Assess** (5 min): Check database instance status in cloud console. Determine if failure is instance-level or storage-level.
+2. **If instance healthy but connections exhausted**: Restart container services to clear connection pools.
 3. **If instance unhealthy**: Initiate point-in-time recovery (PITR) to last known-good state.
-4. **Update connection**: Modify Cloud Run environment variables to point to recovered instance.
+4. **Update connection**: Modify container environment variables to point to recovered instance.
 5. **Validate**: Run health check queries, verify RLS enforcement, confirm audit logging.
 6. **Switchover**: Update connection strings in Terragrunt config and apply.
 
 **RPO**: < 5 minutes (PITR with WAL archiving)
 **RTO**: < 1 hour
 
-### 5.2 Scenario 2: Cloud Run Service Failure
+### 5.2 Scenario 2: Container Service Failure
 
-**Trigger**: One or more Cloud Run services returning 5xx errors or not responding
+**Trigger**: One or more container services returning 5xx errors or not responding
 **Impact**: Tier 2 — Affected service unavailable, other services may continue
 
 **Recovery Steps**:
 
-1. **Assess** (5 min): Check Cloud Run service logs for crash loops, OOM, or configuration errors.
-2. **If recent deployment caused failure**: Roll back to previous revision via `gcloud run services update-traffic --to-revisions=<PREVIOUS>=100`.
-3. **If infrastructure issue**: Redeploy from Artifact Registry using pinned image digest.
+1. **Assess** (5 min): Check container service logs for crash loops, OOM, or configuration errors.
+2. **If recent deployment caused failure**: Roll back to previous revision (GCP: `gcloud run services update-traffic`; AWS: ECS task definition rollback; Azure: Container Apps revision revert).
+3. **If infrastructure issue**: Redeploy from container registry using pinned image digest.
 4. **If regional issue**: Deploy to alternate region using Terragrunt with updated region variable.
 5. **Validate**: Health checks, end-to-end API test, audit log verification.
 
 **RPO**: N/A (stateless services)
 **RTO**: < 30 minutes (rollback), < 4 hours (regional failover)
 
-### 5.3 Scenario 3: Cloud Storage Failure
+### 5.3 Scenario 3: Object Storage Failure
 
-**Trigger**: Document upload/download failures, 5xx from GCS API
+**Trigger**: Document upload/download failures, 5xx from storage API
 **Impact**: Tier 2 — Document access unavailable, app search may degrade
 
 **Recovery Steps**:
 
-1. **Assess** (5 min): Check GCS bucket status and GCP status dashboard.
+1. **Assess** (5 min): Check storage bucket/container status and cloud status dashboard.
 2. **If object corruption**: Restore from versioned objects.
-3. **If bucket-level failure**: GCS provides automatic regional redundancy. Wait for GCP recovery or switch to backup bucket.
+3. **If bucket-level failure**: Cloud-native storage provides automatic regional redundancy. Wait for CSP recovery or switch to backup bucket.
 4. **If regional failure**: Restore from cross-region backup (if configured) or rebuild from database metadata.
 5. **Validate**: Document download test, upload test, verify object integrity checksums.
 
 **RPO**: < 5 minutes (object versioning with 365-day retention)
 **RTO**: < 4 hours
 
-### 5.4 Scenario 4: Vertex AI Vector Search Failure
+### 5.4 Scenario 4: AI / Vector Search Failure
 
 **Trigger**: Semantic search returns errors or empty results
 **Impact**: Tier 3 — AI-powered search unavailable, basic document listing still works
 
 **Recovery Steps**:
 
-1. **Assess** (10 min): Check Vertex AI index endpoint status, PSC connectivity.
+1. **Assess** (10 min): Check vector search endpoint status, private endpoint connectivity.
 2. **If index endpoint unhealthy**: Undeploy and redeploy index via Terragrunt.
-3. **If index corrupted**: Rebuild from source documents by triggering re-embedding job via Cloud Tasks.
+3. **If index corrupted**: Rebuild from source documents by triggering re-embedding job via task queue.
 4. **Enable degraded mode**: System continues to function with document listing and manual search while vector search is unavailable.
 5. **Validate**: Test semantic search queries, verify result relevance, check workspace scoping.
 
@@ -168,21 +168,21 @@ The Contingency Plan Coordinator (CEO) has sole authority to activate the ISCP. 
 
 ### 5.5 Scenario 5: Regional Failure (Disaster Recovery)
 
-**Trigger**: GCP region (us-central1) experiences sustained outage
+**Trigger**: Cloud provider region experiences sustained outage
 **Impact**: All tiers — Complete service disruption
 
 **Recovery Steps**:
 
-1. **Activate DR** (CEO authorization required): Decision to failover to alternate US region (us-east1 or us-west1).
-2. **Database recovery**: Restore Cloud SQL from cross-region backup to target region. Verify data integrity and RLS enforcement.
+1. **Activate DR** (CEO authorization required): Decision to failover to alternate US region.
+2. **Database recovery**: Restore database from cross-region backup to target region. Verify data integrity and RLS enforcement.
 3. **Infrastructure deployment**: Update region in env.hcl and run `terragrunt run-all apply`.
-4. **Application deployment**: Push container images to Artifact Registry in target region. Deploy Cloud Run services pointing to recovered database.
+4. **Application deployment**: Push container images to registry in target region. Deploy container services pointing to recovered database.
 5. **DNS failover**: Update Cloudflare DNS records to point to new region's load balancer IPs.
-6. **Identity Platform**: Verify authentication works (Identity Platform is multi-regional).
+6. **Identity**: Verify authentication works (identity services are multi-regional on all clouds).
 7. **Validation**: End-to-end authentication, document upload/download, API functionality, audit logging, RLS enforcement.
 8. **Notify stakeholders**: Confirm service restoration to customers and FedRAMP PMO.
 
-**RPO**: < 5 minutes (Cloud SQL cross-region backup)
+**RPO**: < 5 minutes (cross-region database backup)
 **RTO**: < 4 hours (IaC-driven rebuild)
 
 ---
@@ -209,9 +209,9 @@ After recovery, the following reconstitution steps ensure full operational capab
 | Test Type | Frequency | Description |
 |-----------|-----------|-------------|
 | **Tabletop Exercise** | Annual | Walk-through of all 5 scenarios with contingency team |
-| **Component Recovery Test** | Semi-annual | Test Cloud SQL PITR, Cloud Run rollback, GCS restore |
+| **Component Recovery Test** | Semi-annual | Test database PITR, container rollback, storage restore |
 | **IaC Rebuild Validation** | Quarterly | Verify Terragrunt can deploy full stack from scratch |
-| **Backup Verification** | Monthly | Verify Cloud SQL backup integrity and GCS versioning |
+| **Backup Verification** | Monthly | Verify database backup integrity and storage versioning |
 
 ### 7.2 Test Documentation
 
@@ -237,12 +237,12 @@ Each test produces a report including:
 
 | Component | Backup Method | Retention | Encryption | Location |
 |-----------|--------------|-----------|------------|----------|
-| Cloud SQL | Automated daily + PITR | 30 days | CMEK (AES-256) | Cross-region |
-| Cloud Storage | Object versioning | 365 days | CMEK (AES-256) | Regional (multi-zone) |
-| Terraform State | GCS with versioning | Indefinite | Google-managed | Multi-region |
-| Container Images | Artifact Registry | Indefinite | Google-managed | Regional |
+| PostgreSQL | Automated daily + PITR | 30 days | CMEK (AES-256) | Cross-region |
+| Object Storage | Object versioning | 365 days | CMEK (AES-256) | Regional (multi-zone) |
+| Terraform State | Cloud storage with versioning | Indefinite | Cloud-managed | Multi-region |
+| Container Images | Container registry | Indefinite | Cloud-managed | Regional |
 | Configuration | Git (GitHub) | Indefinite | GitHub encryption | GitHub US |
-| Vertex AI Indexes | Rebuilt from source | N/A (rebuild) | CMEK | Regional |
+| Vector Indexes | Rebuilt from source | N/A (rebuild) | CMEK | Regional |
 
 ---
 

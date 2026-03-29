@@ -11,7 +11,7 @@
 
 ## 1. Purpose
 
-This policy defines physical and environmental security requirements for Latent Archon. As a cloud-native organization with all infrastructure hosted on Google Cloud Platform (GCP), physical security is primarily an inherited control from GCP's FedRAMP High authorized data centers. This policy documents the inheritance model, supplementary controls for personnel devices, and administrative requirements.
+This policy defines physical and environmental security requirements for Latent Archon. As a cloud-native organization with all infrastructure hosted on FedRAMP High authorized cloud providers (GCP, AWS, or Azure), physical security is primarily an inherited control from the CSP's data centers. This policy documents the inheritance model, supplementary controls for personnel devices, and administrative requirements.
 
 ---
 
@@ -19,20 +19,20 @@ This policy defines physical and environmental security requirements for Latent 
 
 This policy applies to:
 
-- GCP data centers hosting Latent Archon infrastructure (inherited controls)
+- Cloud provider data centers hosting Latent Archon infrastructure (inherited controls)
 - Personnel work locations (home offices, co-working spaces)
 - Personnel devices used to access Latent Archon systems
 - Any physical media that may contain Latent Archon or customer data
 
 ---
 
-## 3. Inherited Physical Security Controls (GCP)
+## 3. Inherited Physical Security Controls (Cloud Providers)
 
-### 3.1 GCP FedRAMP High Authorization
+### 3.1 CSP FedRAMP High Authorization
 
-All Latent Archon infrastructure is hosted in GCP `us-east1` region, which operates under **FedRAMP High** authorization. GCP's FedRAMP High authorization means the following physical security controls are fully inherited:
+All Latent Archon infrastructure is hosted in US regions on FedRAMP High authorized cloud providers (GCP, AWS, or Azure). Each customer deployment uses a single cloud provider. The CSP's FedRAMP High authorization means the following physical security controls are fully inherited:
 
-| NIST Control | Control Name | GCP Implementation |
+| NIST Control | Control Name | CSP Implementation |
 |-------------|-------------|-------------------|
 | PE-2 | Physical Access Authorizations | Multi-layer access: perimeter security, building access, data center floor, server cages |
 | PE-3 | Physical Access Control | Biometric + badge authentication, man-traps, vehicle barriers |
@@ -51,9 +51,9 @@ All Latent Archon infrastructure is hosted in GCP `us-east1` region, which opera
 | PE-17 | Alternate Work Site | GCP maintains multiple data center locations |
 | PE-18 | Location of Information System Components | Components housed within secured data center floors |
 
-### 3.2 GCP Compliance Documentation
+### 3.2 CSP Compliance Documentation
 
-GCP's physical security posture is verified by:
+Each cloud provider's physical security posture is verified by:
 
 - **FedRAMP High** P-ATO (Joint Authorization Board)
 - **SOC 2 Type II** reports (available under NDA)
@@ -62,7 +62,7 @@ GCP's physical security posture is verified by:
 - **ISO 27018** (PII protection in cloud)
 - **CSA STAR** Level 2 certification
 
-Latent Archon reviews GCP's FedRAMP marketplace listing and compliance status as part of vendor risk management (per POL-VR-001).
+Latent Archon reviews each CSP's FedRAMP marketplace listing and compliance status as part of vendor risk management (per POL-VR-001). See [cloud supplements](../cloud/) for per-provider details.
 
 ---
 
@@ -90,14 +90,14 @@ Since Latent Archon personnel work remotely, the following requirements apply to
 | Firewall | Enabled |
 | Antivirus / endpoint protection | Required on Windows; recommended on macOS/Linux |
 | Browser | Current version of Chrome, Firefox, Edge, or Safari |
-| MFA on all company accounts | Required (TOTP via Identity Platform) |
+| MFA on all company accounts | Required (TOTP or IdP-provided MFA) |
 
 ### 4.3 Device Loss or Theft
 
 If a device with access to Latent Archon systems is lost or stolen:
 
 1. **Report immediately** to Security Lead
-2. **Revoke sessions**: All active sessions terminated via Identity Platform
+2. **Revoke sessions**: All active sessions terminated via identity provider
 3. **Revoke tokens**: GitHub PATs, any API keys revoked
 4. **Assess exposure**: Determine what data/systems were accessible
 5. **Monitor**: Watch for unauthorized access in audit logs for 30 days
@@ -113,7 +113,7 @@ If a device with access to Latent Archon systems is lost or stolen:
 |-------------|---------|
 | Encryption | All removable media containing company data must be encrypted |
 | Prohibited transfers | Customer data must **never** be copied to USB drives or removable media |
-| Cloud-only | All company data stored in approved cloud services (GCP, GitHub) |
+| Cloud-only | All company data stored in approved cloud services (GCP / AWS / Azure, GitHub) |
 
 ### 5.2 Media Disposal
 
@@ -122,7 +122,7 @@ If a device with access to Latent Archon systems is lost or stolen:
 | Printed customer data | Cross-cut shred |
 | Removable storage with company data | Cryptographic erasure + physical destruction |
 | Decommissioned laptops | Full disk wipe (NIST 800-88 Clear) before disposal/donation |
-| Cloud resources | Managed by GCP (cryptographic erasure on disk retirement) |
+| Cloud resources | Managed by CSP (cryptographic erasure on disk retirement) |
 
 ---
 
@@ -130,11 +130,11 @@ If a device with access to Latent Archon systems is lost or stolen:
 
 ### 6.1 Infrastructure Maintenance (Inherited)
 
-All infrastructure maintenance is performed by GCP and inherited under their FedRAMP High authorization:
+All infrastructure maintenance is performed by the cloud provider and inherited under their FedRAMP High authorization:
 
-- Hardware maintenance by authorized GCP personnel only
+- Hardware maintenance by authorized CSP personnel only
 - Failed drives cryptographically erased and physically destroyed
-- Maintenance logs maintained by GCP per FedRAMP requirements
+- Maintenance logs maintained by CSP per FedRAMP requirements
 - No Latent Archon personnel have physical access to infrastructure
 
 ### 6.2 Personnel Device Maintenance
@@ -150,8 +150,8 @@ All infrastructure maintenance is performed by GCP and inherited under their Fed
 
 | Activity | Frequency | Owner |
 |----------|-----------|-------|
-| GCP FedRAMP status check | Quarterly | Security Lead |
-| GCP SOC 2 report review | Annual (on availability) | Security Lead |
+| CSP FedRAMP status check | Quarterly | Security Lead |
+| CSP SOC 2 report review | Annual (on availability) | Security Lead |
 | Device compliance audit | Semi-annual | Security Lead |
 | Policy acknowledgment | Annual | All personnel (via Drata) |
 | Incident review (device loss) | On occurrence | Security Lead |

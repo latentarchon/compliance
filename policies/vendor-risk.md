@@ -19,7 +19,7 @@ This policy establishes requirements for assessing, approving, monitoring, and m
 
 This policy applies to:
 
-- Cloud infrastructure providers (GCP)
+- Cloud infrastructure providers (GCP, AWS, Azure)
 - SaaS/PaaS service dependencies
 - Open-source software libraries and frameworks
 - Contractor and consulting engagements with system access
@@ -33,23 +33,25 @@ This policy applies to:
 
 | Tier | Criteria | Examples | Review Frequency |
 |------|----------|---------|-----------------|
-| **Critical** | Processes or stores customer data; single point of failure | GCP (Cloud Run, Cloud SQL, GCS, Vertex AI, Identity Platform) | Continuous + Annual deep review |
+| **Critical** | Processes or stores customer data; single point of failure | GCP, AWS, Azure (container services, database, storage, AI, identity) | Continuous + Annual deep review |
 | **High** | Has access to production systems or code; integral to operations | GitHub (source control, CI/CD), Microsoft (Graph API), Go/Node runtime | Semi-annual |
 | **Medium** | Supports development or has indirect data access | Dependabot, development tooling, monitoring integrations | Annual |
 | **Low** | No data access; easily replaceable | Documentation tools, design tools, project management | Biennial |
 
-### 3.2 Current Critical Vendor: Google Cloud Platform
+### 3.2 Critical Vendors: Cloud Infrastructure Providers
 
-GCP is Latent Archon's sole infrastructure provider. Risk is managed through:
+Latent Archon deploys on GCP, AWS, or Azure (one provider per customer). Each provider is assessed identically:
 
 | Control | Implementation |
 |---------|---------------|
-| **FedRAMP Authorization** | GCP holds FedRAMP High authorization (IL4 capable) |
-| **SOC 2 Type II** | Annual audit reports reviewed |
-| **ISO 27001/27017/27018** | Certifications maintained |
-| **BAA** | Available for HIPAA-regulated workloads |
-| **Data Processing Terms** | Google Cloud Data Processing Addendum in effect |
-| **Vendor Lock-in Mitigation** | PostgreSQL (portable), standard container images, Terraform IaC (multi-cloud capable), Connect-RPC (protocol-agnostic) |
+| **FedRAMP Authorization** | All three CSPs hold FedRAMP High authorization |
+| **SOC 2 Type II** | Annual audit reports reviewed per provider |
+| **ISO 27001/27017/27018** | Certifications maintained by each CSP |
+| **BAA** | Available from each CSP for HIPAA-regulated workloads |
+| **Data Processing Terms** | CSP-specific Data Processing Addendum in effect |
+| **Vendor Lock-in Mitigation** | PostgreSQL (portable), standard container images, Terraform IaC (multi-cloud), Connect-RPC (protocol-agnostic), cloud-agnostic Go backend with per-provider adapters |
+
+See [cloud supplements](../cloud/) for per-provider service details and FedRAMP authorization IDs.
 
 ### 3.3 High Tier Vendor: Microsoft (Graph API / Entra ID)
 
@@ -60,8 +62,8 @@ Microsoft Graph API and Microsoft Entra ID (Azure AD) are used for SharePoint/On
 | **FedRAMP Authorization** | Microsoft Azure holds FedRAMP High authorization |
 | **SOC 2 Type II** | Annual audit reports reviewed |
 | **Permissions Scope** | Read-only delegated permissions only (`Files.Read.All`, `Sites.Read.All`) — no write access to customer Microsoft 365 data |
-| **Token Security** | OAuth refresh tokens encrypted via Cloud KMS (AES-256-GCM, HSM-backed) before database storage; client secret injected as runtime env var only |
-| **Data Residency** | Documents downloaded from Microsoft 365 are stored exclusively in US GCP regions; no Microsoft-side data persistence by the integration |
+| **Token Security** | OAuth refresh tokens encrypted via cloud KMS (AES-256-GCM, HSM-backed) before database storage; client secret injected as runtime env var only |
+| **Data Residency** | Documents downloaded from Microsoft 365 are stored exclusively in US cloud regions; no Microsoft-side data persistence by the integration |
 | **Network Isolation** | `graph.microsoft.com` and `login.microsoftonline.com` added to FQDN egress firewall allowlist; all other egress blocked |
 | **Vendor Lock-in Mitigation** | Integration is optional per-org; documents enter standard pipeline after download; no proprietary format dependencies |
 
@@ -114,7 +116,7 @@ Before engaging any new Critical or High tier vendor:
 
 | Activity | Frequency | Applies To |
 |----------|-----------|-----------|
-| FedRAMP marketplace status check | Quarterly | Critical (GCP) |
+| FedRAMP marketplace status check | Quarterly | Critical (all CSPs) |
 | SOC 2 report review | Annual (on issuance) | Critical, High |
 | Security advisory monitoring | Continuous | All tiers |
 | Dependency vulnerability scanning (Dependabot) | Continuous (automated) | Open-source deps |
@@ -189,7 +191,9 @@ Open-source dependencies are managed as a supply chain risk:
 | Subprocessor | Service | Data Access | FedRAMP |
 |-------------|---------|-------------|---------|
 | Google Cloud Platform | Infrastructure (compute, storage, AI, identity) | Customer documents, messages, embeddings | High |
-| Microsoft | Graph API (SharePoint/OneDrive sync), Entra ID (OAuth2) | Read-only access to customer Microsoft 365 documents (downloaded and stored in GCP) | High |
+| Amazon Web Services | Infrastructure (compute, storage, AI, identity) | Customer documents, messages, embeddings | High |
+| Microsoft Azure | Infrastructure (compute, storage, AI, identity) | Customer documents, messages, embeddings | High |
+| Microsoft | Graph API (SharePoint/OneDrive sync), Entra ID (OAuth2) | Read-only access to customer Microsoft 365 documents (downloaded and stored in cloud) | High |
 | GitHub | Source control, CI/CD | Source code (no customer data) | SOC 2 |
 
 ### 7.2 Subprocessor Changes

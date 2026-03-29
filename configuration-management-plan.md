@@ -17,7 +17,7 @@ This Configuration Management Plan (CMP) establishes the policies, procedures, a
 
 ### 1.2 Scope
 
-This plan covers all components within the authorization boundary: application code (Go backend, React SPAs), infrastructure-as-code (Terraform/Terragrunt), database schema, container images, GCP resource configurations, and compliance documentation.
+This plan covers all components within the authorization boundary: application code (Go backend, React SPAs), infrastructure-as-code (Terraform/Terragrunt), database schema, container images, cloud resource configurations (GCP / AWS / Azure), and compliance documentation.
 
 ---
 
@@ -42,18 +42,18 @@ This plan covers all components within the authorization boundary: application c
 | **Infrastructure** | Terraform modules (14), Terragrunt configs | infra/ repo | Git SHA + Terraform state |
 | **Database Schema** | Migrations, canonical schema.sql | backend/shared-go/postgres/ | Sequential migration IDs |
 | **Protobuf Definitions** | Service and message definitions | backend/shared-go/proto/ | Git SHA |
-| **Container Images** | Distroless Go images | Artifact Registry | SHA256 digest |
+| **Container Images** | Distroless Go images | Container Registry (AR / ECR / ACR) | SHA256 digest |
 | **Security Policies** | 13 policy documents | compliance/policies/ | Git SHA + version headers |
-| **GCP Resources** | Cloud Run, Cloud SQL, GCS, etc. | Terraform state in GCS | State version history |
+| **Cloud Resources** | Container services, database, storage, etc. | Terraform state in cloud storage | State version history |
 | **Dependencies** | Go modules, NPM packages | go.mod/go.sum, package-lock.json | Lock file hashes |
 
 ### 3.2 Baseline Configuration
 
 The production baseline is defined by:
 1. **Git main branch**: Authoritative source for all code and IaC
-2. **Terraform state**: Authoritative record of deployed GCP resources
-3. **Cloud SQL schema**: Current schema as defined by applied migrations
-4. **Artifact Registry**: Current production container image digests
+2. **Terraform state**: Authoritative record of deployed cloud resources
+3. **PostgreSQL schema**: Current schema as defined by applied migrations
+4. **Container registry**: Current production container image digests
 5. **go.sum / package-lock.json**: Cryptographic hashes of all dependencies
 
 ---
@@ -67,7 +67,7 @@ The production baseline is defined by:
 | **Standard** | Bug fixes, dependency updates, documentation | 1 PR reviewer | CI pipeline |
 | **Significant** | New features, architecture changes, new services | CAB + Security review | CI + staging deploy |
 | **Emergency** | Critical vulnerability patches, incident response | CEO verbal + post-hoc PR | Minimal — deploy then review |
-| **Infrastructure** | Terraform changes, GCP resource modifications | CAB + Terragrunt plan review | Plan review + staging apply |
+| **Infrastructure** | Terraform changes, cloud resource modifications | CAB + Terragrunt plan review | Plan review + staging apply |
 
 ### 4.2 Change Request Process
 
@@ -115,15 +115,15 @@ The production baseline is defined by:
 | Dependencies | Dependabot alerts | Continuous |
 | Container images | Trivy scan of deployed images | Per-build |
 | Database schema | Migration version check | Per-deploy |
-| Cloud Armor rules | Terraform state comparison | Weekly |
+| WAF rules | Terraform state comparison | Weekly |
 
 ### 5.2 Unauthorized Change Detection
 
 - **Git branch protection**: Direct pushes to main blocked; all changes require PR
 - **Terraform state locking**: Prevents concurrent modifications
-- **Audit logging**: All GCP resource changes logged in Cloud Audit Logs
+- **Audit logging**: All cloud resource changes logged in cloud audit logs
 - **Gitleaks**: Detects unauthorized secrets in repository history
-- **Cloud Monitoring**: Alerts on unexpected resource creation or IAM changes
+- **Cloud monitoring**: Alerts on unexpected resource creation or IAM changes
 
 ---
 

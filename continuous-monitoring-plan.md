@@ -30,12 +30,12 @@ This plan covers monitoring of all security controls within the authorization bo
 | Automated vulnerability scanning | Continuous (per-build) | CI/CD pipeline (Trivy, GoSec, govulncheck, Semgrep) |
 | Dependency vulnerability alerts | Daily | Dependabot |
 | Infrastructure drift detection | Weekly | `terragrunt plan` comparison |
-| Operating system patching | Inherited (GCP) | Cloud Run managed infrastructure |
-| KSI evidence collection | Weekly | Go CLI (`cmd/ksi-evidence`) queries GCP APIs; SHA-256 manifest |
+| Operating system patching | Inherited (CSP) | Managed container infrastructure (Cloud Run / ECS Fargate / Container Apps) |
+| KSI evidence collection | Weekly | Go CLI (`cmd/ksi-evidence`) queries cloud APIs per provider; SHA-256 manifest |
 | SCN classification | Per-PR | Go CLI (`cmd/classify-scn`) analyzes diffs; posts PR comment |
 | OSCAL SSP validation | Per-PR | CI generates OSCAL v1.1.3 JSON and validates schema |
 | Configuration compliance check | Weekly | Drata automated monitoring sync |
-| Access review (IAM/RBAC) | Monthly | Manual review of GCP IAM and application RBAC |
+| Access review (IAM/RBAC) | Monthly | Manual review of cloud IAM and application RBAC |
 | Security control assessment | Annual | 3PAO assessment |
 | Penetration testing | Annual | 3PAO or qualified assessor |
 | Red team exercises | Monthly | Internal red team suite (44 attacks) |
@@ -47,16 +47,16 @@ This plan covers monitoring of all security controls within the authorization bo
 
 | Tool | What It Monitors | Alert Mechanism |
 |------|-----------------|----------------|
-| **Cloud Monitoring** | CPU, memory, latency, error rates, Cloud SQL metrics | Alert policies → notification channels |
-| **Cloud Armor Analytics** | WAF rule matches, DDoS events, blocked requests, bot traffic | Dashboard + alert policies |
-| **Cloud Audit Logs** | All GCP resource changes, data access events | Log-based alerts |
+| **Cloud Monitoring** (Cloud Monitoring / CloudWatch / Azure Monitor) | CPU, memory, latency, error rates, database metrics | Alert policies → notification channels |
+| **WAF Analytics** (Cloud Armor / WAFv2 / Front Door WAF) | WAF rule matches, DDoS events, blocked requests, bot traffic | Dashboard + alert policies |
+| **Cloud Audit Logs** | All cloud resource changes, data access events | Log-based alerts |
 | **Application Audit Logger** | Authentication, authorization, data access, role changes, SCIM events | WARN-level events → email notifications |
 | **Dependabot** | Dependency vulnerabilities across all repositories | GitHub alerts + automated PRs |
 | **Drata** | Control implementation status, evidence freshness, personnel compliance | Dashboard + weekly sync report |
 | **CI/CD Security Pipeline** | SAST findings, container vulnerabilities, secret exposure, image signing (Cosign) | Build failure + PR blocking |
-| **Cloud DLP** | PII, credentials, and financial data in uploaded documents (pre-RAG scanning) | DLP findings logged; optional redaction via de-identify template |
-| **Security Alert Policies** | WAF block spikes, 5xx error rate, Cloud SQL auth failures, IAM privilege escalation, KMS key lifecycle, secret access | Cloud Monitoring alert → notification channels |
-| **KSI Evidence Collector** | GCP firewall rules, Cloud Run services, Cloud Armor, KMS rotation, log sinks, container images, SQL backups, GCS versioning | Weekly CI artifact (365-day retention) |
+| **DLP** (Cloud DLP / Comprehend / AI Language) | PII, credentials, and financial data in uploaded documents (pre-RAG scanning) | DLP findings logged; optional redaction via de-identify template |
+| **Security Alert Policies** | WAF block spikes, 5xx error rate, database auth failures, IAM privilege escalation, KMS key lifecycle, secret access | Cloud monitoring alert → notification channels |
+| **KSI Evidence Collector** | Network firewall rules, container services, WAF policies, KMS rotation, log sinks, container images, DB backups, storage versioning | Weekly CI artifact (365-day retention) |
 | **SCN Classifier** | Security-critical file changes in PRs (30+ patterns) | PR comment (advisory, non-blocking) |
 | **OSCAL Validator** | SSP structural conformance to OSCAL v1.1.3 schema | PR check (advisory, non-blocking) |
 
@@ -102,7 +102,7 @@ Refer to the Configuration Management Plan (CMP-LA-001) for detailed procedures.
 
 Key monitoring activities:
 - **Weekly**: Terraform drift detection via `terragrunt plan`
-- **Weekly**: KSI evidence collection — Go CLI queries 10 GCP API endpoints and writes JSON evidence with SHA-256 checksum manifest
+- **Weekly**: KSI evidence collection — Go CLI queries cloud API endpoints per provider and writes JSON evidence with SHA-256 checksum manifest
 - **Per-PR**: Automated SCN classifier flags changes to security-critical paths (auth, crypto, network, IAM, SSP) as SIGNIFICANT or ROUTINE
 - **Per-deploy**: Configuration baseline comparison
 - **Continuous**: GitHub branch protection enforcement
@@ -169,7 +169,7 @@ Refer to the Incident Response Policy (POL-IR-001) for detailed procedures.
 
 Significant changes that trigger SSP update and notification:
 - New external services or integrations
-- Architecture changes (new Cloud Run services, new GCP projects)
+- Architecture changes (new container services, new cloud environments)
 - Changes to authorization boundary
 - New data types or PII categories
 - Changes to cryptographic implementations
@@ -198,20 +198,20 @@ The Drata sync CLI (`drata-sync`) automatically uploads the following evidence w
 
 ### 7.2 Automated KSI Evidence via CI
 
-The KSI evidence collector (`cmd/ksi-evidence`) runs weekly via GitHub Actions and collects machine-readable evidence from GCP APIs:
+The KSI evidence collector (`cmd/ksi-evidence`) runs weekly via GitHub Actions and collects machine-readable evidence from cloud APIs. The collector auto-detects the target cloud provider and queries the appropriate APIs:
 
-| KSI Theme | Evidence File | GCP API Queried |
-|-----------|--------------|----------------|
-| IAM: Non-user authentication | `ksi-iam-sa-keys.json` | IAM Credentials |
-| IAM: Least privilege | `ksi-iam-bindings.json` | Resource Manager |
-| CNA: Network restrictions | `ksi-cna-firewall.json` | Compute Firewalls |
-| CNA: Attack surface | `ksi-cna-services.json` | Cloud Run Services |
-| CNA: DDoS protection | `ksi-cna-armor.json` | Compute Security Policies |
-| SVC: Cryptographic modules | `ksi-svc-kms.json` | Cloud KMS |
-| MLA: SIEM integration | `ksi-mla-sinks.json` | Cloud Logging Config |
-| VDR: Vulnerability scanning | `ksi-vdr-images.json` | Artifact Registry |
-| REC: Recovery capabilities | `ksi-rec-sql-backup.json` | Cloud SQL Admin |
-| REC: GCS versioning | `ksi-rec-gcs-versioning.json` | Cloud Storage |
+| KSI Theme | Evidence File | GCP API | AWS API | Azure API |
+|-----------|--------------|---------|---------|----------|
+| IAM: Non-user authentication | `ksi-iam-sa-keys.json` | IAM Credentials | IAM Access Keys | Azure AD App Credentials |
+| IAM: Least privilege | `ksi-iam-bindings.json` | Resource Manager | IAM Policies | RBAC Role Assignments |
+| CNA: Network restrictions | `ksi-cna-firewall.json` | Compute Firewalls | Security Groups | NSG Rules |
+| CNA: Attack surface | `ksi-cna-services.json` | Cloud Run Services | ECS Services | Container Apps |
+| CNA: DDoS protection | `ksi-cna-armor.json` | Compute Security Policies | WAFv2 Web ACLs | Front Door WAF Policies |
+| SVC: Cryptographic modules | `ksi-svc-kms.json` | Cloud KMS | AWS KMS | Key Vault |
+| MLA: SIEM integration | `ksi-mla-sinks.json` | Cloud Logging Config | CloudWatch Log Groups | Azure Monitor Diagnostics |
+| VDR: Vulnerability scanning | `ksi-vdr-images.json` | Artifact Registry | ECR | Container Registry |
+| REC: Recovery capabilities | `ksi-rec-db-backup.json` | Cloud SQL Admin | RDS Snapshots | PostgreSQL Flex Backups |
+| REC: Storage versioning | `ksi-rec-storage-versioning.json` | Cloud Storage | S3 Versioning | Blob Versioning |
 
 Each collection run produces a `manifest.json` with SHA-256 checksums and byte counts for every evidence file. Evidence artifacts are uploaded to GitHub Actions with 365-day retention.
 

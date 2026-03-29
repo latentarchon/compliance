@@ -38,7 +38,7 @@ This policy applies to all employees, contractors, and temporary personnel with 
 | Role | Additional Training Topics |
 |------|---------------------------|
 | **Engineers** | OWASP Top 10, secure coding in Go, SQL injection prevention, secrets management, container security, supply chain security |
-| **DevOps / Infrastructure** | GCP security best practices, Terraform security, least-privilege IAM, network security, incident response procedures |
+| **DevOps / Infrastructure** | Cloud security best practices (GCP / AWS / Azure), Terraform security, least-privilege IAM, network security, incident response procedures |
 | **Management** | Risk management, regulatory compliance (NIST 800-53, FedRAMP), vendor risk assessment, security governance |
 | **All Personnel** | Data classification, acceptable use, password/MFA hygiene, social engineering defense, reporting procedures |
 
@@ -115,7 +115,7 @@ Semi-annual tabletop exercises covering scenarios such as:
 - Compromised CI/CD pipeline
 - Insider threat / unauthorized data access
 - DDoS attack against production services
-- Vendor (GCP) security incident
+- Vendor (CSP) security incident
 - Ransomware / crypto mining on infrastructure
 
 ### 6.2 Participation

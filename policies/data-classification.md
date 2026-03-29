@@ -45,37 +45,37 @@ This policy applies to all data created, received, processed, stored, or transmi
 
 | Data Type | Storage | Encryption | Isolation | Retention |
 |-----------|---------|-----------|-----------|-----------|
-| Uploaded documents | GCS (CMEK) | AES-256 at rest, TLS in transit | Per-workspace bucket prefix | Customer-controlled (purge on account deletion) |
-| Document chunks & metadata | Cloud SQL (CMEK) | AES-256 at rest, TLS in transit | PostgreSQL RLS (FORCE) | Customer-controlled |
-| Document embeddings | Vertex AI Vector Search (CMEK) | AES-256 at rest (CMEK via Cloud KMS, HSM-backed, 90-day rotation), gRPC+TLS via PSC | Workspace-scoped token restrictions | Customer-controlled |
-| Conversation messages | Cloud SQL (CMEK) | AES-256 at rest, TLS in transit | PostgreSQL RLS (FORCE) | Customer-controlled |
-| AI-generated images | GCS (CMEK) | AES-256 at rest, TLS in transit | Per-workspace path | Customer-controlled |
+| Uploaded documents | Object storage (CMEK) | AES-256 at rest, TLS in transit | Per-workspace bucket prefix | Customer-controlled (purge on account deletion) |
+| Document chunks & metadata | PostgreSQL (CMEK) | AES-256 at rest, TLS in transit | PostgreSQL RLS (FORCE) | Customer-controlled |
+| Document embeddings | Vector search (CMEK) | AES-256 at rest (CMEK via cloud KMS, HSM-backed, 90-day rotation), TLS via private endpoint | Workspace-scoped token restrictions | Customer-controlled |
+| Conversation messages | PostgreSQL (CMEK) | AES-256 at rest, TLS in transit | PostgreSQL RLS (FORCE) | Customer-controlled |
+| AI-generated images | Object storage (CMEK) | AES-256 at rest, TLS in transit | Per-workspace path | Customer-controlled |
 
 ### 4.2 Account Data (Confidential)
 
 | Data Type | Storage | Encryption | Retention |
 |-----------|---------|-----------|-----------|
-| User profiles (email, name) | Cloud SQL (CMEK) | AES-256 | Account lifetime + 30 days |
-| Auth credentials | Identity Platform | Google-managed encryption | Account lifetime |
-| TOTP MFA secrets | Identity Platform | Google-managed encryption | Account lifetime |
-| SCIM tokens (SHA-256 hash only) | Cloud SQL (CMEK) | AES-256 | Until revoked |
-| SSO configurations | Cloud SQL (CMEK) | AES-256 | Organization lifetime |
-| Organization/workspace metadata | Cloud SQL (CMEK) | AES-256 | Account lifetime |
+| User profiles (email, name) | PostgreSQL (CMEK) | AES-256 | Account lifetime + 30 days |
+| Auth credentials | Identity provider | Provider-managed encryption | Account lifetime |
+| TOTP MFA secrets | Identity provider | Provider-managed encryption | Account lifetime |
+| SCIM tokens (SHA-256 hash only) | PostgreSQL (CMEK) | AES-256 | Until revoked |
+| SSO configurations | PostgreSQL (CMEK) | AES-256 | Organization lifetime |
+| Organization/workspace metadata | PostgreSQL (CMEK) | AES-256 | Account lifetime |
 
 ### 4.3 Operational Data (Internal)
 
 | Data Type | Storage | Retention |
 |-----------|---------|-----------|
-| Application audit events | Cloud SQL | Indefinite (compliance requirement) |
-| BigQuery audit dataset | BigQuery (CMEK via US multi-region KMS keyring) | Indefinite (no table/partition expiration) |
-| GCS WORM audit bucket | GCS (locked retention, versioned, CMEK) | 2-year locked retention (production), 1-year (staging) |
-| Cloud Audit Logs (Admin Activity) | Cloud Logging | Always on, indefinite |
-| Cloud Audit Logs (Data Access) | Cloud Logging | Enabled for BigQuery, Cloud SQL, Cloud Run, KMS, IAM, GCS |
-| Cloud Run access logs | Cloud Logging | 30 days (default) |
-| Terraform state | GCS (versioned, CMEK) | Indefinite |
+| Application audit events | PostgreSQL | Indefinite (compliance requirement) |
+| Audit dataset | Analytics storage (CMEK) | Indefinite (no expiration) |
+| WORM audit bucket | Object storage (locked retention, versioned, CMEK) | 2-year locked retention (production), 1-year (staging) |
+| Cloud Audit Logs (Admin Activity) | Cloud logging | Always on, indefinite |
+| Cloud Audit Logs (Data Access) | Cloud logging | Enabled for database, container, KMS, IAM, storage services |
+| Container access logs | Cloud logging | 30 days (default) |
+| Terraform state | Cloud storage (versioned, CMEK) | Indefinite |
 | CI/CD build logs | GitHub Actions | 90 days |
-| Container images | Artifact Registry (CMEK) | Current + 5 previous versions |
-| Red team attack logs | GCS (versioned, red-infra project) | 365 days |
+| Container images | Container registry (CMEK) | Current + 5 previous versions |
+| Red team attack logs | Object storage (versioned) | 365 days |
 
 ---
 
@@ -112,7 +112,7 @@ This policy applies to all data created, received, processed, stored, or transmi
 | Application audit events | Indefinite | Indefinite | NIST AU-11, CJIS §5.4, zero-deletion policy |
 | BigQuery audit dataset | Indefinite | Indefinite (no table/partition expiration, CMEK) | NIST AU-11, zero-deletion policy |
 | GCS WORM audit logs | 2 years (locked) | Indefinite (tiered to COLDLINE, never deleted) | NIST AU-9, CJIS §5.4 |
-| Cloud Audit Logs | 365 days | 365 days (configurable) | GCP default + policy |
+| Cloud Audit Logs | 365 days | 365 days (configurable) | CSP default + policy |
 | Infrastructure state (Terraform) | Indefinite | Indefinite | Operational need |
 | Source code | Indefinite | Indefinite | Business record |
 | CI/CD artifacts (SBOMs, scan reports) | 90 days | 1 year | Compliance evidence |
@@ -135,19 +135,19 @@ This policy applies to all data created, received, processed, stored, or transmi
 
 | Data Type | Disposal Method | Verification |
 |-----------|----------------|-------------|
-| Cloud SQL records | `DELETE` with cascading constraints; PITR logs expire per backup retention | Query verification |
-| GCS objects | Object deletion after WORM retention period expires; no auto-delete lifecycle rules; versions tier to COLDLINE but never auto-delete; 90-day soft-delete recovery window | Lifecycle policy audit + retention policy verification |
-| Vector embeddings | Index removal via Vertex AI API | API confirmation |
-| Identity Platform accounts | Firebase Admin SDK deletion | Admin console verification |
+| PostgreSQL records | `DELETE` with cascading constraints; PITR logs expire per backup retention | Query verification |
+| Object storage objects | Object deletion after WORM retention period expires; no auto-delete lifecycle rules; versions tier to cold storage but never auto-delete; soft-delete recovery window | Lifecycle policy audit + retention policy verification |
+| Vector embeddings | Index removal via cloud API | API confirmation |
+| Identity provider accounts | Admin SDK / API deletion | Admin console verification |
 | Local copies | Secure erase (overwrite) | N/A |
 
 ### 7.2 Account Deletion / Data Purge
 
 When a customer account is deleted (organization purge):
 
-1. All workspace data (documents, messages, embeddings) deleted from Cloud SQL
-2. All GCS objects in workspace prefix deleted
-3. All vector embeddings for workspace removed from Vertex AI index
+1. All workspace data (documents, messages, embeddings) deleted from PostgreSQL
+2. All storage objects in workspace prefix deleted
+3. All vector embeddings for workspace removed from vector search index
 4. User accounts disassociated (not deleted — may belong to other orgs)
 5. Audit events preserved (exempt from purge — compliance requirement)
 6. Purge operation itself logged as audit event
@@ -164,11 +164,11 @@ For CMEK-encrypted data, key destruction renders all encrypted data unrecoverabl
 
 ## 8. Data Sovereignty
 
-- All customer data is stored and processed within the United States (GCP `us-east1` region by default)
-- Per-tenant data residency: `organizations.data_region` column (default `us-east1`) enables future per-tenant regional data isolation for agencies requiring specific region constraints
+- All customer data is stored and processed within the United States (US regions only, regardless of cloud provider)
+- Per-tenant data residency: `organizations.data_region` column enables per-tenant regional data isolation for agencies requiring specific region constraints
 - No cross-border data transfers for customer data
-- GCP's Data Processing Addendum governs data location obligations
-- Embedding API calls route to `us-central1` (U.S. region only)
+- CSP Data Processing Addendum governs data location obligations
+- All AI/embedding API calls route to US regions only
 
 ---
 
@@ -178,8 +178,8 @@ For CMEK-encrypted data, key destruction renders all encrypted data unrecoverabl
 |----------|-----------|-------|
 | Data inventory review | Annual | Security Lead |
 | Retention compliance audit | Semi-annual | Security Lead |
-| GCS lifecycle policy review | Quarterly | Engineering |
-| Cloud SQL backup verification | Monthly | Engineering |
+| Storage lifecycle policy review | Quarterly | Engineering |
+| Database backup verification | Monthly | Engineering |
 | Data classification review | Annual | Security Lead |
 | Disposal verification | On occurrence | Engineering |
 

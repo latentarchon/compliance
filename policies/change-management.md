@@ -23,7 +23,7 @@ This policy applies to all changes affecting:
 - Infrastructure as code (Terragrunt/Terraform modules)
 - Database schema and migrations
 - CI/CD pipeline configuration
-- GCP project settings and IAM
+- Cloud provider settings and IAM (GCP / AWS / Azure)
 - Third-party dependencies
 - Operational runbooks and documentation
 
@@ -83,7 +83,7 @@ All changes begin as a GitHub Pull Request (PR) against the relevant repository:
 
 - **Staging**: Automatic on merge to `main` (CI/CD pipeline)
 - **Production**: Requires manual approval via GitHub environment gate (`environment: production`)
-- **Rollback**: Previous Cloud Run revision remains available; instant rollback via traffic splitting
+- **Rollback**: Previous container revision remains available; instant rollback via traffic splitting
 
 #### Infrastructure Deployments
 
@@ -106,8 +106,8 @@ All changes begin as a GitHub Pull Request (PR) against the relevant repository:
 
 All infrastructure is defined in Terragrunt/Terraform and stored in version control:
 
-- **State**: GCS backend with versioning and state locking
-- **Modules**: 14+ reusable modules (vpc, cloud-sql, cloud-run, load-balancer, cloud-armor, service-accounts, firebase, gcs, kms, audit-logs, cloud-tasks, vertex-ai, document-ai, artifact-registry)
+- **State**: Cloud storage backend with versioning and state locking
+- **Modules**: 14+ reusable modules per cloud provider (vpc/vnet, database, container, load-balancer, waf, service-accounts, identity, storage, kms, audit-logs, task-queue, ai-services, document-extraction, container-registry)
 - **Environments**: Separate staging and production configurations
 - **Projects**: Two-project architecture (admin + app) with per-project configs
 
@@ -171,10 +171,10 @@ SPA responses include `Permissions-Policy: camera=(), microphone=(), geolocation
 
 ### 7.3 Network Restrictions
 
-- All Cloud Run services: private VPC connector, no public IP
-- Cloud SQL: private IP only, IAM authentication
-- Vertex AI: Private Service Connect (PSC), no public endpoint
-- Org policy `sql.restrictPublicIp` blocks public database IPs
+- All container services: private VPC/VNet connector, no public IP
+- Database: private IP only, IAM authentication
+- AI services: private endpoint, no public endpoint
+- Cloud-native org/account policies block public database IPs
 
 ---
 
@@ -183,9 +183,9 @@ SPA responses include `Permissions-Policy: camera=(), microphone=(), geolocation
 ### 8.1 Keyless Authentication
 
 - All CI/CD uses Workload Identity Federation (WIF) — zero stored secrets
-- Org policies `iam.disableServiceAccountKeyCreation` and `iam.disableServiceAccountKeyUpload` enforce keyless auth
+- Cloud-native org/account policies enforce keyless auth
 - OIDC providers locked to `latentarchon` GitHub organization
-- Cloud Run ingress restricted via org policy `run.allowedIngress` (internal + CLB only)
+- Container ingress restricted via org/account policies (internal + load balancer only)
 
 ### 8.2 Pipeline Security
 
@@ -215,10 +215,10 @@ Emergency changes (security incidents, critical bugs affecting availability) fol
 
 | Component | Rollback Method | Time to Rollback |
 |-----------|----------------|-----------------|
-| Cloud Run services | Traffic split to previous revision | < 1 minute |
+| Container services | Traffic split to previous revision | < 1 minute |
 | Database schema | Forward migration (new migration file) | 5–30 minutes |
 | Infrastructure | `terragrunt apply` with previous state | 5–15 minutes |
-| DNS/TLS | Certificate Manager update | 5–60 minutes |
+| DNS/TLS | Certificate manager update | 5–60 minutes |
 
 ---
 
@@ -231,7 +231,7 @@ All changes are tracked across multiple systems:
 | GitHub | PR history, reviews, approvals, merges, branch protection events |
 | Cloud Build / GitHub Actions | Build logs, deployment logs |
 | Terraform | State history (GCS versioned), plan outputs |
-| Cloud Audit Logs | GCP API calls, IAM changes, resource modifications |
+| Cloud Audit Logs | Cloud API calls, IAM changes, resource modifications |
 | Application Audit Events | Runtime changes (user management, document operations) |
 
 ---

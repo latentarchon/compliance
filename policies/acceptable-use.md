@@ -21,7 +21,7 @@ This policy applies to all employees, contractors, and temporary personnel who a
 
 - Latent Archon production and staging environments
 - Source code repositories (GitHub)
-- GCP Console and cloud infrastructure
+- Cloud console and infrastructure (GCP / AWS / Azure)
 - Customer data in any form
 - Internal communication systems
 - Company-provided or company-connected devices
@@ -44,7 +44,7 @@ This policy applies to all employees, contractors, and temporary personnel who a
 |----------|-------------|
 | Accessing production systems | MFA required, audit logged, business justification |
 | Code development and review | Via approved tools (GitHub, approved IDE), signed commits preferred |
-| Infrastructure management | Via Terragrunt/Terraform only (no ad hoc `gcloud` mutations) |
+| Infrastructure management | Via Terragrunt/Terraform only (no ad hoc cloud CLI mutations) |
 | Customer data access | Only for troubleshooting with customer consent, logged, minimized |
 | Security testing | Only via approved red team tools on staging, with notification |
 | Open-source contributions | Must not include proprietary code or customer data |
@@ -71,9 +71,9 @@ The following are **strictly prohibited** and may result in immediate terminatio
 
 The following require explicit written approval from CTO or CEO:
 
-- Granting new IAM roles at the GCP organization level
-- Creating service account keys (also blocked by org policy)
-- Modifying GCP org policies
+- Granting new IAM roles at the cloud organization/account level
+- Creating service account keys (also blocked by org/account policy)
+- Modifying cloud org/account policies
 - Adding new third-party services that process customer data
 - Making emergency changes to production (per Change Management Policy)
 - Accessing another employee's account or workspace
@@ -93,8 +93,8 @@ The following require explicit written approval from CTO or CEO:
 
 ### 5.2 Credential and Secret Rules
 
-- Use Workload Identity Federation for GCP authentication (no service account keys)
-- Store all secrets in GitHub Actions secrets or Cloud Run environment variables
+- Use Workload Identity Federation / OIDC for cloud authentication (no service account keys)
+- Store all secrets in GitHub Actions secrets or container environment variables
 - **Never** commit secrets, API keys, or tokens to source code repositories
 - Use unique passwords for all Latent Archon accounts
 - Report lost or compromised credentials immediately
@@ -106,7 +106,7 @@ The following require explicit written approval from CTO or CEO:
 ### 6.1 Production Environment
 
 - All production changes **must** go through the CI/CD pipeline (PR → review → merge → deploy)
-- Direct `gcloud` mutations to production are **prohibited** (enforced by gcloud guardrail wrapper)
+- Direct cloud CLI mutations to production are **prohibited** (enforced by CLI guardrail wrappers)
 - Terraform is the only authorized method for infrastructure changes
 - Production deployment requires manual approval via GitHub environment gate
 - Emergency changes follow the Emergency Change procedure in POL-CM-001
@@ -161,7 +161,7 @@ Personnel who report security concerns in good faith are protected from retaliat
 - Report immediately to Security Lead
 - Remote session revocation initiated for all active sessions
 - GitHub personal access tokens revoked
-- GCP access reviewed and revoked if needed
+- Cloud access reviewed and revoked if needed
 
 ---
 
@@ -171,10 +171,10 @@ Personnel who report security concerns in good faith are protected from retaliat
 
 Latent Archon systems are monitored for policy compliance. Monitoring includes:
 
-- Cloud Audit Logs for all GCP API calls
+- Cloud audit logs for all cloud API calls
 - Application audit events for data access
 - GitHub audit logs for repository access and changes
-- Cloud Armor logs for network-level activity
+- WAF logs for network-level activity
 
 ### 9.2 Enforcement
 
