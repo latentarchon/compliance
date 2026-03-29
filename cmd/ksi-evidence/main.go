@@ -49,7 +49,7 @@ type Evidence struct {
 
 // ProjectConfig holds the project IDs for a given environment.
 type ProjectConfig struct {
-	ChatProject  string
+	AppProject  string
 	AdminProject string
 	Region       string
 }
@@ -57,13 +57,13 @@ type ProjectConfig struct {
 func envConfig(env string) ProjectConfig {
 	if env == "production" {
 		return ProjectConfig{
-			ChatProject:  "latentarchon-chat-prod",
+			AppProject:   "latentarchon-app-prod",
 			AdminProject: "latentarchon-admin-prod",
 			Region:       "us-east1",
 		}
 	}
 	return ProjectConfig{
-		ChatProject:  "latentarchon-chat-staging",
+		AppProject:   "latentarchon-app-staging",
 		AdminProject: "latentarchon-admin-staging",
 		Region:       "us-east1",
 	}
@@ -96,7 +96,7 @@ func main() {
 
 	fmt.Println("=== KSI Evidence Collection ===")
 	fmt.Printf("Environment: %s\n", *env)
-	fmt.Printf("Chat Project: %s\n", cfg.ChatProject)
+	fmt.Printf("App Project: %s\n", cfg.AppProject)
 	fmt.Printf("Admin Project: %s\n", cfg.AdminProject)
 	fmt.Printf("Output: %s\n", *outputDir)
 	fmt.Println()
@@ -207,13 +207,13 @@ func (c *Collector) writeManifest() error {
 	manifest := struct {
 		Timestamp    string         `json:"collection_timestamp"`
 		Environment  string         `json:"environment"`
-		ChatProject  string         `json:"chat_project"`
+		AppProject   string         `json:"app_project"`
 		AdminProject string         `json:"admin_project"`
 		Files        []ManifestFile `json:"files"`
 	}{
 		Timestamp:    c.timestamp,
 		Environment:  c.env,
-		ChatProject:  c.cfg.ChatProject,
+		AppProject:  c.cfg.AppProject,
 		AdminProject: c.cfg.AdminProject,
 	}
 	for _, f := range c.files {
@@ -252,7 +252,7 @@ func (c *Collector) collectSAKeys() error {
 	// For now, we report that SA key checking requires the IAM admin API
 	// which is better done via gcloud. Store a placeholder that CI can fill.
 	result := []SAKeyInfo{
-		{ServiceAccount: "check-via-gcloud", Project: c.cfg.ChatProject, UserManagedKeys: -1},
+		{ServiceAccount: "check-via-gcloud", Project: c.cfg.AppProject, UserManagedKeys: -1},
 		{ServiceAccount: "check-via-gcloud", Project: c.cfg.AdminProject, UserManagedKeys: -1},
 	}
 
@@ -287,7 +287,7 @@ func (c *Collector) collectIAMBindings() error {
 	// The IAM policy is best collected at the org level.
 	// Store project identifiers for now.
 	result := []ProjectIAM{
-		{Project: c.cfg.ChatProject, Bindings: nil},
+		{Project: c.cfg.AppProject, Bindings: nil},
 		{Project: c.cfg.AdminProject, Bindings: nil},
 	}
 
@@ -324,7 +324,7 @@ func (c *Collector) collectFirewallRules() error {
 	}
 
 	var allRules []FirewallRule
-	for _, project := range []string{c.cfg.ChatProject, c.cfg.AdminProject} {
+	for _, project := range []string{c.cfg.AppProject, c.cfg.AdminProject} {
 		it := client.List(c.ctx, &computepb.ListFirewallsRequest{Project: project})
 		for {
 			fw, err := it.Next()
@@ -380,7 +380,7 @@ func (c *Collector) collectCloudRunServices() error {
 	}
 
 	var services []RunService
-	for _, project := range []string{c.cfg.ChatProject, c.cfg.AdminProject} {
+	for _, project := range []string{c.cfg.AppProject, c.cfg.AdminProject} {
 		parent := fmt.Sprintf("projects/%s/locations/%s", project, c.cfg.Region)
 		it := client.ListServices(c.ctx, &runpb.ListServicesRequest{Parent: parent})
 		for {
@@ -433,7 +433,7 @@ func (c *Collector) collectCloudArmorPolicies() error {
 	}
 
 	var policies []ArmorPolicy
-	for _, project := range []string{c.cfg.ChatProject, c.cfg.AdminProject} {
+	for _, project := range []string{c.cfg.AppProject, c.cfg.AdminProject} {
 		it := client.List(c.ctx, &computepb.ListSecurityPoliciesRequest{Project: project})
 		for {
 			pol, err := it.Next()
@@ -557,7 +557,7 @@ func (c *Collector) collectLogSinks() error {
 	}
 
 	var sinks []LogSink
-	for _, project := range []string{c.cfg.ChatProject, c.cfg.AdminProject} {
+	for _, project := range []string{c.cfg.AppProject, c.cfg.AdminProject} {
 		it := client.ListSinks(c.ctx, &loggingpb.ListSinksRequest{
 			Parent: fmt.Sprintf("projects/%s", project),
 		})
@@ -607,7 +607,7 @@ func (c *Collector) collectContainerImages() error {
 	}
 
 	var images []ContainerImage
-	for _, project := range []string{c.cfg.ChatProject, c.cfg.AdminProject} {
+	for _, project := range []string{c.cfg.AppProject, c.cfg.AdminProject} {
 		parent := fmt.Sprintf("projects/%s/locations/%s/repositories/archon", project, c.cfg.Region)
 		it := client.ListDockerImages(c.ctx, &artifactregistrypb.ListDockerImagesRequest{Parent: parent})
 		for {

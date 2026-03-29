@@ -8,7 +8,7 @@
 // Flags:
 //
 //	--project-id       GCP project ID (admin project)
-//	--chat-project-id  GCP project ID (chat project)
+//	--app-project-id   GCP project ID (app project)
 //	--region           GCP region (default: us-east1)
 //	--db-instance      Cloud SQL instance name
 //	--documents-bucket GCS documents bucket name
@@ -35,14 +35,14 @@ import (
 
 func main() {
 	projectID := flag.String("project-id", os.Getenv("PROJECT_ID"), "GCP admin project ID")
-	chatProjectID := flag.String("chat-project-id", os.Getenv("CHAT_PROJECT_ID"), "GCP chat project ID")
+	appProjectID := flag.String("app-project-id", os.Getenv("APP_PROJECT_ID"), "GCP app project ID")
 	region := flag.String("region", envOrDefault("REGION", "us-east1"), "GCP region")
 	dbInstance := flag.String("db-instance", os.Getenv("DB_INSTANCE"), "Cloud SQL instance name")
 	documentsBucket := flag.String("documents-bucket", os.Getenv("GCS_DOCUMENTS_BUCKET"), "GCS documents bucket")
 	kmsKeyring := flag.String("kms-keyring", os.Getenv("KMS_KEYRING"), "KMS key ring name")
 	kmsKey := flag.String("kms-key", os.Getenv("KMS_KEY"), "KMS crypto key name")
 	outputDir := flag.String("output-dir", envOrDefault("OUTPUT_DIR", "./reports"), "Report output directory")
-	services := flag.String("services", envOrDefault("CLOUD_RUN_SERVICES", "archon-admin,archon-chat,archon-ops,admin-spa,chat-spa,clamav"), "Cloud Run services to check")
+	services := flag.String("services", envOrDefault("CLOUD_RUN_SERVICES", "archon-admin,archon-app,archon-ops,admin-spa,app-spa,clamav"), "Cloud Run services to check")
 	dryRun := flag.Bool("dry-run", false, "Print checks without executing")
 	verbose := flag.Bool("verbose", false, "Enable verbose logging")
 	flag.Parse()
@@ -61,7 +61,7 @@ func main() {
 	if *dryRun {
 		logger.Info("[DRY RUN] would execute contingency plan checks",
 			"admin_project", *projectID,
-			"chat_project", *chatProjectID,
+			"app_project", *appProjectID,
 			"region", *region,
 			"db_instance", *dbInstance,
 			"documents_bucket", *documentsBucket,
@@ -77,15 +77,15 @@ func main() {
 
 	// Parse service lists per project
 	adminServices := []string{}
-	chatServices := []string{}
+	appServices := []string{}
 	for _, s := range strings.Split(*services, ",") {
 		s = strings.TrimSpace(s)
 		if s == "" {
 			continue
 		}
-		// Chat project services
-		if s == "archon-chat" || s == "chat-spa" {
-			chatServices = append(chatServices, s)
+		// App project services
+		if s == "archon-app" || s == "app-spa" {
+			appServices = append(appServices, s)
 		} else {
 			adminServices = append(adminServices, s)
 		}
@@ -112,10 +112,10 @@ func main() {
 		runner.Add(checks.NewCloudRunCheck(*projectID, *region, svc))
 	}
 
-	// ── 4. Cloud Run Service Health (chat project) ──
-	if *chatProjectID != "" {
-		for _, svc := range chatServices {
-			runner.Add(checks.NewCloudRunCheck(*chatProjectID, *region, svc))
+	// ── 4. Cloud Run Service Health (app project) ──
+	if *appProjectID != "" {
+		for _, svc := range appServices {
+			runner.Add(checks.NewCloudRunCheck(*appProjectID, *region, svc))
 		}
 	}
 
@@ -128,8 +128,8 @@ func main() {
 
 	// ── 6. Artifact Registry Image Verification ──
 	runner.Add(checks.NewArtifactRegistryCheck(*projectID, *region))
-	if *chatProjectID != "" {
-		runner.Add(checks.NewArtifactRegistryCheck(*chatProjectID, *region))
+	if *appProjectID != "" {
+		runner.Add(checks.NewArtifactRegistryCheck(*appProjectID, *region))
 	}
 
 	// ── Execute all checks ──
@@ -139,7 +139,7 @@ func main() {
 	rpt := report.Generate(report.Input{
 		Timestamp:      time.Now().UTC(),
 		AdminProjectID: *projectID,
-		ChatProjectID:  *chatProjectID,
+		AppProjectID:   *appProjectID,
 		Region:         *region,
 		Results:        results,
 	})

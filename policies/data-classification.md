@@ -20,7 +20,7 @@ This policy defines data classification levels, handling requirements, retention
 This policy applies to all data created, received, processed, stored, or transmitted by Latent Archon, including:
 
 - Customer-uploaded documents and generated content
-- Chat messages and AI-generated responses
+- Conversation messages and AI-generated responses
 - User account and authentication data
 - Audit logs and system telemetry
 - Source code and infrastructure configuration
@@ -32,7 +32,7 @@ This policy applies to all data created, received, processed, stored, or transmi
 
 | Level | Label | Definition | Examples |
 |-------|-------|-----------|----------|
-| **1** | **CUI / Restricted** | Controlled Unclassified Information or data subject to regulatory protection. Unauthorized disclosure could cause serious harm. | Customer documents (may contain CUI), document embeddings, chat messages referencing CUI |
+| **1** | **CUI / Restricted** | Controlled Unclassified Information or data subject to regulatory protection. Unauthorized disclosure could cause serious harm. | Customer documents (may contain CUI), document embeddings, conversation messages referencing CUI |
 | **2** | **Confidential** | Internal business data not intended for public disclosure. Unauthorized disclosure could cause moderate harm. | User credentials (hashed), API keys, SCIM tokens, audit event details, source code, infrastructure configs |
 | **3** | **Internal** | Operational data for internal use. Unauthorized disclosure would cause limited harm. | System logs, performance metrics, deployment records, internal documentation |
 | **4** | **Public** | Information approved for public disclosure. | Marketing website content, published security whitepaper (redacted), public API documentation |
@@ -48,7 +48,7 @@ This policy applies to all data created, received, processed, stored, or transmi
 | Uploaded documents | GCS (CMEK) | AES-256 at rest, TLS in transit | Per-workspace bucket prefix | Customer-controlled (purge on account deletion) |
 | Document chunks & metadata | Cloud SQL (CMEK) | AES-256 at rest, TLS in transit | PostgreSQL RLS (FORCE) | Customer-controlled |
 | Document embeddings | Vertex AI Vector Search | AES-256 at rest, gRPC+TLS via PSC | Workspace-scoped token restrictions | Customer-controlled |
-| Chat messages | Cloud SQL (CMEK) | AES-256 at rest, TLS in transit | PostgreSQL RLS (FORCE) | Customer-controlled |
+| Conversation messages | Cloud SQL (CMEK) | AES-256 at rest, TLS in transit | PostgreSQL RLS (FORCE) | Customer-controlled |
 | AI-generated images | GCS (CMEK) | AES-256 at rest, TLS in transit | Per-workspace path | Customer-controlled |
 
 ### 4.2 Account Data (Confidential)
@@ -159,7 +159,8 @@ For CMEK-encrypted data, key destruction renders all encrypted data unrecoverabl
 
 ## 8. Data Sovereignty
 
-- All customer data is stored and processed within the United States (GCP `us-east1` region)
+- All customer data is stored and processed within the United States (GCP `us-east1` region by default)
+- Per-tenant data residency: `organizations.data_region` column (default `us-east1`) enables future per-tenant regional data isolation for agencies requiring specific region constraints
 - No cross-border data transfers for customer data
 - GCP's Data Processing Addendum governs data location obligations
 - Embedding API calls route to `us-central1` (U.S. region only)

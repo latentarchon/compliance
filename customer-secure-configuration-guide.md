@@ -72,8 +72,8 @@ For SSO users, password policy is governed by the customer's Identity Provider. 
 |------|-----------|----------------------|
 | `master_admin` | Full org management, user management, all workspace access | 1-2 designated agency admins only |
 | `admin` | User management, workspace management, document management | IT security staff |
-| `editor` | Upload documents, chat, search within assigned workspaces | Analysts and content managers |
-| `viewer` | Chat and search within assigned workspaces (read-only) | General staff |
+| `editor` | Upload documents, converse, search within assigned workspaces | Analysts and content managers |
+| `viewer` | Converse and search within assigned workspaces (read-only) | General staff |
 
 **Customer Action**:
 - Assign `master_admin` to no more than 2 agency personnel
@@ -82,7 +82,7 @@ For SSO users, password policy is governed by the customer's Identity Provider. 
 
 ### 3.2 Workspace Isolation
 
-Workspaces provide data isolation boundaries. Documents and chat history in one workspace are invisible to users in other workspaces.
+Workspaces provide data isolation boundaries. Documents and conversation history in one workspace are invisible to users in other workspaces.
 
 **Customer Action**:
 - Create separate workspaces for different data sensitivity levels or projects
@@ -123,7 +123,7 @@ All data is encrypted automatically. No customer configuration is required.
 | Setting | Default | Configurable | How to Change |
 |---------|---------|-------------|---------------|
 | Document Retention | Indefinite | Yes | Admin API → `UpdateOrganizationSettings` |
-| Chat History Retention | Indefinite | Yes | Admin API → `UpdateOrganizationSettings` |
+| Conversation History Retention | Indefinite | Yes | Admin API → `UpdateOrganizationSettings` |
 | Audit Log Retention | 365 days | No (platform minimum) | N/A |
 | Closed Account Purge | 90 days | No | Automatic |
 
@@ -147,7 +147,7 @@ All user and administrative actions are logged automatically:
 
 - Authentication events (login, logout, MFA challenges)
 - Document operations (upload, download, delete)
-- Chat interactions (message sent, search performed)
+- Conversation interactions (message sent, search performed)
 - Administrative actions (role changes, member additions/removals, settings changes)
 - SCIM provisioning events
 - SSO configuration changes

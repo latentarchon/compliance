@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-Latent Archon is a multi-tenant document intelligence platform purpose-built for government agencies handling Controlled Unclassified Information (CUI). The platform enables Retrieval-Augmented Generation (RAG) chat over uploaded documents with workspace-level data isolation, operating entirely on Google Cloud Platform (GCP) FedRAMP-authorized infrastructure.
+Latent Archon is a multi-tenant document intelligence platform purpose-built for government agencies handling Controlled Unclassified Information (CUI). The platform enables Retrieval-Augmented Generation (RAG) conversation over uploaded documents with workspace-level data isolation, operating entirely on Google Cloud Platform (GCP) FedRAMP-authorized infrastructure.
 
 This whitepaper describes the platform's security architecture across authentication, data isolation, data flow, encryption, logging, disaster recovery, infrastructure governance, and network security.
 
@@ -23,22 +23,22 @@ Authentication is split across two GCP projects with independent Firebase Auth /
 
 | Pool | Project | Users | Domain |
 |------|---------|-------|--------|
-| Chat (End Users) | `latentarchon-chat-prod` | Agency analysts, viewers | `app.latentarchon.com` |
+| App (End Users) | `latentarchon-app-prod` | Agency analysts, viewers | `app.latentarchon.com` |
 | Admin (Org Admins) | `latentarchon-admin-prod` | Org administrators, workspace managers | `admin.latentarchon.com` |
 
-This two-project split provides **complete auth pool isolation** — a valid chat-pool JWT cannot authenticate against the admin API, and vice versa. Credential compromise in one pool cannot escalate to the other.
+This two-project split provides **complete auth pool isolation** — a valid app-pool JWT cannot authenticate against the admin API, and vice versa. Credential compromise in one pool cannot escalate to the other.
 
 ### Cross-Pool Identity Prohibition
 
-Because Firebase UIDs are project-scoped, the same person has different UIDs in the admin and chat pools. **Cross-pool identity bridging is explicitly prohibited** — the system never copies memberships between pools by matching on email. This would create a lateral escalation path (compromise one pool → gain the other pool's permissions).
+Because Firebase UIDs are project-scoped, the same person has different UIDs in the admin and app pools. **Cross-pool identity bridging is explicitly prohibited** — the system never copies memberships between pools by matching on email. This would create a lateral escalation path (compromise one pool → gain the other pool's permissions).
 
 Instead, workspace access across pools uses the **explicit invite flow**:
 
 1. Admin creates workspace → admin UID stored in `workspace_members` (admin app)
 2. System auto-creates a pending invite for the creator's email
-3. Creator receives email with sign-in link to the chat app
-4. Creator authenticates in the chat app → chat UID
-5. Creator accepts invite → chat UID stored in `workspace_members` (chat app)
+3. Creator receives email with sign-in link to the app
+4. Creator authenticates in the app → app UID
+5. Creator accepts invite → app UID stored in `workspace_members` (app)
 
 Each pool's membership is created through that pool's own authentication, with an auditable invite record bridging the two. See `docs/POOL_ISOLATION.md` for the full architectural decision record.
 
@@ -118,12 +118,12 @@ Default `PUBLIC` privileges are revoked on all tables and sequences. Only named 
 
 | Role | Cloud Run Service | Auth | Permissions |
 |------|-------------------|------|-------------|
-| `archon_chat_ro` | Chat API | Cloud SQL IAM (keyless) | SELECT on reference tables; SELECT + INSERT on messages/searches/generations; INSERT on audit_events; SELECT + INSERT + UPDATE on users (profile upsert) |
+| `archon_app_ro` | App API | Cloud SQL IAM (keyless) | SELECT on reference tables; SELECT + INSERT on messages/searches/generations; INSERT on audit_events; SELECT + INSERT + UPDATE on users (profile upsert) |
 | `archon_admin_rw` | Admin API | Cloud SQL IAM (keyless) | ALL on all tables and sequences |
 | `archon_ops_rw` | Ops service | Cloud SQL IAM (keyless) | SELECT/INSERT/UPDATE on documents, versions, DLQ; full CRUD on chunks; INSERT on audit_events + generations; SELECT on reference tables |
 | `postgres` (migration only) | Atlas job (Cloud Run Job) | Password (Secret Manager) | Superuser — DDL privileges for schema migrations only. Not accessible to any runtime service. |
 
-The chat role **cannot** create, modify, or delete organizations, workspaces, documents, or members. Even if the chat service is fully compromised, the attacker cannot ALTER tables, CREATE functions/triggers (no backdoor), or DELETE any data. Roles are granted to IAM service accounts dynamically by naming convention, ensuring environment-agnostic enforcement. Enforced via migration `20260328120000_enforce_least_privilege_db_roles.sql`.
+The app role **cannot** create, modify, or delete organizations, workspaces, documents, or members. Even if the app service is fully compromised, the attacker cannot ALTER tables, CREATE functions/triggers (no backdoor), or DELETE any data. Roles are granted to IAM service accounts dynamically by naming convention, ensuring environment-agnostic enforcement. Enforced via migration `20260328120000_enforce_least_privilege_db_roles.sql`.
 
 ### Vector Store Isolation
 
@@ -170,7 +170,7 @@ Upload → Size Check (50 MB) → Type Allowlist → Magic-Byte Validation
   → Vector Search Index (workspace-scoped)
 ```
 
-### RAG Chat Flow
+### RAG Conversation Flow
 
 ```
 User Message → Workspace Access Verification → Query Embedding
@@ -183,8 +183,8 @@ User Message → Workspace Access Verification → Query Embedding
 ### Cross-Project Data Flow
 
 Only one narrow IAM grant crosses the project boundary:
-- `roles/cloudsql.client` + `roles/cloudsql.instanceUser` for the chat SA on the admin project
-- This enables chat API read access to documents and workspace data from Cloud SQL
+- `roles/cloudsql.client` + `roles/cloudsql.instanceUser` for the app SA on the admin project
+- This enables app API read access to documents and workspace data from Cloud SQL
 - All other services are project-isolated
 
 ---
@@ -200,7 +200,7 @@ Only one narrow IAM grant crosses the project boundary:
 | Vertex AI Vector Search | AES-256 | Google-managed |
 | Audit Logs | AES-256 | Google-managed |
 
-Cloud KMS is provisioned in the infrastructure for customer-managed encryption key (CMEK) support. Key rotation is automated.
+Cloud KMS is provisioned in the infrastructure for customer-managed encryption key (CMEK) support. Per-tenant CMEK anchor: `organizations.kms_key_name` column stores the KMS key resource name for each tenant, enabling future per-tenant encryption key isolation. Key rotation is automated.
 
 ### Data in Transit
 
@@ -222,6 +222,12 @@ HSTS is enforced with `max-age=63072000; includeSubDomains; preload` (2-year pin
 - **No service account keys**: Workload Identity Federation (WIF) with OIDC for CI/CD
 - **Org policy enforcement**: `iam.disableServiceAccountKeyCreation` blocks SA key creation org-wide
 
+### Schema future-proofing (no behavioral change today)
+
+- `organizations.kms_key_name` — Per-tenant CMEK anchor for future customer-managed key isolation.
+- `organizations.data_region` — Default `us-east1`; enables future per-tenant data residency constraints.
+- `audit_events.session_id` and `audit_events.mfa_method` — Additional audit information per AU-3(1) for session correlation and MFA method tracking.
+
 ---
 
 ## 5. Logging & Audit
@@ -241,6 +247,8 @@ All security-relevant operations are persisted to the `audit_events` database ta
 | `user_agent` | Client identification |
 | `metadata` (JSONB) | request_id, idp_pool_id, trace_id, span_id, error_code, duration_ms, platform |
 | `correlation_id` | Cross-event linking |
+| `session_id` | Session identification for cross-event correlation |
+| `mfa_method` | MFA method used for the action (e.g., TOTP) — supports AU-3(1) additional audit information |
 
 ### Audited Operations
 
@@ -309,7 +317,7 @@ The platform includes a **real-time security notification service** that alerts 
 
 ### Data Purge (Privacy Policy §5)
 
-A **Cloud Scheduler-triggered daily job** permanently deletes all data for accounts closed more than 90 days ago. This includes user records, org memberships, workspace memberships, documents, chat messages, and audit events. The purge is irreversible and fully logged.
+A **Cloud Scheduler-triggered daily job** permanently deletes all data for accounts closed more than 90 days ago. This includes user records, org memberships, workspace memberships, documents, conversation messages, and audit events. The purge is irreversible and fully logged.
 
 ### Forensic Preservation (Security Addendum §7.4)
 
@@ -341,12 +349,12 @@ Documents support **immutable version history**:
 
 ## 9. Multimodal AI (Image Generation)
 
-The chat API supports **inline image generation** within streaming conversations:
+The app API supports **inline image generation** within streaming conversations:
 
 | Step | Detail |
 |------|--------|
 | Model | Gemini 2.0 Flash with ResponseModalities image output via Vertex AI |
-| Streaming | Images generated inline during server-streaming chat responses |
+| Streaming | Images generated inline during server-streaming conversation responses |
 | Storage | Generated images uploaded to GCS with workspace-scoped paths |
 | Proxy | Images served via authenticated proxy endpoint — no direct GCS URLs exposed |
 | Rate Limiting | Max 4 images per response, 10 MB total image payload per response |
@@ -363,7 +371,7 @@ A dedicated **Export Service** supports bulk data export for FOIA requests, gove
 | Capability | Detail |
 |-----------|--------|
 | Scope | Organization-level or workspace-level data export |
-| Data Included | Documents (originals + metadata), chat messages, audit events, user records, workspace configurations |
+| Data Included | Documents (originals + metadata), conversation messages, audit events, user records, workspace configurations |
 | Format | Structured export package with manifest and chain-of-custody metadata |
 | Access Control | Export restricted to organization `master_admin` role with step-up MFA |
 | Audit Trail | Every export request is audit-logged with requestor ID, scope, and completion status |
@@ -379,7 +387,7 @@ The platform includes an **Analytics Service** providing per-organization usage 
 
 | Capability | Detail |
 |-----------|--------|
-| Usage Metrics | Chat messages, document uploads, vector searches, and API calls tracked per org and workspace |
+| Usage Metrics | Conversation messages, document uploads, vector searches, and API calls tracked per org and workspace |
 | Cost Attribution | Vertex AI, Document AI, Cloud Storage, and compute costs attributed to org/workspace |
 | Dashboard | Admin-facing usage dashboard with time-series charts and per-workspace breakdowns |
 | Access Control | Analytics endpoints restricted to organization admin role; data org-scoped |
@@ -435,7 +443,7 @@ SBOMs are generated automatically in CI/CD for every component:
 | Backend (Go modules) | Syft + anchore/sbom-action | CycloneDX JSON + SPDX JSON | Every push to main + weekly |
 | Backend container image | anchore/sbom-action | SPDX JSON | Every container build |
 | Admin SPA (npm) | anchore/sbom-action | SPDX JSON | Every push to main |
-| Chat SPA (npm) | anchore/sbom-action | SPDX JSON | Every push to main |
+| App SPA (npm) | anchore/sbom-action | SPDX JSON | Every push to main |
 
 SBOM artifacts are retained for 90 days and attached to each workflow run.
 
@@ -474,7 +482,7 @@ Critical findings on the main branch trigger a notification job. SARIF results a
 
 ### SPA (nginx)
 
-Both admin and chat SPAs enforce comprehensive security headers:
+Both admin and app SPAs enforce comprehensive security headers:
 
 | Header | Value |
 |--------|-------|
@@ -554,11 +562,11 @@ Organization (latentarchon.com)
 │   ├── staging-vpc-latentarchon  (Shared VPC Host — Staging)
 │   └── central-log-latentarchon  (Centralized Logging & Monitoring)
 ├── Production/
-│   ├── latentarchon-chat-prod    (Chat API + SPA)
+│   ├── latentarchon-app-prod    (App API + SPA)
 │   ├── latentarchon-admin-prod   (Admin API + Ops + Data)
 │   └── kms-proj-*                (KMS Autokey)
 ├── Non-Production/
-│   ├── latentarchon-chat-staging
+│   ├── latentarchon-app-staging (App)
 │   ├── latentarchon-admin-staging
 │   └── kms-proj-*
 └── Development/
@@ -725,7 +733,7 @@ CORS is enforced via a config-driven origin allowlist derived from deployment en
 - **Production**: Exact-match origins for `app.latentarchon.com`, `admin.latentarchon.com`, `api.latentarchon.com`
 - **Staging**: Exact-match + tight suffix patterns (`*.app.staging.latentarchon.com`, `*.admin.staging.latentarchon.com`) — only one label depth allowed (no deep nesting)
 - **Development**: Localhost origins (`http://localhost:3000`, `:3001`, `:5173`, `:8080`) added only when `ENVIRONMENT=development`
-- **Domain cross-validation**: Config validates that `CHAT_DOMAIN`, `ADMIN_DOMAIN`, `API_DOMAIN` suffixes match the `ENVIRONMENT` setting — prevents env mismatch
+- **Domain cross-validation**: Config validates that `APP_DOMAIN`, `ADMIN_DOMAIN`, `API_DOMAIN` suffixes match the `ENVIRONMENT` setting — prevents env mismatch
 - Disallowed origins receive no CORS headers (no `Access-Control-Allow-Origin`, no credentials)
 
 CORS is tested with unit tests and e2e tests covering allowed origins, blocked origins, subdomain patterns, and deep-nesting attacks.

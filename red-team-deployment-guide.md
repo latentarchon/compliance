@@ -17,7 +17,7 @@ The red team infrastructure runs in an **isolated GCP project** (`latentarchon-r
 | VPC + Subnet | `redteam-vpc` / `redteam-subnet` (10.99.0.0/24) | Yes (free) |
 | Firewall Rules | deny-all-ingress, allow-IAP-SSH, allow-egress | Yes (free) |
 | Cloud NAT + Router | `redteam-nat` / `redteam-router` | Yes |
-| Log Sinks (×4) | Audit sinks on redteam + chat + admin projects | Yes (free) |
+| Log Sinks (×4) | Audit sinks on redteam + app + admin projects | Yes (free) |
 | Monitoring Dashboard | Red Team Assessment dashboard | Yes (free) |
 | **Optional** Attacker VM | `e2-small` preemptible, Debian 12, 20 GB | Off by default |
 | **Optional** Cloud Scheduler | Weekly cron → Cloud Run Job | Off by default |

@@ -33,7 +33,7 @@ This policy applies to:
 | Tier | Services | RPO | RTO | Justification |
 |------|----------|-----|-----|---------------|
 | **Tier 1 — Critical** | Cloud SQL (database), GCS (document storage), Identity Platform (auth) | < 5 minutes | < 1 hour | Customer data and authentication — any loss is unacceptable |
-| **Tier 2 — Essential** | Cloud Run services (chat API, admin API, ops), Load Balancers, Cloud Armor | 0 (stateless) | < 4 hours | Stateless services rebuilt from container images + Terraform |
+| **Tier 2 — Essential** | Cloud Run services (app API, admin API, ops), Load Balancers, Cloud Armor | 0 (stateless) | < 4 hours | Stateless services rebuilt from container images + Terraform |
 | **Tier 3 — Supporting** | Vertex AI (Vector Search + LLM), Document AI, Cloud Tasks, Ops Service | < 24 hours | < 8 hours | AI/search features; system usable without them (degraded mode) |
 | **Tier 4 — Non-critical** | Staging environments, CI/CD, monitoring dashboards, Drata sync | N/A | < 24 hours | Operational tooling; no customer impact |
 

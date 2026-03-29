@@ -71,7 +71,7 @@ Latent Archon is a multi-tenant document intelligence platform purpose-built for
 
 - **Document Management**: Secure upload, storage, and lifecycle management of government documents with malware scanning (ClamAV, fail-closed in production), magic-byte validation, and file type allowlisting.
 - **AI-Powered Search**: Retrieval-Augmented Generation (RAG) using vector embeddings (Vertex AI) for semantic document search across workspace-scoped document collections.
-- **Interactive Chat**: Conversational interface over uploaded documents using Google Gemini large language models, with citations and source attribution.
+- **Interactive Conversation**: Conversational interface over uploaded documents using Google Gemini large language models, with citations and source attribution.
 - **Workspace Isolation**: Logical data isolation at the workspace level enforced through PostgreSQL Row-Level Security (RLS), vector store token restrictions, and application-layer access controls.
 - **Enterprise SSO/SCIM**: SAML 2.0 federation with customer Identity Providers and SCIM 2.0 automated user lifecycle management.
 
@@ -122,15 +122,15 @@ The authorization boundary encompasses all components required to deliver the La
 
 | Component | GCP Service | Project | Description |
 |-----------|-------------|---------|-------------|
-| Chat API | Cloud Run (`archon-chat`) | `latentarchon-chat-prod` | User-facing API: chat, search, auth, streaming |
+| App API | Cloud Run (`archon-app`) | `latentarchon-app-prod` | User-facing API: conversation, search, auth, streaming |
 | Admin API | Cloud Run (`archon-admin`) | `latentarchon-admin-prod` | Admin API: org management, document ingestion, settings |
 | Ops Service | Cloud Run (`archon-ops`) | `latentarchon-admin-prod` | Background processing: embeddings, cron, document processing |
-| Chat SPA | Cloud Run (nginx) | `latentarchon-chat-prod` | React single-page application for end users |
+| App SPA | Cloud Run (nginx) | `latentarchon-app-prod` | React single-page application for end users |
 | Admin SPA | Cloud Run (nginx) | `latentarchon-admin-prod` | React single-page application for administrators |
 | Database | Cloud SQL PostgreSQL 15 | `latentarchon-admin-prod` | Primary data store with RLS, encrypted at rest (CMEK) |
 | Object Storage | Cloud Storage | `latentarchon-admin-prod` | Document file storage, GCS versioning (365-day retention) |
 | Vector Search | Vertex AI Vector Search | `latentarchon-admin-prod` | Semantic search index with PSC endpoint |
-| Text Generation | Vertex AI (Gemini) | `latentarchon-admin-prod` | LLM for RAG chat responses |
+| Text Generation | Vertex AI (Gemini) | `latentarchon-admin-prod` | LLM for RAG conversation responses |
 | Document Processing | Document AI | `latentarchon-admin-prod` | OCR and document parsing |
 | Identity | Identity Platform | Both projects | Firebase Auth with IDP pools for multi-tenant isolation |
 | WAF | Cloud Armor | Both projects | DDoS protection, OWASP CRS, bot blocking, IP allowlisting |
@@ -147,18 +147,18 @@ The authorization boundary encompasses all components required to deliver the La
 
 Latent Archon uses a **two-project architecture** for blast-radius isolation:
 
-- **Chat Project** (`latentarchon-chat-prod`): Contains the user-facing chat API and SPA. Has its own Identity Platform user pool, Cloud Armor policy, and load balancer. The chat service account has **read-only** database access (`chat_ro` PostgreSQL role) and cross-project `cloudsql.client` + `cloudsql.instanceUser` IAM grants.
+- **App Project** (`latentarchon-app-prod`): Contains the user-facing app API and SPA. Has its own Identity Platform user pool, Cloud Armor policy, and load balancer. The app service account has **read-only** database access (`app_ro` PostgreSQL role) and cross-project `cloudsql.client` + `cloudsql.instanceUser` IAM grants.
 
 - **Admin Project** (`latentarchon-admin-prod`): Contains the admin API, ops service, database, object storage, vector search, and all backend processing. Has its own Identity Platform admin pool. The admin service account has `admin_rw` database access. The ops service account has `ops_rw` access.
 
-**Cross-pool identity bridging is explicitly prohibited.** Users who exist in both pools (admin and chat) are treated as separate identities. Workspace access across pools uses an explicit invite flow only (see `docs/POOL_ISOLATION.md`).
+**Cross-pool identity bridging is explicitly prohibited.** Users who exist in both pools (admin and app) are treated as separate identities. Workspace access across pools uses an explicit invite flow only (see `docs/POOL_ISOLATION.md`).
 
 ### 3.3 Environments
 
 | Environment | Purpose | GCP Projects | Access |
 |-------------|---------|--------------|--------|
-| Production | Live customer data | `latentarchon-chat-prod`, `latentarchon-admin-prod` | Restricted to CI/CD + emergency break-glass |
-| Staging | Pre-production validation | `latentarchon-chat-staging`, `latentarchon-admin-staging` | Engineering team |
+| Production | Live customer data | `latentarchon-app-prod`, `latentarchon-admin-prod` | Restricted to CI/CD + emergency break-glass |
+| Staging | Pre-production validation | `latentarchon-app-staging`, `latentarchon-admin-staging` | Engineering team |
 | Development | Local development | N/A (local Docker Compose) | Individual developers |
 
 All environments are managed via Terraform/Terragrunt. No manual GCP console changes are permitted in staging or production (enforced by gcloud guardrail wrapper).
@@ -225,7 +225,7 @@ All other egress is blocked. This is enforced via Terraform-managed firewall rul
 | Information Type | NIST SP 800-60 Category | Confidentiality | Integrity | Availability |
 |-----------------|------------------------|-----------------|-----------|--------------|
 | Customer Documents (CUI) | D.14 — General Information | Moderate | Moderate | Moderate |
-| Chat Messages / AI Responses | D.14 — General Information | Moderate | Moderate | Low |
+| Messages / AI Responses | D.14 — General Information | Moderate | Moderate | Low |
 | User Account Data (PII) | D.8 — Personal Identity and Authentication | Moderate | Moderate | Low |
 | Audit Logs | D.3.5 — Internal Risk Mgmt | Moderate | Moderate | Low |
 | System Configuration | D.3 — Administrative Mgmt | Low | Moderate | Moderate |
@@ -235,7 +235,7 @@ All other egress is blocked. This is enforced via Terraform-managed firewall rul
 
 | Level | Description | Examples |
 |-------|-------------|---------|
-| **CUI / Restricted** | Controlled Unclassified Information per 32 CFR 2002 | Customer documents, workspace content, chat messages |
+| **CUI / Restricted** | Controlled Unclassified Information per 32 CFR 2002 | Customer documents, workspace content, conversation messages |
 | **Confidential** | Internal business data requiring protection | Audit logs, user PII, API keys, system credentials |
 | **Internal** | Internal use data not for external distribution | Architecture docs, runbooks, non-sensitive config |
 | **Public** | Approved for public distribution | Marketing materials, published documentation |
@@ -248,7 +248,7 @@ All other egress is blocked. This is enforced via Terraform-managed firewall rul
 
 | User Type | Description | Auth Method | Privileges | Count |
 |-----------|-------------|-------------|------------|-------|
-| **Customer End User** | Agency staff using chat/search | Firebase Auth (magic link or SSO) + MFA | viewer, editor roles within assigned workspaces | Variable per customer |
+| **Customer End User** | Agency staff using app search/conversation | Firebase Auth (magic link or SSO) + MFA | viewer, editor roles within assigned workspaces | Variable per customer |
 | **Customer Org Admin** | Agency administrator | Firebase Auth (SSO preferred) + MFA | master_admin or admin role; org management, user lifecycle, settings | 1-5 per customer org |
 | **Latent Archon Engineer** | Platform developer | GitHub SSO + GCP IAM (WIF) | CI/CD deployment; no direct production data access | < 10 |
 | **Latent Archon Operations** | Platform operations | GCP IAM (break-glass only) | Emergency access via IAM Conditions; time-limited | 1-2 |
@@ -273,7 +273,7 @@ All other egress is blocked. This is enforced via Terraform-managed firewall rul
 | `master_admin` | Full organization management; promote/demote admins; configure org settings (session timeouts, IP allowlists); manage SSO/SCIM |
 | `admin` | Workspace management; invite/remove members; upload/delete documents; view audit logs |
 | `editor` | Document upload and metadata editing within assigned workspaces |
-| `viewer` | Read-only access to documents and chat within assigned workspaces |
+| `viewer` | Read-only access to documents and conversations within assigned workspaces |
 
 #### Database Roles (Separation of Duties)
 
@@ -281,13 +281,13 @@ Default `PUBLIC` privileges are revoked on all tables and sequences. Only the th
 
 | DB Role | Service | Auth Method | Privileges |
 |---------|---------|-------------|------------|
-| `archon_chat_ro` | archon-chat | Cloud SQL IAM (keyless) | SELECT on reference tables; SELECT + INSERT on messages, rag_searches, generations; INSERT on audit_events; SELECT + INSERT + UPDATE on users (profile upsert) |
+| `archon_app_ro` | archon-app | Cloud SQL IAM (keyless) | SELECT on reference tables; SELECT + INSERT on messages, rag_searches, generations; INSERT on audit_events; SELECT + INSERT + UPDATE on users (profile upsert) |
 | `archon_admin_rw` | archon-admin | Cloud SQL IAM (keyless) | ALL on all tables and sequences (full CRUD) |
 | `archon_ops_rw` | archon-ops | Cloud SQL IAM (keyless) | SELECT + INSERT + UPDATE on documents, document_versions, DLQ; SELECT + INSERT + UPDATE + DELETE on chunks; INSERT on audit_events and generations; SELECT on reference tables |
 
 **Migration user** (`postgres`): Password-authenticated superuser used exclusively by the Atlas migration job (Cloud Run Job). Has DDL privileges (CREATE/ALTER/DROP). No runtime service has access to these credentials — the password is stored in Secret Manager and mounted only on the migration job container.
 
-All database roles operate under PostgreSQL Row-Level Security (RLS). RLS policies scope queries to the authenticated user's organization and workspace. RLS is **fail-closed**: if `app.organization_id` or `app.workspace_id` session variables are not set, queries return zero rows (not all rows). Roles are granted to IAM service accounts dynamically by naming convention (`archon-chat@*`, `archon-admin@*`, `archon-ops@*`), ensuring environment-agnostic enforcement across staging and production.
+All database roles operate under PostgreSQL Row-Level Security (RLS). RLS policies scope queries to the authenticated user's organization and workspace. RLS is **fail-closed**: if `app.organization_id` or `app.workspace_id` session variables are not set, queries return zero rows (not all rows). Roles are granted to IAM service accounts dynamically by naming convention (`archon-app@*`, `archon-admin@*`, `archon-ops@*`), ensuring environment-agnostic enforcement across staging and production.
 
 ---
 
@@ -298,10 +298,10 @@ All database roles operate under PostgreSQL Row-Level Security (RLS). RLS polici
 ```
 ┌─ Authorization Boundary ─────────────────────────────────────────────────┐
 │                                                                          │
-│  ┌─ Chat Project (latentarchon-chat-prod) ──────────────────────────┐   │
-│  │  Cloud Armor (WAF) → Global HTTPS LB → Chat SPA (Cloud Run)     │   │
-│  │                                       → Chat API (Cloud Run)     │   │
-│  │  Identity Platform (Chat User Pool)                              │   │
+│  ┌─ App Project (latentarchon-app-prod) ──────────────────────────┐   │
+│  │  Cloud Armor (WAF) → Global HTTPS LB → App SPA (Cloud Run)     │   │
+│  │                                       → App API (Cloud Run)     │   │
+│  │  Identity Platform (App User Pool)                              │   │
 │  └──────────────────────────────────────────────────────────────────┘   │
 │           │ Cross-project: cloudsql.client IAM                          │
 │  ┌─ Admin Project (latentarchon-admin-prod) ────────────────────────┐   │
@@ -372,7 +372,7 @@ Audit event logged (user_id, org_id, workspace_id, action,
                     ip_address, user_agent, metadata JSONB)
 ```
 
-### 8.3 Data Flow Diagram — Chat / RAG Query
+### 8.3 Data Flow Diagram — App / RAG Query
 
 ```
 Customer Browser (HTTPS/TLS 1.2+)
@@ -381,7 +381,7 @@ Customer Browser (HTTPS/TLS 1.2+)
 Cloud Armor WAF → Global HTTPS LB
     │
     ▼
-Chat API (Cloud Run) — Auth Interceptor (same 7-layer chain)
+App API (Cloud Run) — Auth Interceptor (same 7-layer chain)
     │
     ├─► Workspace access check (explicit membership OR master_admin)
     │
@@ -397,7 +397,7 @@ Context Assembly + Gemini LLM Request (Vertex AI):
     ├─► Streaming response to client
     │
     ▼
-Chat message persisted (Cloud SQL, RLS-scoped)
+Message persisted (Cloud SQL, RLS-scoped)
 Audit event logged
 ```
 

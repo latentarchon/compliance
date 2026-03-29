@@ -33,18 +33,18 @@ AI-Powered Document Intelligence for Government
 
 ## Elevator Pitch
 
-Latent Archon is a multi-tenant document intelligence platform that enables government teams to upload sensitive documents and interact with them through AI-powered chat — with workspace-level data isolation, CUI-grade security controls, and zero data leakage between organizations. Built entirely on FedRAMP High authorized GCP infrastructure, Latent Archon delivers the capabilities of modern AI to agencies that cannot compromise on security.
+Latent Archon is a multi-tenant document intelligence platform that enables government teams to upload sensitive documents and interact with them through AI-powered conversation — with workspace-level data isolation, CUI-grade security controls, and zero data leakage between organizations. Built entirely on FedRAMP High authorized GCP infrastructure, Latent Archon delivers the capabilities of modern AI to agencies that cannot compromise on security.
 
 ---
 
 ## Core Capabilities
 
 **AI Document Intelligence**
-- Retrieval-Augmented Generation (RAG) chat over uploaded document collections
+- Retrieval-Augmented Generation (RAG) conversation over uploaded document collections
 - Workspace-scoped vector search with Vertex AI
 - Document AI OCR processing for PDF, image, and office formats
 - Gemini-powered streaming responses with source citations
-- Inline image generation within chat conversations via Gemini 2.0 Flash
+- Inline image generation within conversations via Gemini 2.0 Flash
 - Semantic near-duplicate detection (0.97 cosine similarity threshold) and immutable document versioning
 
 **CUI-Grade Security**
@@ -88,7 +88,7 @@ Latent Archon is a multi-tenant document intelligence platform that enables gove
 | **Internal Red Team** | 44 automated attack scenarios across auth bypass, privilege escalation, and data exfiltration |
 | **FIPS 140-2 Cryptography** | All server-side TLS, hashing, and encryption use FIPS-validated BoringSSL (NIST cert #4407) via GOEXPERIMENT=boringcrypto |
 | **FOIA-Ready Data Export** | Bulk export with chain-of-custody manifests for FOIA compliance and federal record-keeping |
-| **Multimodal AI** | Text RAG + inline image generation within chat conversations via Gemini 2.0 Flash |
+| **Multimodal AI** | Text RAG + inline image generation within conversations via Gemini 2.0 Flash |
 | **No Vendor Lock-in** | PostgreSQL (portable), standard containers, Terraform IaC, Connect-RPC (protocol-agnostic) |
 | **Rapid Deployment** | Cloud-native serverless architecture — provision a new customer org in minutes, not months |
 

@@ -97,7 +97,7 @@ In addition to the standard incident reporting channels (US-CERT, FedRAMP PMO), 
 |----------------|----------|----------|
 | Authentication | Login success/failure, MFA challenge, session timeout | §5.4.1.1 |
 | Authorization | RBAC checks, workspace access, permission denied | §5.4.1.1 |
-| Data Access | Document view, search query, chat message | §5.4.1.1 |
+| Data Access | Document view, search query, conversation message | §5.4.1.1 |
 | Data Modification | Document upload/delete, member invite/remove | §5.4.1.1 |
 | Administrative | Role change, org settings update, SSO config | §5.4.1.1 |
 | System | Service startup/shutdown, health check failures | §5.4.1.1 |
@@ -113,7 +113,7 @@ In addition to the standard incident reporting channels (US-CERT, FedRAMP PMO), 
 |-------------|----------------|----------|
 | Least privilege access | RBAC with 4 org roles + 3 workspace roles; 3 least-privilege DB roles | `policies/access-control.md` §5, §6.2 |
 | Account management (provisioning/deprovisioning) | SCIM 2.0 + JIT provisioning; same-day deprovisioning on termination | `policies/access-control.md` §3 |
-| Separation of duties | Separate DB roles per service; admin vs. chat pool isolation | `policies/access-control.md` §6 |
+| Separation of duties | Separate DB roles per service; admin vs. app pool isolation | `policies/access-control.md` §6 |
 | Session lock (idle timeout) | 25-min default idle timeout (configurable per org, minimum 5 min) | `policies/access-control.md` §4.2 |
 | Unsuccessful logon attempts | Identity Platform brute-force protection + IP/per-user rate limiting | `policies/access-control.md` §4.4 |
 | System access notifications (login banners) | Configurable per-org login banner (stored in org settings) | Application feature |

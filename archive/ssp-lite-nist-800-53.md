@@ -11,7 +11,7 @@
 
 ## 1. System Description
 
-Latent Archon is a multi-tenant RAG (Retrieval-Augmented Generation) platform for government document intelligence. The system enables agency users to upload documents, perform AI-powered search, and interact with document content via chat — with workspace-level data isolation and CUI-grade security controls.
+Latent Archon is a multi-tenant RAG (Retrieval-Augmented Generation) platform for government document intelligence. The system enables agency users to upload documents, perform AI-powered search, and interact with document content via conversation — with workspace-level data isolation and CUI-grade security controls.
 
 ### Deployment Model
 
@@ -23,10 +23,10 @@ Latent Archon is a multi-tenant RAG (Retrieval-Augmented Generation) platform fo
 
 | Component | GCP Service | Project |
 |-----------|-------------|---------|
-| Chat API | Cloud Run (`archon-chat`) | `latentarchon-chat-prod` |
+| App API | Cloud Run (`archon-app`) | `latentarchon-app-prod` |
 | Admin API | Cloud Run (`archon-admin`) | `latentarchon-admin-prod` |
 | Ops Service | Cloud Run (`archon-ops`) | `latentarchon-admin-prod` |
-| Chat SPA | Cloud Run (nginx) | `latentarchon-chat-prod` |
+| App SPA | Cloud Run (nginx) | `latentarchon-app-prod` |
 | Admin SPA | Cloud Run (nginx) | `latentarchon-admin-prod` |
 | Database | Cloud SQL (PostgreSQL 15) | `latentarchon-admin-prod` |
 | Object Storage | Cloud Storage | `latentarchon-admin-prod` |
@@ -71,7 +71,7 @@ Controls are categorized by implementation responsibility:
 | AC-2(4) | Automated Audit Actions | Latent Archon | All account lifecycle events audit-logged with user/IP/timestamp |
 | AC-3 | Access Enforcement | Latent Archon | RBAC (master_admin, admin, editor, viewer) enforced per-RPC; PostgreSQL RLS (fail-closed); **org membership enforced at interceptor level** (orgless users rejected on all non-AuthService RPCs); **subdomain→org DB validation** rejects unknown org subdomains and cross-org mismatches; org slug format validated against DNS-safe regex + reserved-slug blocklist |
 | AC-4 | Information Flow Enforcement | Shared | VPC networking (private IP only); FQDN-based egress firewall (default deny all, explicit Google API allowlist); Cloud Armor WAF; RLS workspace scoping; vector store token restrictions; per-org IP allowlisting via Cloud Armor; **subdomain→org cross-org prevention** (Host subdomain resolved to org via DB, user's org must match) |
-| AC-5 | Separation of Duties | Latent Archon | Three Cloud Run services with distinct DB roles (chat_ro, admin_rw, ops_rw); two-project auth isolation with **cross-pool identity bridging explicitly prohibited** — workspace access across pools uses explicit invite flow only (auto-invite on workspace creation; see `docs/POOL_ISOLATION.md`) |
+| AC-5 | Separation of Duties | Latent Archon | Three Cloud Run services with distinct DB roles (app_ro, admin_rw, ops_rw); two-project auth isolation with **cross-pool identity bridging explicitly prohibited** — workspace access across pools uses explicit invite flow only (auto-invite on workspace creation; see `docs/POOL_ISOLATION.md`) |
 | AC-6 | Least Privilege | Shared | 15 specific IAM roles on terraform-sa; DB roles with minimal grants; per-service SA with scoped permissions |
 | AC-6(1) | Authorize Access to Security Functions | Latent Archon | Only master_admin can promote to master_admin; MFA reset restricted to admins with self-reset blocked |
 | AC-6(9) | Log Use of Privileged Functions | Latent Archon | All admin operations audit-logged; WARN-level for security-critical events |
@@ -109,7 +109,7 @@ Controls are categorized by implementation responsibility:
 | AU-6 | Audit Record Review, Analysis, and Reporting | Shared | Cloud Logging dashboards; alert policies on WARN-level audit events; **Pub/Sub SIEM export pipeline** (per-customer topic + pull/push subscription for agency Splunk/Sentinel/Chronicle integration) |
 | AU-7 | Audit Record Reduction and Report Generation | GCP + Latent Archon | Cloud Logging filtering; structured JSON format; correlation IDs for cross-event linking |
 | AU-8 | Time Stamps | GCP Inherited | Cloud Run uses Google NTP; audit events use `time.Now().UTC()` |
-| AU-9 | Protection of Audit Information | GCP + Latent Archon | DB audit_events table: chat role has INSERT-only; Cloud Logging immutable; GCS export versioned |
+| AU-9 | Protection of Audit Information | GCP + Latent Archon | DB audit_events table: app role has INSERT-only; Cloud Logging immutable; GCS export versioned |
 | AU-11 | Audit Record Retention | Shared | Cloud Logging: 30 days default; GCS export: 365 days; DB audit_events: configurable |
 | AU-12 | Audit Record Generation | Latent Archon | `internal/audit/logger.go` generates events; async persistence with `EventAsync()` |
 
@@ -311,7 +311,7 @@ The following control families are **fully or predominantly inherited** from GCP
 | ID | Finding | Risk | Milestone | Target |
 |----|---------|------|-----------|--------|
 | ~~POA-1~~ | ~~ClamAV Docker image not yet deployed~~ | ~~Complete~~ | Terraform module + staging/production configs deployed (`infra/modules/clamav/`). Uses `benzino77/clamav-rest` on Cloud Run (internal-only, archon-admin invoker). Needs image push + `terragrunt apply`. | **Infra ready** |
-| ~~POA-2~~ | ~~App Check enforcement set to UNENFORCED~~ | ~~Complete~~ | All 4 identity-platform configs (staging admin/chat, production admin/chat) set to `ENFORCED`. Pending: production Firebase app IDs + reCAPTCHA site keys. | **Done** |
+| ~~POA-2~~ | ~~App Check enforcement set to UNENFORCED~~ | ~~Complete~~ | All 4 identity-platform configs (staging admin/app, production admin/app) set to `ENFORCED`. Pending: production Firebase app IDs + reCAPTCHA site keys. | **Done** |
 | ~~POA-3~~ | ~~Production Cloud Armor IP ranges TBD~~ | ~~Complete~~ | Self-service per-org IP allowlisting implemented via Cloud Armor API integration; org admins configure CIDR allowlists via `UpdateOrganizationSettings` RPC | **Done** |
 | POA-4 | FedRAMP 3PAO assessment | High | Engage 3PAO for formal Moderate assessment | Q3 2026 |
 | POA-5 | StateRAMP authorization | Medium | Apply after FedRAMP Moderate achieved | Q4 2026 |

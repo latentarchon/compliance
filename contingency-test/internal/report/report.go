@@ -13,7 +13,7 @@ import (
 type Input struct {
 	Timestamp      time.Time
 	AdminProjectID string
-	ChatProjectID  string
+	AppProjectID   string
 	Region         string
 	Results        []checks.Result
 }
@@ -65,8 +65,8 @@ func Generate(in Input) string {
 	b.WriteString(fmt.Sprintf("| **Failed** | %d |\n", failed))
 	b.WriteString(fmt.Sprintf("| **Skipped** | %d |\n", skipped))
 	b.WriteString(fmt.Sprintf("| **Admin Project** | `%s` |\n", in.AdminProjectID))
-	if in.ChatProjectID != "" {
-		b.WriteString(fmt.Sprintf("| **Chat Project** | `%s` |\n", in.ChatProjectID))
+	if in.AppProjectID != "" {
+		b.WriteString(fmt.Sprintf("| **App Project** | `%s` |\n", in.AppProjectID))
 	}
 	b.WriteString(fmt.Sprintf("| **Region** | `%s` |\n", in.Region))
 	b.WriteString("\n---\n\n")

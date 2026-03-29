@@ -100,7 +100,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 
 2. **RBAC**: Each RPC handler performs explicit role-based authorization checks before executing business logic. Organization operations require `IsOrgAdmin()` or `IsMasterAdmin()`. Workspace operations require `CanUserAccessWorkspace()` (explicit membership or master_admin).
 
-3. **PostgreSQL RLS**: Row-Level Security policies on all data tables scope queries to the authenticated user's organization and workspace. RLS is fail-closed: missing session variables return zero rows. The `chat_ro` role cannot INSERT/UPDATE/DELETE data tables.
+3. **PostgreSQL RLS**: Row-Level Security policies on all data tables scope queries to the authenticated user's organization and workspace. RLS is fail-closed: missing session variables return zero rows. The `app_ro` role cannot INSERT/UPDATE/DELETE data tables.
 
 4. **Vector Store Scoping**: Vertex AI vector search queries are restricted by workspace-scoped token filters, preventing cross-workspace semantic search.
 
@@ -126,7 +126,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 
 **Implementation**: Separation of duties is enforced through:
 
-- **Service Isolation**: Three Cloud Run services (`archon-chat`, `archon-admin`, `archon-ops`) operate with distinct PostgreSQL roles (`archon_chat_ro`, `archon_admin_rw`, `archon_ops_rw`) enforced via migration `20260328120000_enforce_least_privilege_db_roles.sql`. Default `PUBLIC` privileges are revoked — only named roles have table access. The chat service cannot modify reference data. The ops service has write access limited to document processing tables only.
+- **Service Isolation**: Three Cloud Run services (`archon-app`, `archon-admin`, `archon-ops`) operate with distinct PostgreSQL roles (`archon_app_ro`, `archon_admin_rw`, `archon_ops_rw`) enforced via migration `20260328120000_enforce_least_privilege_db_roles.sql`. Default `PUBLIC` privileges are revoked — only named roles have table access. The app service cannot modify reference data. The ops service has write access limited to document processing tables only.
 - **Project Isolation**: Two GCP projects with separate Identity Platform pools, Cloud Armor policies, and IAM configurations. Cross-pool identity bridging is explicitly prohibited (see `docs/POOL_ISOLATION.md`).
 - **RBAC**: Only `master_admin` can promote others to `master_admin`. Self-MFA-reset is blocked. Last-admin guard prevents lockout.
 - **CI/CD**: Production deploys require PR approval. Terraform plans are posted as PR comments for review before apply.
@@ -139,7 +139,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 **Implementation**:
 
 - **GCP IAM**: The Terraform service account has exactly 15 specific roles (no `roles/editor` or `roles/owner`). Each Cloud Run service account has scoped permissions for only the APIs it needs. Workload Identity Federation eliminates static service account keys.
-- **Database**: Three distinct PostgreSQL roles with minimum necessary grants, enforced via Atlas migration. Default `PUBLIC` privileges are revoked on all tables and sequences. `archon_chat_ro` is read-only on reference data (SELECT + INSERT only for chat persistence). `archon_ops_rw` is scoped to document processing tables (cannot touch org/member/invite data). Audit table is INSERT-only for non-admin roles. Schema migrations run under a separate `postgres` superuser whose credentials are isolated in Secret Manager — no runtime service can execute DDL.
+- **Database**: Three distinct PostgreSQL roles with minimum necessary grants, enforced via Atlas migration. Default `PUBLIC` privileges are revoked on all tables and sequences. `archon_app_ro` is read-only on reference data (SELECT + INSERT only for app persistence). `archon_ops_rw` is scoped to document processing tables (cannot touch org/member/invite data). Audit table is INSERT-only for non-admin roles. Schema migrations run under a separate `postgres` superuser whose credentials are isolated in Secret Manager — no runtime service can execute DDL.
 - **Application**: RBAC enforces per-RPC authorization. Viewers cannot modify data. Editors cannot manage members. Only admins can manage workspaces.
 
 ### AC-6(1): Authorize Access to Security Functions
@@ -330,7 +330,7 @@ Organization administrators configure timeouts via `UpdateOrganizationSettings` 
 - **Authentication**: Login success/failure, MFA verification, token refresh, session timeout
 - **Authorization**: RBAC check pass/fail, workspace access grant/deny, org membership validation
 - **Account Lifecycle**: User creation, invitation, join, removal, role change, account closure, SCIM provisioning/deprovisioning
-- **Data Access**: Document upload, download, delete, search queries, chat messages
+- **Data Access**: Document upload, download, delete, search queries, conversation messages
 - **Administrative**: Org settings changes, SSO/SCIM configuration, IP allowlist updates, member management
 - **Security**: Failed auth attempts, cross-org access attempts, rate limit hits, WAF blocks
 
@@ -341,14 +341,14 @@ The event types are reviewed annually and updated as new features are added.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Each audit event record contains: `user_id` (actor), `organization_id` (org scope), `workspace_id` (workspace scope, where applicable), `action` (event type string), `status` (success/failure), `resource_type` and `resource_id` (target), `ip_address` (source IP), `user_agent` (client identifier), `trace_id` (distributed tracing correlation), `correlation_id` (multi-event correlation), and `created_at` (UTC timestamp).
+**Implementation**: Each audit event record contains: `user_id` (actor), `organization_id` (org scope), `workspace_id` (workspace scope, where applicable), `action` (event type string), `status` (success/failure), `resource_type` and `resource_id` (target), `ip_address` (source IP), `user_agent` (client identifier), `trace_id` (distributed tracing correlation), `correlation_id` (multi-event correlation), `session_id` (session identification), `mfa_method` (MFA method used, e.g., TOTP), and `created_at` (UTC timestamp).
 
 ### AU-3(1): Additional Audit Information
 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Audit events include a JSONB `metadata` field containing: `request_id`, `idp_pool_id` (Identity Platform tenant), `trace_id` (OpenTelemetry), `span_id`, `error_code` (for failures), `duration_ms` (request duration), and `platform` (admin/chat/ops). This enables correlation across distributed services and integration with SIEM systems.
+**Implementation**: Audit events include a JSONB `metadata` field containing: `request_id`, `idp_pool_id` (Identity Platform tenant), `trace_id` (OpenTelemetry), `span_id`, `error_code` (for failures), `duration_ms` (request duration), and `platform` (admin/app/ops). Additionally, top-level `session_id` and `mfa_method` columns provide session correlation and MFA method tracking (e.g., TOTP) per AU-3(1) requirements. This enables correlation across distributed services and integration with SIEM systems. See Security Whitepaper: "Schema future-proofing".
 
 ### AU-4: Audit Log Storage Capacity
 
@@ -404,7 +404,7 @@ The event types are reviewed annually and updated as new features are added.
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: Audit records are protected through multiple mechanisms: (1) The `audit_events` database table grants INSERT-only access to the `chat_ro` role — no application role can UPDATE or DELETE audit records; (2) Cloud Logging records are immutable once written; (3) GCS export uses versioning with 365-day retention; (4) Access to raw audit data requires `master_admin` role at the application level or GCP IAM privileges at the infrastructure level.
+**Implementation**: Audit records are protected through multiple mechanisms: (1) The `audit_events` database table grants INSERT-only access to the `app_ro` role — no application role can UPDATE or DELETE audit records; (2) Cloud Logging records are immutable once written; (3) GCS export uses versioning with 365-day retention; (4) Access to raw audit data requires `master_admin` role at the application level or GCP IAM privileges at the infrastructure level.
 
 ### AU-9(4): Access by Subset of Privileged Users
 
@@ -425,7 +425,7 @@ The event types are reviewed annually and updated as new features are added.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Audit events are generated by the application via `internal/audit/logger.go` using `EventAsync()` for non-blocking persistence. Events are generated at all three Cloud Run services (chat, admin, ops) for their respective operations. Every service generates audit events for authentication, authorization, and data access operations within its scope.
+**Implementation**: Audit events are generated by the application via `internal/audit/logger.go` using `EventAsync()` for non-blocking persistence. Events are generated at all three Cloud Run services (app, admin, ops) for their respective operations. Every service generates audit events for authentication, authorization, and data access operations within its scope.
 
 ---
 
@@ -457,7 +457,7 @@ The event types are reviewed annually and updated as new features are added.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The only cross-project system interconnection is a single IAM grant: the chat project service account receives `roles/cloudsql.client` and `roles/cloudsql.instanceUser` on the admin project for Cloud SQL database access. All other services are project-isolated. External interconnections (customer IdP SAML/SCIM, Cloudflare DNS) are documented in Section 4 of the SSP.
+**Implementation**: The only cross-project system interconnection is a single IAM grant: the app project service account receives `roles/cloudsql.client` and `roles/cloudsql.instanceUser` on the admin project for Cloud SQL database access. All other services are project-isolated. External interconnections (customer IdP SAML/SCIM, Cloudflare DNS) are documented in Section 4 of the SSP.
 
 ### CA-5: Plan of Action and Milestones
 
@@ -1439,7 +1439,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Application and management functionality are separated through: (1) Two distinct GCP projects (chat and admin) with separate Identity Platform pools; (2) Three Cloud Run services with distinct database roles (chat_ro, admin_rw, ops_rw); (3) Admin operations require the `admin` or `master_admin` RBAC role, inaccessible from the chat application; (4) GCP management operations use separate IAM credentials from application service accounts.
+**Implementation**: Application and management functionality are separated through: (1) Two distinct GCP projects (app and admin) with separate Identity Platform pools; (2) Three Cloud Run services with distinct database roles (app_ro, admin_rw, ops_rw); (3) Admin operations require the `admin` or `master_admin` RBAC role, inaccessible from the app; (4) GCP management operations use separate IAM credentials from application service accounts.
 
 ### SC-4: Information in Shared System Resources
 
@@ -1464,7 +1464,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 
 - **External boundary**: Cloud Armor WAF (OWASP CRS, HTTP method enforcement, origin restriction, bot blocking, per-org IP allowlisting) → Global HTTPS Load Balancer → Cloud Run (private IP only)
 - **Internal boundary**: VPC with no public IPs on any service. FQDN-based egress firewall with default-deny-all. Only Google API endpoints are reachable outbound.
-- **Cross-project boundary**: Single narrow IAM grant (cloudsql.client) from chat project to admin project database. No other cross-project access.
+- **Cross-project boundary**: Single narrow IAM grant (cloudsql.client) from app project to admin project database. No other cross-project access.
 - **Org boundary**: 5-layer org isolation in auth interceptor prevents cross-org request routing via DB-backed subdomain validation
 
 ### SC-7(3): Access Points
@@ -1472,7 +1472,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: External access points are minimized to: (1) Chat project HTTPS endpoint (app.latentarchon.com); (2) Admin project HTTPS endpoint (admin.latentarchon.com); (3) SCIM endpoint (admin API path). All access points terminate at Cloud Armor WAF → Global HTTPS Load Balancer. No other external access points exist. No SSH, VPN, or direct infrastructure access is provided.
+**Implementation**: External access points are minimized to: (1) App project HTTPS endpoint (app.latentarchon.com); (2) Admin project HTTPS endpoint (admin.latentarchon.com); (3) SCIM endpoint (admin API path). All access points terminate at Cloud Armor WAF → Global HTTPS Load Balancer. No other external access points exist. No SSH, VPN, or direct infrastructure access is provided.
 
 ### SC-7(4): External Telecommunications Services
 
@@ -1528,7 +1528,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Key management uses Cloud KMS: (1) CMEK keys for Cloud SQL and GCS encryption (AES-256, automatic rotation every 365 days); (2) JWT signing keys managed by Google Identity Platform (automatic rotation); (3) SCIM tokens are random 32-byte values, SHA-256 hashed before storage; (4) No static service account keys — all service authentication uses Workload Identity Federation; (5) TLS certificate keys managed by Google Certificate Manager (automatic renewal).
+**Implementation**: Key management uses Cloud KMS: (1) CMEK keys for Cloud SQL and GCS encryption (AES-256, automatic rotation every 365 days); (2) Per-tenant CMEK anchor via `organizations.kms_key_name` column for future per-tenant encryption key isolation; (3) JWT signing keys managed by Google Identity Platform (automatic rotation); (4) SCIM tokens are random 32-byte values, SHA-256 hashed before storage; (5) No static service account keys — all service authentication uses Workload Identity Federation; (6) TLS certificate keys managed by Google Certificate Manager (automatic renewal). See Security Whitepaper: "Schema future-proofing".
 
 ### SC-12(1): Availability
 
@@ -1549,7 +1549,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The system does not include collaborative computing devices (cameras, microphones). The RAG chat feature is text-only. No audio/video capabilities exist within the application.
+**Implementation**: The system does not include collaborative computing devices (cameras, microphones). The RAG conversation feature is text-only. No audio/video capabilities exist within the application.
 
 ### SC-17: Public Key Infrastructure Certificates
 
@@ -1563,7 +1563,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The React SPAs (chat and admin) are the only mobile code executed on client devices. SPAs are served from Cloud Run containers and execute in the browser sandbox. Content Security Policy (CSP) headers restrict script sources. No Java applets, Flash, ActiveX, or other plugin-based mobile code is used.
+**Implementation**: The React SPAs (app and admin) are the only mobile code executed on client devices. SPAs are served from Cloud Run containers and execute in the browser sandbox. Content Security Policy (CSP) headers restrict script sources. No Java applets, Flash, ActiveX, or other plugin-based mobile code is used.
 
 ### SC-20: Secure Name/Address Resolution Service (Authoritative Source)
 
@@ -1732,7 +1732,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Spam protection is provided by: (1) Firebase App Check with reCAPTCHA Enterprise for client attestation; (2) Cloud Armor bot/scanner blocking rules; (3) Rate limiting at IP and per-user levels; (4) No user-to-user messaging within the platform (chat is user-to-AI only).
+**Implementation**: Spam protection is provided by: (1) Firebase App Check with reCAPTCHA Enterprise for client attestation; (2) Cloud Armor bot/scanner blocking rules; (3) Rate limiting at IP and per-user levels; (4) No user-to-user messaging within the platform (conversation is user-to-AI only).
 
 ### SI-10: Information Input Validation
 

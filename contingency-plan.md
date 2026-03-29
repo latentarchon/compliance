@@ -36,11 +36,11 @@ The ISCP covers:
 ### 2.1 System Description
 
 Latent Archon is a multi-tenant document intelligence SaaS platform hosted on GCP. The system consists of:
-- **3 Cloud Run services**: archon-chat (user-facing), archon-admin (admin API), archon-ops (background processing)
+- **3 Cloud Run services**: archon-app (user-facing), archon-admin (admin API), archon-ops (background processing)
 - **Cloud SQL PostgreSQL 15**: Primary data store with RLS
 - **Cloud Storage**: Document file storage
 - **Vertex AI**: Vector search and LLM inference
-- **Identity Platform**: Authentication (two pools: chat and admin)
+- **Identity Platform**: Authentication (two pools: app and admin)
 - **Cloud Armor**: WAF and DDoS protection
 - **Cloud KMS**: Encryption key management
 
@@ -51,7 +51,7 @@ All infrastructure is managed via Terraform/Terragrunt, enabling reproducible de
 | Service Tier | Components | RPO | RTO | Description |
 |-------------|------------|-----|-----|-------------|
 | **Tier 1 — Critical** | Database (Cloud SQL), Document Storage (GCS), Authentication (Identity Platform) | < 5 min | < 1 hr | Customer data and authentication — any loss is unacceptable |
-| **Tier 2 — Essential** | Cloud Run APIs (chat, admin, ops), Load Balancers, Cloud Armor | 0 (stateless) | < 4 hr | Stateless services rebuilt from container images + Terraform |
+| **Tier 2 — Essential** | Cloud Run APIs (app, admin, ops), Load Balancers, Cloud Armor | 0 (stateless) | < 4 hr | Stateless services rebuilt from container images + Terraform |
 | **Tier 3 — Supporting** | Vertex AI (Vector Search + LLM), Document AI, Cloud Tasks, Ops Service | < 24 hr | < 8 hr | AI/search features; system usable without them (degraded mode) |
 | **Tier 4 — Non-Critical** | CI/CD pipelines, Monitoring dashboards, Drata sync | N/A | < 24 hr | Operational tooling; does not affect customer service |
 
@@ -137,7 +137,7 @@ The Contingency Plan Coordinator (CEO) has sole authority to activate the ISCP. 
 ### 5.3 Scenario 3: Cloud Storage Failure
 
 **Trigger**: Document upload/download failures, 5xx from GCS API
-**Impact**: Tier 2 — Document access unavailable, chat/search may degrade
+**Impact**: Tier 2 — Document access unavailable, app search may degrade
 
 **Recovery Steps**:
 

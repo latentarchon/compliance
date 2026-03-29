@@ -65,7 +65,7 @@ Latent Archon is a CUI-compliant RAG (Retrieval-Augmented Generation) chatbot pl
 | **Session Management** | NIST 800-171 AC-12 compliant idle (30 min) and absolute (12 hr) timeouts |
 | **Multi-Tenancy** | Two-project auth isolation (separate Firebase pools), tenant ID enforcement at interceptor + host + header levels |
 | **Data Isolation** | PostgreSQL Row-Level Security (RLS) with fail-closed workspace scoping on all data tables |
-| **Database Roles** | Three least-privilege Postgres roles: read-only (chat), read-write (admin), ops (processing) |
+| **Database Roles** | Three least-privilege Postgres roles: read-only (app), read-write (admin), ops (processing) |
 | **API Protocol** | Connect-RPC with typed interceptor chain (auth → MFA → rate limit → logging) |
 | **Rate Limiting** | Two-tier: IP-based HTTP middleware + per-user Connect-RPC interceptor with service-specific tiers |
 | **Upload Security** | File type allowlist, magic-byte validation, size limits, filename sanitization, SHA-256 deduplication |
@@ -86,7 +86,7 @@ The system is deployed as three isolated Cloud Run services, each operating in a
 
 | Service | Mode | Purpose | Auth Model |
 |---|---|---|---|
-| `archon-chat` | `public` | User-facing chat API, streaming, search | Firebase Auth (app pool) |
+| `archon-app` | `public` | User-facing app API, streaming, search | Firebase Auth (app pool) |
 | `archon-admin` | `admin` | Admin API: org/workspace/document management | Firebase Auth (admin pool) |
 | `archon-ops` | `ops` | Internal: document processing, cron jobs | Google OIDC (service accounts) |
 
@@ -94,10 +94,10 @@ The system is deployed as three isolated Cloud Run services, each operating in a
 
 Authentication is split across two GCP projects to provide **complete auth pool isolation**:
 
-- **`latentarchon-app`**: Firebase Auth user pool for chat users
+- **`latentarchon-app`**: Firebase Auth user pool for app users
 - **`latentarchon-admin`**: Firebase Auth pool for admin users
 
-This prevents cross-pool authentication attacks — a valid chat user token cannot authenticate against the admin API, and vice versa.
+This prevents cross-pool authentication attacks — a valid app user token cannot authenticate against the admin API, and vice versa.
 
 ### Request Flow
 
@@ -171,7 +171,7 @@ The system implements a hierarchical RBAC model:
 |---|---|
 | `admin` | Full workspace management: invite/remove members, upload/delete documents |
 | `editor` | Document upload and metadata editing |
-| `viewer` | Read-only access to documents and chat |
+| `viewer` | Read-only access to documents and conversations |
 
 #### Access Tier (CUI Segmentation)
 | Tier | Purpose |
@@ -186,7 +186,7 @@ Every RPC handler performs explicit authorization checks:
 1. **Organization operations**: `IsOrgAdmin()` / `IsMasterAdmin()` checks
 2. **Workspace operations**: `CanUserAccessWorkspace()` checks (explicit membership OR master_admin of parent org)
 3. **Document operations**: Workspace access verified before any document CRUD
-4. **Chat/Search**: Workspace access verified for every workspace ID in the request
+4. **App/Search**: Workspace access verified for every workspace ID in the request
 5. **Member management**: Only admins can invite/remove; only master_admins can invite other master_admins
 6. **MFA reset**: Admin-only, with self-reset prevention (`cannot reset your own MFA via admin endpoint`)
 7. **Last-admin guard**: Both org and workspace member removal prevent removing the last admin
@@ -352,13 +352,13 @@ Three Postgres roles enforce least-privilege access:
 
 | Role | Used By | Permissions |
 |---|---|---|
-| `archon_chat_ro` | Chat API (`archon-chat`) | SELECT on reference tables; SELECT + INSERT on messages, rag_searches, generations |
+| `archon_app_ro` | App API (`archon-app`) | SELECT on reference tables; SELECT + INSERT on messages, rag_searches, generations |
 | `archon_admin_rw` | Admin API (`archon-admin`) | ALL on all tables and sequences |
 | `archon_ops_rw` | Ops service (`archon-ops`) | SELECT/INSERT/UPDATE on documents + chunks; INSERT on audit_events + generations; SELECT on reference tables |
 
 Key restrictions:
-- Chat role **cannot** create, modify, or delete organizations, workspaces, documents, or members
-- Chat role **cannot** delete any data
+- App role **cannot** create, modify, or delete organizations, workspaces, documents, or members
+- App role **cannot** delete any data
 - Ops role **cannot** modify organizations, workspaces, or members
 - Roles are mapped to GCP IAM service accounts via Cloud SQL IAM authentication
 
@@ -529,7 +529,7 @@ Applied as a Connect-RPC interceptor **after** authentication:
 
 | Service Tier | Rate | Burst | Interval |
 |---|---|---|---|
-| Chat (ConversationService) | 20 req/min | 30 | 1 minute |
+| App (ConversationService) | 20 req/min | 30 | 1 minute |
 | Upload (DocumentService) | 15 req/min | 20 | 1 minute |
 | Default (all other RPCs) | 60 req/min | 80 | 1 minute |
 
@@ -650,7 +650,7 @@ If any step fails, the upload is rejected and no data is persisted.
 3. **Context Isolation**: Vector search results are scoped to authorized workspaces only
 4. **Prompt Construction**: System prompt is server-controlled (not user-modifiable)
 5. **Message Persistence**: Async with WaitGroup tracking for graceful shutdown
-6. **Correlation IDs**: Every chat flow gets a unique correlation ID for audit trail
+6. **Correlation IDs**: Every conversation flow gets a unique correlation ID for audit trail
 
 ### Document Processing Pipeline
 
@@ -774,8 +774,8 @@ Every RPC call is logged with:
 ### Cross-Project Security
 
 Only one narrow IAM grant crosses the project boundary:
-- `roles/cloudsql.client` + `roles/cloudsql.instanceUser` for the chat service account on the admin project
-- This enables the chat API to read documents and workspace data from Cloud SQL
+- `roles/cloudsql.client` + `roles/cloudsql.instanceUser` for the app service account on the admin project
+- This enables the app API to read documents and workspace data from Cloud SQL
 
 ---
 
@@ -905,7 +905,7 @@ The `RecoveryInterceptor` catches all panics in Connect-RPC handlers, logs the p
 
 ### Async Operation Tracking
 
-Chat message persistence uses a `sync.WaitGroup` to ensure all in-flight writes complete before shutdown:
+Message persistence uses a `sync.WaitGroup` to ensure all in-flight writes complete before shutdown:
 
 ```go
 if h.wg != nil {
@@ -928,7 +928,7 @@ go func() {
 | **AC-2** | Account Management | Firebase Auth user management, org/workspace member CRUD, invite system with expiring tokens |
 | **AC-3** | Access Enforcement | RBAC (master_admin/admin/editor/viewer), workspace access checks, RLS |
 | **AC-4** | Information Flow Enforcement | RLS workspace scoping, vector search token restrictions, two-project auth isolation |
-| **AC-5** | Separation of Duties | Three database roles (chat_ro, admin_rw, ops_rw), three server modes |
+| **AC-5** | Separation of Duties | Three database roles (app_ro, admin_rw, ops_rw), three server modes |
 | **AC-6** | Least Privilege | Database roles, IAM service accounts, per-service permissions |
 | **AC-7** | Unsuccessful Login Attempts | Firebase Auth built-in lockout; rate limiting on auth endpoints |
 | **AC-8** | System Use Notification | Configurable at frontend level |
@@ -939,7 +939,7 @@ go func() {
 | **AU-3** | Content of Audit Records | User ID, action, status, resource, IP, user agent, timestamps, trace IDs, correlation IDs |
 | **AU-6** | Audit Review | Cloud Logging SIEM integration, structured JSON logs, WARN-level security events |
 | **AU-8** | Time Stamps | `TIMESTAMPTZ` on all records, server-generated timestamps |
-| **AU-9** | Protection of Audit Information | Audit table uses admin-scoped DBTX; chat role has SELECT-only on audit_events |
+| **AU-9** | Protection of Audit Information | Audit table uses admin-scoped DBTX; app role has SELECT-only on audit_events |
 | **AU-12** | Audit Generation | Audit events generated at handler level for all security-relevant operations |
 | **IA-2** | Identification and Authentication | Firebase Auth JWT verification with MFA; SAML 2.0 SSO federation with customer IdPs |
 | **IA-4** | Identifier Management | SCIM 2.0 automated user provisioning/deprovisioning; external identity mapping |
@@ -1029,9 +1029,9 @@ Latent Archon provides a multi-tenant Retrieval-Augmented Generation (RAG) assis
 Security is layered: Identity Platform/Firebase Auth with mandatory TOTP MFA, tenant isolation enforcement, per-request and per-user rate limiting, strict CORS and security headers, Google OIDC verification for internal tasks, Row-Level Security (RLS) in Postgres, and vector-level token restrictions. Comprehensive audit logs, OpenTelemetry tracing/metrics, and health/readiness endpoints support production operations and compliance.
 
 ## System Overview
-- API surface: Connect-RPC for all public/admin operations (server-streaming for chat); minimal REST only for health, readiness, and multipart uploads.
+- API surface: Connect-RPC for all public/admin operations (server-streaming for app); minimal REST only for health, readiness, and multipart uploads.
 - Server modes (single binary):
-  - public: user-facing chat + search
+  - public: user-facing app + search
   - admin: administration (org/workspace/doc/member CRUD)
   - ops: internal task endpoints (document processing, DLQ), Google OIDC protected
 - Core domain services:
@@ -1042,7 +1042,7 @@ Security is layered: Identity Platform/Firebase Auth with mandatory TOTP MFA, te
   - chatmessage: message storage/retrieval/rating
   - audit: structured audit events to Postgres + Cloud Logging
 
-## Data Flow (Chat)
+## Data Flow (App)
 1) Authenticated user sends `SendMessage` (Connect server-streaming) with selected `workspace_ids`.
 2) Access check: user must be a member of each workspace.
 3) If configured, query is embedded (Vertex AI), searched across vector index with token restrictions on `workspace_id`.
@@ -1090,7 +1090,7 @@ Security is layered: Identity Platform/Firebase Auth with mandatory TOTP MFA, te
   - OpenTelemetry tracing spans for HTTP and Connect-RPC.
   - Metrics middleware emits request counts/latency/error rates; slow-query warnings in DB layer.
 - Health and Readiness
-  - `/health` liveness; `/readyz` deep readiness probes that reflect availability of DB, vector store, document service, Cloud Tasks, gentext, and chat storage.
+  - `/health` liveness; `/readyz` deep readiness probes that reflect availability of DB, vector store, document service, Cloud Tasks, gentext, and message storage.
 - Graceful Shutdown
   - Signal-driven server stop, bounded shutdown timeouts, and tracking of background workers to drain streams/persists.
 
@@ -1107,14 +1107,14 @@ Security is layered: Identity Platform/Firebase Auth with mandatory TOTP MFA, te
 Note: Additional programmatic and organizational controls (e.g., account management, vulnerability management, incident response processes) are documented in repository READMEs and Incident Response documentation and are complemented by GCP-native services and policies.
 
 ## Data Handling and Privacy
-- Data types: user identity (UID/email/display name), documents and derived chunks/embeddings, chat messages, audit events.
+- Data types: user identity (UID/email/display name), documents and derived chunks/embeddings, messages, audit events.
 - Storage: Cloud SQL (primary system of record); GCS for original objects.
 - Retention and Deletion: soft delete with retention; purge routine removes DB rows, vectors, and GCS objects.
 - Multi-tenant segregation: enforced in DB (RLS), vector store (token restrict), and request path (membership and tenant checks).
 
 ## Deployment and Environments
 - Environments: development, staging, production. Domains drive CORS allowlists and config validation.
-- Cloud Run services: public (chat API), admin (admin API), ops (internal tasks). Private VPC egress to Cloud SQL; least-privilege service accounts.
+- Cloud Run services: public (app API), admin (admin API), ops (internal tasks). Private VPC egress to Cloud SQL; least-privilege service accounts.
 - Dependencies:
   - Cloud SQL (Postgres) via Cloud SQL Connector with private IP and IAM AuthN.
   - GCS for document storage.
@@ -1124,7 +1124,7 @@ Note: Additional programmatic and organizational controls (e.g., account managem
 
 ## Configuration and Limits (key)
 - Server modes: `SERVER_MODE` in {public|admin|ops}; `ENVIRONMENT` in {development|staging|production}.
-- Domains: `API_DOMAIN`, `ADMIN_DOMAIN`, `CHAT_DOMAIN` drive CORS allowlists.
+- Domains: `API_DOMAIN`, `ADMIN_DOMAIN`, `APP_DOMAIN` drive CORS allowlists.
 - DB: `DB_CONNECTION_NAME`, `DB_NAME`, `DB_IAM_USER`.
 - Storage/AI: `GCS_DOCUMENTS_BUCKET`, `DOCUMENT_AI_PROCESSOR_ID`, `DOCUMENT_AI_LOCATION`, `VERTEX_AI_REGION`, `EMBEDDING_MODEL` (default `gemini-embedding-2-preview`), `EMBEDDING_INDEX_ID`, `EMBEDDING_DEPLOYMENT_ID`, `EMBEDDING_DIMENSIONS`, `EMBEDDING_REGION`, `VERTEX_AI_INDEX_ENDPOINT`.
 - Tasks: `DOCUMENT_PROCESSING_QUEUE_NAME`, `DOCUMENT_PROCESSING_ENDPOINT_URL`, `CLOUD_TASKS_REGION`.
@@ -1177,7 +1177,7 @@ Note: Additional programmatic and organizational controls (e.g., account managem
   - Mitigations: Server-side membership checks; RLS fail-closed semantics; vector-layer token restricts; ops endpoints require Google OIDC with allowlisted service accounts.
 
 ## Data Governance Details
-- Data minimization: user identity (UID, email, display name), documents, derived chunks/embeddings, chat messages, audit events.
+- Data minimization: user identity (UID, email, display name), documents, derived chunks/embeddings, messages, audit events.
 - Encryption: TLS in transit; at-rest encryption via GCP-managed keys for Cloud SQL and GCS; Vertex AI managed by Google Cloud.
 - Retention: soft-delete for documents with purge flow; audit logs persisted in DB and duplicated to Cloud Logging; retention policies governed by environment.
 - Deletion and account lifecycle: tokens can be revoked and users deleted in Identity Platform; document soft-delete and purge supported; background tasks isolated by OIDC.
@@ -1190,7 +1190,7 @@ Note: Additional programmatic and organizational controls (e.g., account managem
 - Secrets and config: environment-driven configuration with explicit validation; least-privilege service accounts per service.
 
 ## Testing and Assurance
-- Unit and integration tests present across services (e.g., auth interceptors, rate limiting, RLS wrappers, workspace access, chat/document handlers).
+- Unit and integration tests present across services (e.g., auth interceptors, rate limiting, RLS wrappers, workspace access, app/document handlers).
 - Static analysis: `go vet` usage and logging of slow queries; typed Connect-RPC services generated via protobuf.
 - Dependency hygiene: version pinning in `go.mod`; Dependabot configuration present in `.github/dependabot.yaml`.
 - Security testing: red-team CLI and isolated infra (redteam/ and red-infra/) enable controlled staging exercises; ops endpoints protected by Google OIDC to constrain blast radius during testing.
@@ -1208,7 +1208,7 @@ Note: Additional programmatic and organizational controls (e.g., account managem
 - FedRAMP (baseline alignment): Shared responsibility with GCP services for physical/network controls; application implements identity, access, audit, and data isolation controls described herein.
 
 ## Optional Attachments and Diagrams (on request)
-- System boundary and data flow diagrams (chat, ingestion, ops).
+- System boundary and data flow diagrams (app, ingestion, ops).
 - RLS policy diagram and workspace scoping sequence.
 - RBAC/membership sequence for org/workspace operations.
 
@@ -1262,19 +1262,19 @@ The platform uses a **multi-project GCP architecture** for workload isolation:
 
 | Project | Purpose | Surface |
 |---------|---------|---------|
-| `latentarchon-chat-prod` | Chat API, Vertex AI, Firebase Auth (user pool) | `app.latentarchon.com` |
+| `latentarchon-app-prod` | App API, Vertex AI, Firebase Auth (user pool) | `app.latentarchon.com` |
 | `latentarchon-admin-prod` | Admin API, Ops, Cloud SQL, GCS, Document AI | `admin.latentarchon.com` |
 | `prod-vpc-latentarchon` | Shared VPC host — centralized network control | Internal |
 | `central-log-latentarchon` | Centralized logging and monitoring | Internal |
 | `kms-proj-*` | Dedicated KMS Autokey projects per environment folder | Internal |
 
-**Why multi-project?** Separate GCP projects provide hard IAM boundaries, separate billing, independent audit trails, and blast-radius containment. A compromise in the user-facing chat project cannot access the admin project's Cloud SQL, GCS, or Document AI resources.
+**Why multi-project?** Separate GCP projects provide hard IAM boundaries, separate billing, independent audit trails, and blast-radius containment. A compromise in the user-facing app project cannot access the admin project's Cloud SQL, GCS, or Document AI resources.
 
 ### Service Architecture
 
 | Service | Runtime | Access | Purpose |
 |---------|---------|--------|---------|
-| `public` (Chat API) | Cloud Run | Public (Firebase Auth at app layer) | User-facing chat, streaming, semantic search |
+| `public` (App API) | Cloud Run | Public (Firebase Auth at app layer) | User-facing app, streaming, semantic search |
 | `admin` (Admin API) | Cloud Run | Public (Firebase Auth at app layer) | Document ingestion, member management, workspace admin |
 | `ops` | Cloud Run | **IAM-private only** | Document processing, cron jobs, embedding operations |
 | `ClamAV` | Cloud Run | **Internal only** | Malware scanning sidecar for uploaded documents |
@@ -1333,11 +1333,11 @@ Organization (latentarchon.com)
 │   ├── staging-vpc-latentarchon  (Shared VPC Host — Staging)
 │   └── central-log-latentarchon  (Centralized Logging & Monitoring)
 ├── Production/
-│   ├── latentarchon-chat-prod    (App: Chat API + SPA)
+│   ├── latentarchon-app-prod    (App: App API + SPA)
 │   ├── latentarchon-admin-prod   (Admin: API + Ops + Data)
 │   └── kms-proj-*                (KMS Autokey)
 ├── Non-Production/
-│   ├── latentarchon-chat-staging
+│   ├── latentarchon-app-staging
 │   ├── latentarchon-admin-staging
 │   └── kms-proj-*
 └── Development/
@@ -1726,7 +1726,7 @@ A Go CLI tool (`redteam/`) implements **44 automated security tests** across thr
 
 **Auth Bypass (17 tests):** No auth, empty bearer, malformed JWT, expired JWT, forged JWT, wrong audience, modified claims, cross-pool auth, MFA bypass, TOTP replay, brute force, alg:none, alg confusion, session fixation, CORS bypass, HTTP method override
 
-**Privilege Escalation (12 tests):** Cloud SQL access, GCS access, Cloud Tasks access, KMS access, admin API from chat token, ops endpoint access, IAM escalation, service account impersonation
+**Privilege Escalation (12 tests):** Cloud SQL access, GCS access, Cloud Tasks access, KMS access, admin API from app token, ops endpoint access, IAM escalation, service account impersonation
 
 **Data Exfiltration (15 tests):** SQL injection (search, path params, headers), workspace ID manipulation, UUID enumeration, IDOR (docs, messages), prompt injection (direct, system override, encoded), vector store direct access, pagination abuse, direct GCS access, parameter pollution, path traversal
 
@@ -1818,7 +1818,7 @@ The platform includes a **real-time security notification service** that alerts 
 
 ### 14.2 Data Purge (Privacy Policy §5)
 
-A **Cloud Scheduler-triggered daily job** permanently deletes all data for accounts closed more than 90 days ago. This includes user records, org memberships, workspace memberships, documents, chat messages, and audit events. The purge is irreversible and fully logged.
+A **Cloud Scheduler-triggered daily job** permanently deletes all data for accounts closed more than 90 days ago. This includes user records, org memberships, workspace memberships, documents, messages, and audit events. The purge is irreversible and fully logged.
 
 ---
 
@@ -1861,11 +1861,11 @@ Documents support **immutable version history**:
 
 ---
 
-## 17. Image Generation in Chat
+## 17. Image Generation in App
 
 **Source:** `cmd/server/connect_conversation.go`
 
-The chat API supports **multimodal AI output** including inline image generation within streaming conversations:
+The app API supports **multimodal AI output** including inline image generation within streaming conversations:
 
 ### 17.1 Pipeline
 
@@ -1896,7 +1896,7 @@ A dedicated **Export Service** supports bulk data export for FOIA (Freedom of In
 | Capability | Detail |
 |-----------|--------|
 | Scope | Organization-level or workspace-level data export with configurable scope |
-| Data Included | Documents (originals + metadata), chat messages, audit events, user records, workspace configurations |
+| Data Included | Documents (originals + metadata), messages, audit events, user records, workspace configurations |
 | Format | Structured export package with manifest, preserving document hierarchy and metadata |
 | Access Control | Export initiation restricted to organization `master_admin` role with step-up MFA |
 | Audit Trail | Every export request is audit-logged with requestor ID, scope, timestamp, and completion status |
@@ -1915,7 +1915,7 @@ The platform includes an **Analytics Service** providing usage metrics, dashboar
 
 | Capability | Detail |
 |-----------|--------|
-| Usage Metrics | Chat messages, document uploads, vector searches, and API calls tracked per organization and workspace |
+| Usage Metrics | Messages, document uploads, vector searches, and API calls tracked per organization and workspace |
 | Cost Attribution | Vertex AI (embedding + generation), Document AI, Cloud Storage, and compute costs attributed to tenant/workspace |
 | Dashboard | Admin-facing usage dashboard with time-series charts, top-N queries, and per-workspace breakdowns |
 | Access Control | Analytics endpoints restricted to organization admin role; data scoped to the admin's organization |
@@ -1952,9 +1952,9 @@ Beyond basic liveness checks (`/health`), the platform implements **deep readine
 | Document Service (GCS) | Bucket accessibility verification | admin + ops |
 | Cloud Tasks | Queue accessibility check | admin + ops |
 | GenText (Gemini) | Model endpoint reachability | public |
-| Chat Storage (messages) | Table read verification | public |
+| Message Storage | Table read verification | public |
 
-Readiness checks are scoped to the server mode — the chat service does not fail readiness for Document AI being unavailable, and the ops service does not check chat storage. This prevents cascading failures across unrelated service boundaries.
+Readiness checks are scoped to the server mode — the app service does not fail readiness for Document AI being unavailable, and the ops service does not check app storage. This prevents cascading failures across unrelated service boundaries.
 
 ### 20.3 Retry & Circuit Breaking
 
@@ -2121,7 +2121,7 @@ The following maps key Latent Archon infrastructure controls to NIST 800-171 fam
 | **IR — Incident Response** | Auth failure, privilege escalation, data deletion, KMS lifecycle alerts |
 | **MA — Maintenance** | IAP tunneling, OS Login, Cloud Shell admin access only |
 | **MP — Media Protection** | CMEK with HSM, FIPS 140-2 Level 3, 90-day key rotation |
-| **PE — Physical & Environmental** | Google Cloud (SOC 2, ISO 27001, FedRAMP ATO) |
+| **PE — Physical & Environmental** | Google Cloud (SOC 2, ISO 27001, FedRAMP certified) |
 | **PL — Planning** | IaC with PR review, plan-on-PR, centralized monitoring |
 | **PS — Personnel Security** | Group-based IAM, per-project access scoping |
 | **RA — Risk Assessment** | 44-test red team suite, container scanning, ClamAV |
@@ -2188,7 +2188,6 @@ The following maps key Latent Archon infrastructure controls to NIST 800-171 fam
 
 *Document generated from infrastructure code review. All controls are implemented as Terraform/Terragrunt IaC and are auditable, reproducible, and version-controlled.*
 
-
 ---
 
 # SECTION 4: CHATGPT — Infrastructure Security Review (infra/vpc/org)
@@ -2205,7 +2204,7 @@ Audience: Government security reviewers, enterprise buyers, and due diligence te
 
 ## Executive Summary
 
-- Two‑project GCP architecture isolates public chat workloads from admin/ops systems, reducing blast radius and aligning with least privilege and data minimization.
+- Two‑project GCP architecture isolates public app workloads from admin/ops systems, reducing blast radius and aligning with least privilege and data minimization.
 - Strong perimeter: Global HTTPS load balancers fronted by Cloud Armor WAF with OWASP Top‑10 rules, rate limiting, method enforcement, origin restrictions, and bot blocking.
 - Defense‑in‑depth networking: Dedicated VPCs, private service networking to Cloud SQL, strict firewalling, Cloud NAT with logging, and an FQDN‑based egress deny‑by‑default policy with explicit allowlists (Google APIs and internal domains only).
 - Robust IAM: Service‑account based access, role scoping per service, cross‑project Cloud SQL access via `roles/cloudsql.client` + `roles/cloudsql.instanceUser`, and controlled impersonation.
@@ -2219,14 +2218,14 @@ Audience: Government security reviewers, enterprise buyers, and due diligence te
 Source: `infra/README.md`, `infra/modules/*`, `infra/environments/production/*`.
 
 - Split projects
-  - Chat project (`latentarchon-chat-prod`): Cloud Run API (`archon-chat`), SPA hosting (`chat-spa`), Cloud Armor, Identity Platform, Vertex AI client usage.
+  - App project (`latentarchon-app-prod`): Cloud Run API (`archon-app`), SPA hosting (`app-spa`), Cloud Armor, Identity Platform, Vertex AI client usage.
   - Admin project (`latentarchon-admin-prod`): Cloud Run (`archon-admin`, `archon-ops` [IAM‑private]), Cloud SQL (PostgreSQL 15), GCS documents bucket, Cloud Tasks, Document AI OCR, Vertex AI indices, Cloud Armor.
 - Load Balancers
   - Global HTTPS LB per project with managed certs; host‑based routing sends SPA domains to SPA backend and API domains to API backend.
 - Cloud Armor WAF
   - Preconfigured OWASP rules (XSS, SQLi, LFI/RFI, RCE, protocol attacks, session fixation, scanner detection, JSON SQLi), IP allowlist (optional), rate limiting with ban, method allow‑list, origin restriction, bot UA blocks.
-- Chat→Admin cross‑project dependencies
-  - Chat Cloud Run depends on Admin’s Vertex AI (PSC endpoint), Document AI processor, and Cloud SQL access for read/write as appropriate.
+- App→Admin cross‑project dependencies
+  - App Cloud Run depends on Admin’s Vertex AI (PSC endpoint), Document AI processor, and Cloud SQL access for read/write as appropriate.
 
 ## Network Security and Segmentation
 
@@ -2254,7 +2253,7 @@ Sources: `infra/modules/service-accounts/main.tf`, `infra/modules/cloud-run/main
   - Public endpoints only when explicitly allowed (`allow_unauthenticated`); otherwise `roles/run.invoker` restricted to specified members.
   - ClamAV service is VPC‑attached and ingress `internal`; only the admin SA can invoke.
 - Cloud SQL IAM
-  - IAM database users per service account; cross‑project grants using `roles/cloudsql.client` and `roles/cloudsql.instanceUser` for chat services needing DB access.
+  - IAM database users per service account; cross‑project grants using `roles/cloudsql.client` and `roles/cloudsql.instanceUser` for app services needing DB access.
 - Organization IAM baselines
   - Group‑based access at folder/project scopes for developer and security viewer roles; log/monitoring viewer access for oversight.
 
@@ -2303,7 +2302,7 @@ Sources: `infra/modules/audit-logs/main.tf`, `org/log-export.tf`, `org/monitorin
 - Application audit logs sink
   - Routes structured `AUDIT_EVENT` logs from Cloud Run to BigQuery alongside platform audit logs for unified queries.
 - Alerting policies
-  - IAM change detection, auth failure spikes, privilege changes, document deletion, and KMS key lifecycle events; throttled notifications to defined channels.
+  - IAM change detection, auth failures, privilege changes, data deletions, and KMS key lifecycle events; throttled notifications to defined channels.
 - Monitoring scope
   - Centralized metrics scope includes VPC host projects and service projects (prod and staging), plus auto‑key projects.
 
@@ -2343,7 +2342,7 @@ Sources: `org/org-policy.tf`, `org/network.tf`, `org/folders.tf`, `org/iam.tf`.
 9. SCC and posture management: Ensure Security Command Center (Standard/Enterprise) is enabled across projects with notifications integrated.
 10. Supply chain: Ensure image vulnerability scanning (Container Analysis) is enabled; consider Binary Authorization or signed artifacts (SLSA‑aligned) for sensitive environments.
 11. DR/Resilience: Evaluate cross‑region read replica or backup export strategy for Cloud SQL; document RTO/RPO per customer SLAs.
-12. ~~Staging environment~~: **Provisioned** — `latentarchon-chat-staging` and `latentarchon-admin-staging` projects created in Non-Production folder with full infrastructure parity.
+12. ~~Staging environment~~: **Provisioned** — `latentarchon-app-staging` and `latentarchon-admin-staging` projects created in Non-Production folder with full infrastructure parity.
 
 ## Evidence and File References
 
@@ -2366,38 +2365,35 @@ Sources: `org/org-policy.tf`, `org/network.tf`, `org/folders.tf`, `org/iam.tf`.
 ## Operational Notes
 
 - Terragrunt remote state: GCS backend per project with bucket‑policy‑only and versioning.
-- Dependency orchestration: Terragrunt handles inter‑module and cross‑project dependencies; deploy admin first, then chat.
+- Dependency orchestration: Terragrunt handles inter‑module and cross‑project dependencies; deploy admin first, then app.
 - SPA hosting: SPAs served by dedicated nginx Cloud Run services; LB host‑based routing separates SPA vs API and applies Cloud Armor to both.
 
-— End of ChatGPT Security Review —
+—
 
+# SECTION 5: CLAUDE — Frontend Security Review (app/admin SPAs)
 
----
+> Source: `app/docs/security/CLAUDE_Frontend_Security_Review.md`
 
-# SECTION 5: CLAUDE — Frontend Security Review (chat/admin SPAs)
-
-> Source: `chat/docs/security/CLAUDE_Frontend_Security_Review.md`
-
----
+—
 
 # Latent Archon — Frontend Platform Review
 
-> **Purpose**: Comprehensive technical review of the Admin and Chat single-page applications for use in government procurement and sales documentation.
+> **Purpose**: Comprehensive technical review of the Admin and App single-page applications for use in government procurement and sales documentation.
 >
 > **Last Updated**: March 22, 2026
 
----
+—
 
 ## 1. Executive Summary
 
 Latent Archon provides a secure, multi-tenant document intelligence platform purpose-built for government workloads. The frontend consists of two independent React SPAs:
 
 - **Admin Console** (`admin/`) — Organization and workspace management, document ingestion, member access control, and audit logging.
-- **Chat Interface** (`chat/`) — AI-powered conversational interface for querying uploaded documents with Retrieval-Augmented Generation (RAG), streaming responses, and source citations.
+- **App Interface** (`app/`) — AI-powered conversational interface for querying uploaded documents with Retrieval-Augmented Generation (RAG), streaming responses, and source citations.
 
 Both applications enforce **passwordless authentication** via magic links and **mandatory TOTP multi-factor authentication** for every user session, meeting NIST 800-63B AAL2 requirements. All API communication uses Connect-RPC with automatic Bearer token injection, and the production deployment runs on hardened, unprivileged nginx containers behind Google Cloud Run with comprehensive security headers.
 
----
+—
 
 ## 2. Architecture Overview
 
@@ -2405,7 +2401,7 @@ Both applications enforce **passwordless authentication** via magic links and **
 
 The platform deliberately separates admin and end-user functionality into independent SPAs, each served from its own Cloud Run service and backed by its own Firebase Identity Platform project:
 
-| Property | Admin Console | Chat Interface |
+| Property | Admin Console | App Interface |
 |---|---|---|
 | **Purpose** | Org/workspace/document/member management | Document Q&A with RAG |
 | **Dev Port** | 3001 | 3000 |
@@ -2427,7 +2423,7 @@ This separation provides **auth pool isolation** — admin users and end users e
 | **API Protocol** | Connect-RPC (buf.build) | 1.7.0 |
 | **Auth Provider** | Firebase Identity Platform | 11.8.1 |
 | **MFA** | TOTP via Google Authenticator / compatible apps | Native Firebase MFA |
-| **Markdown Rendering** | react-markdown (chat only) | 9.0.3 |
+| **Markdown Rendering** | react-markdown (app only) | 9.0.3 |
 | **QR Code Generation** | qrcode.react | 4.2.0 |
 | **Container Runtime** | nginx-unprivileged (Alpine) | 1.27 |
 | **Node.js** | ≥ 20 (LTS) | Required |
@@ -2441,7 +2437,7 @@ Both SPAs are containerized via multi-stage Docker builds:
 
 Production hosting: Google Cloud Run behind a global HTTP(S) load balancer with Cloud Armor WAF, host-based routing, and managed TLS certificates.
 
----
+—
 
 ## 3. Authentication & Authorization
 
@@ -2480,7 +2476,7 @@ There is no way to bypass MFA enrollment — the application literally does not 
 
 ### 3.3 Multi-Tenancy
 
-The platform supports multi-tenant deployment via Firebase Identity Platform tenants:
+The platform supports multi-tenancy via Firebase Identity Platform tenants:
 
 - **Explicit tenant override**: `VITE_FIREBASE_TENANT_ID` environment variable
 - **Subdomain-based discovery**: `VITE_TENANT_MAP` JSON mapping (e.g., `{"acme": "tenant-abc123"}`)
@@ -2495,7 +2491,7 @@ This enables a single deployment to serve multiple government agencies, each iso
 - Token refresh is handled transparently by the Firebase SDK
 - No tokens are stored in localStorage (Firebase SDK manages its own secure storage)
 
----
+—
 
 ## 4. Admin Console — Detailed Review
 
@@ -2577,9 +2573,9 @@ Five typed Connect-RPC service clients:
 
 Plus one REST endpoint for multipart file upload: `apiUpload('/api/documents', formData)` — the sole endpoint that cannot use Connect-RPC due to binary file transfer.
 
----
+—
 
-## 5. Chat Interface — Detailed Review
+## 5. App Interface — Detailed Review
 
 ### 5.1 Route Structure
 
@@ -2588,7 +2584,7 @@ Plus one REST endpoint for multipart file upload: `apiUpload('/api/documents', f
 | `/` | `Chat` | Main conversational interface |
 | `/auth/callback` | Redirect to `/` | Magic link return handler |
 
-### 5.2 Chat Page (`Chat.tsx`)
+### 5.2 App Chat Page (`Chat.tsx`)
 
 The core user-facing experience:
 
@@ -2622,7 +2618,7 @@ The core user-facing experience:
   - Failed streams display an error message in the assistant bubble
   - Error state is visually distinct (red border + text)
 
-### 5.3 Chat API Client (`client.ts`)
+### 5.3 App API Client (`client.ts`)
 
 Four typed Connect-RPC service clients:
 - `getAuthClient()` → `AuthService`
@@ -2630,7 +2626,7 @@ Four typed Connect-RPC service clients:
 - `getConversationClient()` → `ConversationService` (server streaming)
 - `getChatMessageClient()` → `ChatMessageService`
 
----
+—
 
 ## 6. Security Posture
 
@@ -2686,11 +2682,11 @@ The CSP is tightly scoped:
 
 - **No secrets in client code**: All sensitive configuration via environment variables injected at build time
 - **No inline scripts**: CSP-compliant, no `eval()` or `new Function()`
-- **Input sanitization**: TOTP input strips non-numeric characters (`/\D/g`), email validated by browser + server
+- **Input validation**: Forms validate presence (e.g., title, email). Tags normalized to lowercase; commas/enter delimiters controlled.
 - **Error messages**: Generic error display, no stack traces or internal details exposed to users
 - **XSS prevention**: React's default JSX escaping + CSP + `X-Content-Type-Options: nosniff`
 
----
+—
 
 ## 7. API Protocol & Type Safety
 
@@ -2712,8 +2708,8 @@ The proto-generated code covers the full API surface:
 | `OrganizationService` | List, Get, Create, InviteMember | Admin |
 | `WorkspaceService` | List, Get, Create, InviteMember | Both apps |
 | `DocumentService` | List, Update, Delete, Reprocess | Admin |
-| `ConversationService` | SendMessage (server streaming) | Chat |
-| `ChatMessageService` | RetrieveMessages, RateAssistantMessage | Chat |
+| `ConversationService` | SendMessage (server streaming) | App |
+| `ChatMessageService` | RetrieveMessages, RateAssistantMessage | App |
 | `AuditService` | ListAuditEvents | Admin |
 
 ### 7.3 Shared Protobuf Types
@@ -2723,7 +2719,7 @@ Common enums and types defined in `common_pb.ts`:
 - `WorkspaceRole`: ADMIN, EDITOR, VIEWER
 - `OrgRole`: OWNER, ADMIN
 
----
+—
 
 ## 8. Multi-Tenant Data Model
 
@@ -2735,7 +2731,7 @@ Organization (tenant)
         ├── Documents (uploaded files)
         │     └── Chunks (embedded segments for RAG)
         ├── Members (users with role-based access)
-        └── Messages (chat history)
+        └── Messages (conversation history)
 ```
 
 ### 8.2 Roles & Permissions
@@ -2746,13 +2742,13 @@ Organization (tenant)
 | **Organization** | Admin | Workspace management, member invitation |
 | **Workspace** | Admin | Document upload/delete, member management |
 | **Workspace** | Editor | Document upload |
-| **Workspace** | Viewer | Read-only document queries via chat |
+| **Workspace** | Viewer | Read-only document queries via app |
 
 ### 8.3 Workspace-Scoped Queries
 
-The chat interface supports **cross-workspace queries** — users can select multiple workspaces and the RAG pipeline searches across all selected workspace document sets simultaneously, while respecting workspace-level access controls enforced server-side.
+The app interface supports **cross-workspace queries** — users can select multiple workspaces and the RAG pipeline searches across all selected workspace document sets simultaneously, while respecting workspace-level access controls enforced server-side.
 
----
+—
 
 ## 9. Document Processing Pipeline
 
@@ -2785,7 +2781,7 @@ Each document carries:
 - Administrators can **reprocess** failed documents without re-uploading
 - Administrators can **edit metadata** and **delete** documents at any time
 
----
+—
 
 ## 10. Compliance Alignment
 
@@ -2820,7 +2816,7 @@ Each document carries:
 | Input validation | Client-side + server-side validation |
 | Container hardening | Non-root nginx, Alpine base, multi-stage build |
 
----
+—
 
 ## 11. Operational Characteristics
 
@@ -2829,7 +2825,7 @@ Each document carries:
 - **Vite production builds**: Tree-shaken, code-split, content-hashed static assets
 - **Aggressive caching**: `/assets/` served with `Cache-Control: public, immutable` and 1-year expiry (safe due to Vite's content hashing)
 - **Gzip compression**: Enabled for all text-based content types
-- **Streaming responses**: Chat tokens delivered via server streaming, not polling — sub-second time-to-first-token
+- **Streaming responses**: App tokens delivered via server streaming, not polling — sub-second time-to-first-token
 
 ### 11.2 Reliability
 
@@ -2840,11 +2836,11 @@ Each document carries:
 
 ### 11.3 Observability
 
-- **Audit trail**: Every significant action logged with user, resource, IP, user agent, and metadata
+- **Audit trail**: Every significant action logged with user, resource, IP, user agent, and correlation ID
 - **Correlation IDs**: Enables end-to-end request tracing across frontend → API → backend services
 - **Structured error display**: Errors surfaced to admins with actionable context
 
----
+—
 
 ## 12. Source File Inventory
 
@@ -2872,7 +2868,7 @@ Each document carries:
 | `Dockerfile` | 34 | Multi-stage build (node:20-alpine → nginx-unprivileged) |
 | **Total** | **~2,715** | |
 
-### 12.2 Chat Interface (`chat/`)
+### 12.2 App Interface (`app/`)
 
 | File | Lines | Purpose |
 |---|---|---|
@@ -2884,8 +2880,8 @@ Each document carries:
 | `src/auth/MfaChallenge.tsx` | 82 | TOTP verification on sign-in |
 | `src/auth/MfaEnrollment.tsx` | 104 | TOTP enrollment with QR code |
 | `src/lib/auth.ts` | 39 | Firebase app/auth initialization with tenant support |
-| `src/lib/client.ts` | 63 | Connect-RPC clients (conversation + chat history) |
-| `src/pages/Chat.tsx` | 367 | RAG chat with streaming, citations, workspace selection |
+| `src/lib/client.ts` | 63 | Connect-RPC clients (conversation + message history) |
+| `src/pages/Chat.tsx` | 367 | RAG conversation with streaming, citations, workspace selection |
 | `src/pages/TenantNotFound.tsx` | 51 | Tenant resolution error page |
 | `nginx.conf` | 43 | Hardened nginx with security headers + CSP |
 | `Dockerfile` | 34 | Multi-stage build (node:20-alpine → nginx-unprivileged) |
@@ -2900,11 +2896,11 @@ Each document carries:
 | `workspace_connect.ts` / `workspace_pb.ts` | Workspace CRUD + member management |
 | `document_connect.ts` / `document_pb.ts` | Document lifecycle management |
 | `conversation_connect.ts` / `conversation_pb.ts` | RAG conversation streaming |
-| `chatmessage_connect.ts` / `chatmessage_pb.ts` | Chat history + rating |
+| `chatmessage_connect.ts` / `chatmessage_pb.ts` | Message history + rating |
 | `audit_connect.ts` / `audit_pb.ts` | Audit event queries |
 | `common_pb.ts` | Shared enums (DocumentStatus, WorkspaceRole, OrgRole) |
 
----
+—
 
 ## 13. Dependency Audit
 
@@ -2921,8 +2917,8 @@ Each document carries:
 | `@connectrpc/connect-web` | 1.7.0 | Apache 2.0 | Browser Connect transport | Low |
 | `tailwindcss` | 3.4.1 | MIT | Utility-first CSS | Low — Tailwind Labs |
 | `qrcode.react` | 4.2.0 | ISC | QR code SVG generation | Low — Minimal, no network calls |
-| `react-markdown` | 9.0.3 | MIT | Markdown rendering (chat) | Low — Unified ecosystem |
-| `@tailwindcss/typography` | 0.5.19 | MIT | Prose typography (chat) | Low |
+| `react-markdown` | 9.0.3 | MIT | Markdown rendering (app) | Low — Unified ecosystem |
+| `@tailwindcss/typography` | 0.5.19 | MIT | Prose typography (app) | Low |
 
 All dependencies use permissive open-source licenses (MIT, Apache 2.0, ISC) compatible with government procurement.
 
@@ -2938,7 +2934,7 @@ Build-time only, not present in production containers:
 | `autoprefixer` | CSS vendor prefixing |
 | `postcss` | CSS processing |
 
----
+—
 
 ## 14. Key Differentiators for Government
 
@@ -2954,18 +2950,19 @@ Build-time only, not present in production containers:
 10. **Document lifecycle management** — Upload, process, embed, query, reprocess, delete — with status visibility at every stage
 
 
+—
 ---
 
-# SECTION 6: CHATGPT — Frontend Security Review (chat/admin SPAs)
+# SECTION 6: CHATGPT — Frontend Security Review (app/admin SPAs)
 
-> Source: `chat/docs/security/CHATGPT_Frontend_Security_Review.md`
+> Source: `app/docs/security/CHATGPT_Frontend_Security_Review.md`
 
 ---
 
-# ChatGPT Security Review — Chat and Admin SPAs (Latent Archon)
+# ChatGPT Security Review — App and Admin SPAs (Latent Archon)
 
 ## Executive Summary
-- The Chat (end-user) and Admin (operator) single-page applications are modern, security-conscious SPAs served via Cloud Run (nginx) behind a Google Cloud HTTPS Load Balancer with host-based routing and Cloud Armor.
+- The App (end-user) and Admin (operator) single-page applications are modern, security-conscious SPAs served via Cloud Run (nginx) behind a Google Cloud HTTPS Load Balancer with host-based routing and Cloud Armor.
 - Authentication uses Google Identity Platform (Firebase Auth) with multi-tenancy and enforced TOTP-based MFA. Authentication is passwordless via magic link, followed by MFA enrollment and challenge workflows.
 - API access uses Connect-RPC over HTTPS with an auth interceptor that attaches a short-lived Bearer ID token. Document uploads use a single, scoped multipart REST endpoint.
 - Tenancy is derived from subdomain-to-tenant mapping at the client and is expected to be strictly enforced on the backend (RLS and request scoping). Frontend prevents token persistence beyond runtime memory; only the pending magic-link email is stored transiently in localStorage and removed once used.
@@ -2974,18 +2971,18 @@ Build-time only, not present in production containers:
 Overall, the implementation demonstrates strong alignment with security best practices. The recommended next steps focus on codifying HTTP security headers, CSP hardening, additional auth safeguards (session idle timeout, re-auth for sensitive actions), and privacy controls.
 
 ## Scope
-- Frontend SPAs under `chat/` and `admin/` directories, including:
+- Frontend SPAs under `app/` and `admin/` directories, including:
   - Entry points, auth flows, API clients, streaming, data handling, and tenant resolution.
 - Security-relevant architecture from infra and backend where it directly affects client assurances (hosting, transport, identity, tenancy enforcement, logging).
 
 ## Architecture Overview
 - Hosting: Each SPA runs in Cloud Run using `nginxinc/nginx-unprivileged:alpine`. HTTPS LB routes based on hostname:
-  - `app.*.latentarchon.com` → Chat SPA
-  - `api.app.*.latentarchon.com` → User-facing API (chat stream, auth)
+  - `app.*.latentarchon.com` → App SPA
+  - `api.app.*.latentarchon.com` → User-facing API (app stream, auth)
   - `admin.*.latentarchon.com` → Admin SPA
   - `api.admin.*.latentarchon.com` → Admin API (ingestion, org/workspace)
 - Transport: All API calls use HTTPS. Connect-RPC (gRPC-web style) via `@connectrpc/connect-web` with an interceptor injecting `Authorization: Bearer <idToken>`.
-- Streaming: Chat uses server-streaming Connect-RPC for incremental assistant output and citation delivery.
+- Streaming: App uses server-streaming Connect-RPC for incremental assistant output and citation delivery.
 
 ## Authentication & Session Management
 - Identity: Google Identity Platform (Firebase Auth) multi-tenant.
@@ -2997,7 +2994,7 @@ Overall, the implementation demonstrates strong alignment with security best pra
 
 ## Authorization & Multi-Tenancy
 - Frontend expresses org/workspace scoping in requests:
-  - Chat selects workspace IDs to constrain retrieval and RAG context.
+  - App selects workspace IDs to constrain retrieval and RAG context.
   - Admin restricts actions to the selected org/workspace (list, create, invite, upload, document management).
 - Role Surfacing:
   - Admin maps backend enums to `owner/admin` at org level and `admin/editor/viewer` at workspace level.
@@ -3006,14 +3003,14 @@ Overall, the implementation demonstrates strong alignment with security best pra
 ## Data Handling & Privacy
 - Data Types:
   - PII: user email addresses (for auth and invites), display names if provided.
-  - Business Data: uploaded documents (filenames, sizes, types), extracted content (processed server-side), metadata (title, description, tags), chat content and citations.
+  - Business Data: uploaded documents (filenames, sizes, types), extracted content (processed server-side), metadata (title, description, tags), conversation content and citations.
 - Client Storage:
   - No tokens stored at rest on client. Only pending email saved transiently during magic-link flow.
   - UI state (e.g., messages, uploads) lives in memory.
 - Uploads:
   - Admin uses `apiUpload('/api/documents', FormData)` with `Authorization` header. Supports title/description/tags. Filename-derived default title reduces user error.
 - Rendering Safety:
-  - `react-markdown` used in Chat for assistant content. By default, it escapes HTML, mitigating XSS from model output. No `rehype-raw` usage detected.
+  - `react-markdown` used in App for assistant content. By default, it escapes HTML, mitigating XSS from model output. No `rehype-raw` usage detected.
 
 ## Client-Side Security Controls
 - Auth Gate:
@@ -3090,12 +3087,12 @@ Overall, the implementation demonstrates strong alignment with security best pra
 - Emit security telemetry to SIEM (auth events, role/admin changes, document lifecycle, anomalous requests). Implement alerting for brute-force and abuse patterns.
 
 ## Appendix — Key Client Artifacts Reviewed
-- Chat
-  - `chat/src/main.tsx`: Tenant resolution (`VITE_TENANT_MAP`), Firebase init, API client init, `AuthProvider` wiring.
-  - `chat/src/auth/AuthContext.tsx`: Magic link + TOTP MFA flows; no token persistence; localStorage used only for pending email.
-  - `chat/src/auth/AuthGate.tsx`: Gated render based on `authState`.
-  - `chat/src/lib/client.ts`: Connect-RPC transport + auth interceptor; workspace/conversation clients.
-  - `chat/src/pages/Chat.tsx`: Workspace selection, history retrieval, streaming send with abort, sanitized markdown rendering, citations.
+- App
+  - `app/src/main.tsx`: Tenant resolution (`VITE_TENANT_MAP`), Firebase init, API client init, `AuthProvider` wiring.
+  - `app/src/auth/AuthContext.tsx`: Magic link + TOTP MFA flows; no token persistence; localStorage used only for pending email.
+  - `app/src/auth/AuthGate.tsx`: Gated render based on `authState`.
+  - `app/src/lib/client.ts`: Connect-RPC transport + auth interceptor; workspace/conversation clients.
+  - `app/src/pages/Chat.tsx`: Workspace selection, history retrieval, streaming send with abort, sanitized markdown rendering, citations.
 - Admin
   - `admin/src/main.tsx`: Same tenant resolution and auth/API init pattern.
   - `admin/src/auth/AuthContext.tsx` + `AuthGate.tsx`: Same magic link + MFA enforcement.

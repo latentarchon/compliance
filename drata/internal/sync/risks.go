@@ -43,7 +43,7 @@ func ArchonRiskRegister() []RiskDef {
 			Category:           "SECURITY",
 			InherentLikelihood: 4, InherentImpact: 5,
 			ResidualLikelihood: 1, ResidualImpact: 5,
-			TreatmentPlan:      "Mitigated by: TOTP MFA on all data endpoints, Firebase Auth pool isolation (admin/chat), 5-layer tenant enforcement (interceptor → RLS → DB roles → vector scoping → audit), per-tenant IP allowlisting via Cloud Armor, 44-attack automated red team suite run monthly.",
+			TreatmentPlan:      "Mitigated by: TOTP MFA on all data endpoints, Firebase Auth pool isolation (admin/app), 5-layer tenant enforcement (interceptor → RLS → DB roles → vector scoping → audit), per-tenant IP allowlisting via Cloud Armor, 44-attack automated red team suite run monthly.",
 		},
 		{
 			Name:               "Data Exfiltration via Application Vulnerability",
@@ -123,7 +123,7 @@ func ArchonRiskRegister() []RiskDef {
 			Category:           "SECURITY",
 			InherentLikelihood: 3, InherentImpact: 3,
 			ResidualLikelihood: 2, ResidualImpact: 2,
-			TreatmentPlan:      "Mitigated by: Workspace-scoped vector search with token restrictions (can only retrieve documents from authorized workspace), system prompt hardening, input validation and length limits on all chat messages, image generation limits (4 images, 10MB per response), audit logging of all AI interactions.",
+			TreatmentPlan:      "Mitigated by: Workspace-scoped vector search with token restrictions (can only retrieve documents from authorized workspace), system prompt hardening, input validation and length limits on all messages, image generation limits (4 images, 10MB per response), audit logging of all AI interactions.",
 		},
 		{
 			Name:               "CI/CD Pipeline Compromise",

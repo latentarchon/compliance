@@ -114,7 +114,7 @@ This policy applies to:
 | Role | Capabilities |
 |------|-------------|
 | `master_admin` | Full org access; implicit access to all workspaces; can promote other master_admins; can reset member MFA |
-| `admin` | Org management; create workspaces (auto-added as workspace admin + auto-invited to chat pool); invite/remove members |
+| `admin` | Org management; create workspaces (auto-added as workspace admin + auto-invited to app pool); invite/remove members |
 
 #### Workspace Roles
 
@@ -122,7 +122,7 @@ This policy applies to:
 |------|-------------|
 | `admin` | Full workspace management; invite/remove members; upload/delete documents |
 | `editor` | Document upload and metadata editing |
-| `viewer` | Read-only access to documents and chat |
+| `viewer` | Read-only access to documents and conversation |
 
 ### 5.2 Enforcement Points
 
@@ -132,7 +132,7 @@ This policy applies to:
 - Organization operations require `IsOrgAdmin()` or `IsMasterAdmin()`
 - Workspace operations require `CanUserAccessWorkspace()` (explicit membership OR master_admin)
 - Document operations verify workspace access
-- Chat/search verifies workspace access for every workspace ID in the request
+- Conversation/search verifies workspace access for every workspace ID in the request
 
 ### 5.3 Privilege Escalation Prevention
 
@@ -156,7 +156,7 @@ This policy applies to:
 
 | Role | Service | Privilege Level |
 |------|---------|----------------|
-| `archon_chat_ro` | Chat API | SELECT only (with INSERT for messages/searches) |
+| `archon_app_ro` | App API | SELECT only (with INSERT for messages/searches) |
 | `archon_admin_rw` | Admin API | Full CRUD |
 | `archon_ops_rw` | Ops service | Processing-scoped (no org/workspace/member access) |
 
@@ -168,17 +168,17 @@ This policy applies to:
 
 ### 6.4 Auth Pool Isolation
 
-The admin app and chat app use **separate Firebase/Identity Platform projects** with independent UID namespaces. This provides blast-radius isolation — credential compromise in one pool cannot escalate to the other.
+The admin app and app use **separate Firebase/Identity Platform projects** with independent UID namespaces. This provides blast-radius isolation — credential compromise in one pool cannot escalate to the other.
 
 **Prohibited**: Cross-pool identity bridging (copying memberships between pools by email matching). This would create a lateral escalation path and defeat the purpose of pool separation.
 
 **Required**: Workspace access across pools uses the explicit invite flow only:
 
 1. Admin creates workspace → admin UID added to `workspace_members`
-2. System auto-creates a pending invite for the creator's email (chat pool)
-3. Creator receives sign-in link to the chat app
-4. Creator authenticates in the chat app → chat UID
-5. Creator accepts invite → chat UID added to `workspace_members`
+2. System auto-creates a pending invite for the creator's email (app pool)
+3. Creator receives sign-in link to the app
+4. Creator authenticates in the app → app UID
+5. Creator accepts invite → app UID added to `workspace_members`
 
 Each pool's membership is established through that pool's own authentication, with an auditable invite record. See `backend/docs/POOL_ISOLATION.md` for the full architecture decision record.
 

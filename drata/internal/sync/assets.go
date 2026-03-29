@@ -33,8 +33,8 @@ func ArchonAssets() []AssetDef {
 	return []AssetDef{
 		// --- GCP Infrastructure ---
 		{
-			Name:        "Cloud Run — archon-chat (Chat API)",
-			Description: "User-facing chat API service. Handles streaming conversation, message retrieval, auth. Runs on Cloud Run in latentarchon-chat project. Distroless container, FIPS 140-2 BoringCrypto binary.",
+			Name:        "Cloud Run — archon-app (App API)",
+			Description: "User-facing app API service. Handles streaming conversation, message retrieval, auth. Runs on Cloud Run in latentarchon-app project. Distroless container, FIPS 140-2 BoringCrypto binary.",
 			AssetType:   "VIRTUAL",
 		},
 		{
@@ -48,8 +48,8 @@ func ArchonAssets() []AssetDef {
 			AssetType:   "VIRTUAL",
 		},
 		{
-			Name:        "Cloud Run — chat-spa (Chat Frontend)",
-			Description: "Chat SPA served via nginx-unprivileged on Cloud Run in latentarchon-chat project. React/TypeScript/TailwindCSS. Domain: app.latentarchon.com.",
+			Name:        "Cloud Run — app-spa (App Frontend)",
+			Description: "App SPA served via nginx-unprivileged on Cloud Run in latentarchon-app project. React/TypeScript/TailwindCSS. Domain: app.latentarchon.com.",
 			AssetType:   "VIRTUAL",
 		},
 		{
@@ -79,7 +79,7 @@ func ArchonAssets() []AssetDef {
 		},
 		{
 			Name:        "Vertex AI — Gemini (LLM)",
-			Description: "Gemini generative AI model for chat responses and image generation. Accessed via aiplatform PredictionClient. Rate limited, image caps (4/response, 10MB total).",
+			Description: "Gemini generative AI model for conversation responses and image generation. Accessed via aiplatform PredictionClient. Rate limited, image caps (4/response, 10MB total).",
 			AssetType:   "VIRTUAL",
 		},
 		{
@@ -94,7 +94,7 @@ func ArchonAssets() []AssetDef {
 		},
 		{
 			Name:        "Cloud Armor — WAF Policies",
-			Description: "Web Application Firewall policies for both admin and chat load balancers. OWASP Top 10 rules, rate limiting, per-tenant IP allowlisting (dynamic deny rules), adaptive protection.",
+			Description: "Web Application Firewall policies for both admin and app load balancers. OWASP Top 10 rules, rate limiting, per-tenant IP allowlisting (dynamic deny rules), adaptive protection.",
 			AssetType:   "VIRTUAL",
 		},
 		{
@@ -103,18 +103,18 @@ func ArchonAssets() []AssetDef {
 			AssetType:   "VIRTUAL",
 		},
 		{
-			Name:        "Load Balancers (Admin + Chat)",
+			Name:        "Load Balancers (Admin + App)",
 			Description: "Global HTTPS load balancers with managed TLS certificates, host-based routing (SPA vs API), Cloud Armor integration. HSTS enforced (2-year max-age).",
 			AssetType:   "VIRTUAL",
 		},
 		{
 			Name:        "Identity Platform — Admin Pool",
-			Description: "Firebase Auth / Identity Platform for admin users (latentarchon-admin project). Email magic link + TOTP MFA. Separate from chat pool for blast-radius isolation.",
+			Description: "Firebase Auth / Identity Platform for admin users (latentarchon-admin project). Email magic link + TOTP MFA. Separate from app pool for blast-radius isolation.",
 			AssetType:   "VIRTUAL",
 		},
 		{
-			Name:        "Identity Platform — Chat Pool",
-			Description: "Firebase Auth / Identity Platform for chat users (latentarchon-chat project). Email magic link + TOTP MFA. SAML SSO + SCIM provisioning for enterprise tenants.",
+			Name:        "Identity Platform — App Pool",
+			Description: "Firebase Auth / Identity Platform for app users (latentarchon-app project). Email magic link + TOTP MFA. SAML SSO + SCIM provisioning for enterprise tenants.",
 			AssetType:   "VIRTUAL",
 		},
 		{
@@ -129,7 +129,7 @@ func ArchonAssets() []AssetDef {
 		},
 		{
 			Name:        "Artifact Registry",
-			Description: "Docker container registry in both admin and chat GCP projects. Stores built container images. Vulnerability scanning enabled.",
+			Description: "Docker container registry in both admin and app GCP projects. Stores built container images. Vulnerability scanning enabled.",
 			AssetType:   "VIRTUAL",
 		},
 
@@ -145,8 +145,8 @@ func ArchonAssets() []AssetDef {
 			AssetType:   "SOFTWARE",
 		},
 		{
-			Name:        "Chat SPA (React/TypeScript)",
-			Description: "Chat frontend application. React 18, TypeScript, TailwindCSS, Vite build, Connect-RPC client with server streaming. Firebase Auth integration.",
+			Name:        "App SPA (React/TypeScript)",
+			Description: "App frontend application. React 18, TypeScript, TailwindCSS, Vite build, Connect-RPC client with server streaming. Firebase Auth integration.",
 			AssetType:   "SOFTWARE",
 		},
 		{

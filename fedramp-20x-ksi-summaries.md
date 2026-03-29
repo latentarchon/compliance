@@ -451,7 +451,7 @@ Implementation follows FedRAMP's recommended order:
 - ✅ PostgreSQL RLS: workspace-scoped data isolation
 - ✅ GCP IAM: 15 specific roles for terraform-sa (no Owner/Editor)
 - ✅ WIF: keyless CI/CD auth (no SA keys — org policy enforced)
-- ✅ Database roles: archon_chat_ro, archon_admin_rw, archon_ops_rw (enforced via migration; default PUBLIC revoked)
+- ✅ Database roles: archon_app_ro, archon_admin_rw, archon_ops_rw (enforced via migration; default PUBLIC revoked)
 - ✅ Migration-user isolation: postgres superuser credentials in Secret Manager, accessible only to Atlas job (no runtime DDL)
 
 **Machine-Based Validation** (weekly):
@@ -459,7 +459,7 @@ Implementation follows FedRAMP's recommended order:
 - Verify no SA keys exist (org policy audit)
 - Verify RLS policies active on all tables
 - Verify PUBLIC privileges revoked on all tables (query `information_schema.role_table_grants`)
-- Verify DB role grants match expected (archon-chat → archon_chat_ro, archon-admin → archon_admin_rw, archon-ops → archon_ops_rw)
+- Verify DB role grants match expected (archon-app → archon_app_ro, archon-admin → archon_admin_rw, archon-ops → archon_ops_rw)
 
 **Status**: ✅ Implemented.
 
@@ -511,7 +511,7 @@ Implementation follows FedRAMP's recommended order:
 
 **Pass/Fail Criteria**:
 - ✅ Cloud Logging: centralized, immutable, structured JSON
-- ✅ Application audit_events table: user actions with IP, user-agent, metadata
+- ✅ Application audit_events table: user actions with IP, user-agent, metadata, session_id, mfa_method
 - ✅ Cloud Audit Logs: admin activity + data access (GCP API calls)
 - ✅ Log sink to GCS for long-term retention
 - ⬜ Formal SIEM tool integration (Cloud Logging serves as SIEM equivalent)

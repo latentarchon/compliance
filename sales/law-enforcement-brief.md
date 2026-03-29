@@ -30,7 +30,7 @@ Latent Archon provides a secure, AI-powered workspace where your team uploads do
 
 2. **Organize** — Create workspaces per unit, case, or function. Detectives get a workspace for their caseload. Training gets a workspace for policy documents. Intel gets a workspace for bulletins. Each workspace is completely isolated.
 
-3. **Ask** — Type a question in the chat interface. The AI searches your documents, finds the relevant passages, and generates an answer with page-level citations so you can verify the source.
+3. **Ask** — Type a question in the conversation interface. The AI searches your documents, finds the relevant passages, and generates an answer with page-level citations so you can verify the source.
 
 4. **Manage** — Admins control who has access to what. Invite officers, assign roles, revoke access — all through a simple dashboard. SSO integration with your existing identity provider (Okta, Azure AD).
 

@@ -38,7 +38,7 @@ This plan covers all components within the authorization boundary: application c
 
 | Category | Items | Repository | Versioning |
 |----------|-------|------------|-----------|
-| **Application Code** | Go backend (3 services), React SPAs (2) | backend/, admin/, chat/ repos | Git SHA + semver tags |
+| **Application Code** | Go backend (3 services), React SPAs (2) | backend/, admin/, app/ repos | Git SHA + semver tags |
 | **Infrastructure** | Terraform modules (14), Terragrunt configs | infra/ repo | Git SHA + Terraform state |
 | **Database Schema** | Migrations, canonical schema.sql | backend/shared-go/postgres/ | Sequential migration IDs |
 | **Protobuf Definitions** | Service and message definitions | backend/shared-go/proto/ | Git SHA |

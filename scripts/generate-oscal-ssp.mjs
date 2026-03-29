@@ -252,7 +252,7 @@ function buildSSP(controls) {
         ],
         'system-name': 'Latent Archon Document Intelligence Platform',
         'system-name-short': 'LA-DIP',
-        description: 'Latent Archon is a multi-tenant document intelligence platform purpose-built for U.S. government agencies handling Controlled Unclassified Information (CUI). The platform provides document management with malware scanning, AI-powered semantic search using Retrieval-Augmented Generation (RAG), interactive chat over uploaded documents using Google Gemini LLMs, workspace-level data isolation enforced through PostgreSQL Row-Level Security (RLS), and enterprise SSO/SCIM integration.',
+        description: 'Latent Archon is a multi-tenant document intelligence platform purpose-built for U.S. government agencies handling Controlled Unclassified Information (CUI). The platform provides document management with malware scanning, AI-powered semantic search using Retrieval-Augmented Generation (RAG), interactive conversation over uploaded documents using Google Gemini LLMs, workspace-level data isolation enforced through PostgreSQL Row-Level Security (RLS), and enterprise SSO/SCIM integration.',
         props: [
           { name: 'cloud-service-model', value: 'saas' },
           { name: 'cloud-deployment-model', value: 'public-cloud' },
@@ -276,8 +276,8 @@ function buildSSP(controls) {
             },
             {
               uuid: randomUUID(),
-              title: 'Chat Messages / AI Responses',
-              description: 'User chat messages and AI-generated responses from RAG pipeline.',
+              title: 'Conversation Messages / AI Responses',
+              description: 'User conversation messages and AI-generated responses from RAG pipeline.',
               'categorizations': [
                 { system: 'https://doi.org/10.6028/NIST.SP.800-60v2r1', 'information-type-ids': ['D.14'] },
               ],
@@ -319,13 +319,13 @@ function buildSSP(controls) {
           remarks: 'System is in pre-authorization status. Infrastructure-as-code validated in staging. Production deployment pending authorization boundary finalization and 3PAO engagement.',
         },
         'authorization-boundary': {
-          description: 'The authorization boundary encompasses all components required to deliver the Latent Archon SaaS offering: application code (Go backend, React SPAs), GCP infrastructure (Cloud Run, Cloud SQL, Cloud Storage, Vertex AI, Cloud Armor, Cloud KMS, Identity Platform), CI/CD pipelines (GitHub Actions with Workload Identity Federation), administrative interfaces, and supporting services (ClamAV malware scanning, Document AI OCR). The system uses a two-project architecture for blast-radius isolation: Chat Project (latentarchon-chat-prod) for user-facing services and Admin Project (latentarchon-admin-prod) for administrative, processing, and data storage services.',
+          description: 'The authorization boundary encompasses all components required to deliver the Latent Archon SaaS offering: application code (Go backend, React SPAs), GCP infrastructure (Cloud Run, Cloud SQL, Cloud Storage, Vertex AI, Cloud Armor, Cloud KMS, Identity Platform), CI/CD pipelines (GitHub Actions with Workload Identity Federation), administrative interfaces, and supporting services (ClamAV malware scanning, Document AI OCR). The system uses a two-project architecture for blast-radius isolation: App Project (latentarchon-app-prod) for user-facing services and Admin Project (latentarchon-admin-prod) for administrative, processing, and data storage services.',
         },
         'network-architecture': {
           description: 'All inbound traffic flows through Cloud Armor WAF and Global HTTPS Load Balancer. No services have public IP addresses. Internal communication uses VPC-native networking with Cloud SQL via VPC peering, Vertex AI via Private Service Connect, and Cloud Run serverless containers. Egress firewall is deny-all by default with FQDN-based allowlist for GCP APIs only.',
         },
         'data-flow': {
-          description: 'Document upload: Browser → Cloud Armor → HTTPS LB → Admin API (auth, MFA, RBAC, malware scan) → Cloud Storage (CMEK) → Cloud Tasks → Ops Service (OCR, chunking, embedding) → Vertex AI Vector Search. Chat query: Browser → Cloud Armor → HTTPS LB → Chat API (auth, MFA, workspace check) → Vector Search (semantic query) → Gemini LLM (streaming response) → Client. All data at rest encrypted with AES-256 (CMEK via Cloud KMS). All data in transit encrypted with TLS 1.2+.',
+          description: 'Document upload: Browser → Cloud Armor → HTTPS LB → Admin API (auth, MFA, RBAC, malware scan) → Cloud Storage (CMEK) → Cloud Tasks → Ops Service (OCR, chunking, embedding) → Vertex AI Vector Search. App query: Browser → Cloud Armor → HTTPS LB → App API (auth, MFA, workspace check) → Vector Search (semantic query) → Gemini LLM (streaming response) → Client. All data at rest encrypted with AES-256 (CMEK via Cloud KMS). All data in transit encrypted with TLS 1.2+.',
         },
       },
 
@@ -348,7 +348,7 @@ function buildSSP(controls) {
           {
             uuid: randomUUID(),
             title: 'Customer End User',
-            description: 'Agency staff using chat/search functionality via the chat SPA.',
+            description: 'Agency staff using conversation/search functionality via the app SPA.',
             props: [
               { name: 'type', value: 'external' },
               { name: 'privilege-level', value: 'non-privileged' },
@@ -356,9 +356,9 @@ function buildSSP(controls) {
             'role-ids': ['viewer', 'editor'],
             'authorized-privileges': [
               {
-                title: 'Chat and Search',
-                description: 'Access to chat interface and document search within assigned workspaces.',
-                'functions-performed': ['document-search', 'chat', 'view-documents'],
+                title: 'Conversation and Search',
+                description: 'Access to conversation interface and document search within assigned workspaces.',
+                'functions-performed': ['document-search', 'conversation', 'view-documents'],
               },
             ],
           },
@@ -418,8 +418,8 @@ function buildSSP(controls) {
           {
             uuid: UUID.componentChatAPI,
             type: 'service',
-            title: 'Chat API (archon-chat)',
-            description: 'Cloud Run service handling user-facing API: chat, search, auth, streaming responses.',
+            title: 'App API (archon-app)',
+            description: 'Cloud Run service handling user-facing API: conversation, search, auth, streaming responses.',
             status: { state: 'under-development' },
           },
           {

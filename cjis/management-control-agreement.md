@@ -41,7 +41,7 @@ Latent Archon will provide the following services that involve CJI:
 
 - Secure document upload, storage, and lifecycle management
 - AI-powered search (Retrieval-Augmented Generation) over uploaded documents
-- Interactive chat interface with source citations over document collections
+- Interactive conversation interface with source citations over document collections
 - Multi-tenant workspace isolation with organization-scoped access controls
 - Enterprise SSO federation (SAML 2.0) and automated user provisioning (SCIM 2.0)
 - Administrative dashboard for user management, document management, and audit review

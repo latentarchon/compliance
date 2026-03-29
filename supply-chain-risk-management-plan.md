@@ -44,7 +44,7 @@ This plan covers all external components within or supporting the authorization 
 |-----------|-----------------|-----------|----------------------|
 | **Go modules** | ~40 direct, ~120 transitive | go.sum | SHA-256 checksums via Go module mirror |
 | **NPM packages (admin)** | ~30 direct, ~800 transitive | package-lock.json | SHA-512 integrity hashes |
-| **NPM packages (chat)** | ~25 direct, ~700 transitive | package-lock.json | SHA-512 integrity hashes |
+| **NPM packages (app)** | ~25 direct, ~700 transitive | package-lock.json | SHA-512 integrity hashes |
 | **Terraform providers** | ~5 | .terraform.lock.hcl | SHA-256 checksums |
 
 ### 2.3 Container Base Images

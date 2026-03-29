@@ -51,7 +51,7 @@ Customer agencies upload documents that may contain any category of PII dependin
 
 ### 3.1 PII Collection Points
 
-1. **Account Registration**: Email and display name collected via Identity Platform sign-up flow (chat or admin app)
+1. **Account Registration**: Email and display name collected via Identity Platform sign-up flow (app or admin app)
 2. **SAML SSO**: Email, name, and IdP-assigned attributes received in SAML assertion
 3. **SCIM Provisioning**: Email, name, external ID, and group memberships pushed by customer IdP
 4. **HTTP Requests**: IP address and user agent captured automatically by Cloud Armor and application audit logger

@@ -71,6 +71,7 @@ The following are explicitly prohibited:
 
 - Cloud KMS keys are provisioned via Terraform (`infra/modules/kms/`)
 - Separate keys per data class (database vs. object storage)
+- Per-tenant CMEK anchor: `organizations.kms_key_name` column stores the KMS key resource name for each tenant, enabling future per-tenant encryption key isolation
 - Key access restricted to service accounts that require encryption/decryption
 - KMS audit logging enabled for all key operations
 - Key destruction requires manual approval with 24-hour scheduled destruction delay

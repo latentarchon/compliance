@@ -18,7 +18,7 @@ permissions:
 
 env:
   ADMIN_PROJECT_ID: latentarchon-admin-staging
-  CHAT_PROJECT_ID: latentarchon-chat-staging
+  APP_PROJECT_ID: latentarchon-app-staging
   REGION: us-east1
   DB_INSTANCE: archon-db
   GCS_DOCUMENTS_BUCKET: latentarchon-admin-staging-documents
@@ -53,7 +53,7 @@ jobs:
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             ./contingency-test-cli \
               --project-id "$ADMIN_PROJECT_ID" \
-              --chat-project-id "$CHAT_PROJECT_ID" \
+              --app-project-id "$APP_PROJECT_ID" \
               --region "$REGION" \
               --db-instance "$DB_INSTANCE" \
               --documents-bucket "$GCS_DOCUMENTS_BUCKET" \
@@ -65,7 +65,7 @@ jobs:
           else
             ./contingency-test-cli \
               --project-id "$ADMIN_PROJECT_ID" \
-              --chat-project-id "$CHAT_PROJECT_ID" \
+              --app-project-id "$APP_PROJECT_ID" \
               --region "$REGION" \
               --db-instance "$DB_INSTANCE" \
               --documents-bucket "$GCS_DOCUMENTS_BUCKET" \
@@ -115,7 +115,7 @@ jobs:
             max_concurrency: 1
           targets:
             app_project:
-              project_id: "latentarchon-chat-staging"
+              project_id: "latentarchon-app-staging"
               region: "us-east1"
               api_endpoint: "https://api.app.staging.latentarchon.com"
               cloud_sql:
@@ -149,8 +149,8 @@ jobs:
                 - "archon-admin@latentarchon-admin-staging.iam.gserviceaccount.com"
           auth:
             firebase_api_key: ""
-            chat_test_email: ""
-            chat_test_password: ""
+            app_test_email: ""
+            app_test_password: ""
             admin_test_email: ""
             admin_test_password: ""
             totp_secret: ""

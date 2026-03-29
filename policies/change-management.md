@@ -19,7 +19,7 @@ This policy establishes requirements for managing changes to the Latent Archon p
 
 This policy applies to all changes affecting:
 
-- Application source code (backend, admin SPA, chat SPA)
+- Application source code (backend, admin SPA, app SPA)
 - Infrastructure as code (Terragrunt/Terraform modules)
 - Database schema and migrations
 - CI/CD pipeline configuration
@@ -50,7 +50,7 @@ All changes begin as a GitHub Pull Request (PR) against the relevant repository:
 |-----------|---------|
 | `backend/` | Go backend services |
 | `admin/` | Admin SPA (React/TypeScript) |
-| `chat/` | Chat SPA (React/TypeScript) |
+| `app/` | App SPA (React/TypeScript) |
 | `infra/` | Terragrunt modules and environment configs |
 | `org/` | GCP organization Terraform |
 | `vpc/` | VPC and networking Terraform |
@@ -109,7 +109,7 @@ All infrastructure is defined in Terragrunt/Terraform and stored in version cont
 - **State**: GCS backend with versioning and state locking
 - **Modules**: 14+ reusable modules (vpc, cloud-sql, cloud-run, load-balancer, cloud-armor, service-accounts, firebase, gcs, kms, audit-logs, cloud-tasks, vertex-ai, document-ai, artifact-registry)
 - **Environments**: Separate staging and production configurations
-- **Projects**: Two-project architecture (admin + chat) with per-project configs
+- **Projects**: Two-project architecture (admin + app) with per-project configs
 
 ### 5.2 Container Baseline
 

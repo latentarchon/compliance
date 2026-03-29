@@ -136,7 +136,7 @@ Security incidents are managed under the Incident Response Policy (POL-IR-001) w
 | **Zero Trust** | All requests authenticated and authorized; no implicit trust based on network position |
 | **Encryption Everywhere** | AES-256 at rest, TLS 1.2+ in transit, CMEK via Cloud KMS, FIPS 140-2 BoringCrypto |
 | **Immutable Infrastructure** | Distroless containers, IaC-managed, no SSH access to production |
-| **Separation of Duties** | Admin/chat auth pool isolation, PR review requirements, production deploy gates |
+| **Separation of Duties** | Admin/app auth pool isolation, PR review requirements, production deploy gates |
 | **Audit Everything** | Comprehensive audit_events table + Cloud Audit Logs + GCS versioning |
 
 ---
