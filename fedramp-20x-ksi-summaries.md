@@ -452,7 +452,7 @@ Implementation follows FedRAMP's recommended order:
 - ✅ GCP IAM: 15 specific roles for terraform-sa (no Owner/Editor)
 - ✅ WIF: keyless CI/CD auth (no SA keys — org policy enforced)
 - ✅ Database roles: archon_app_ro, archon_admin_rw, archon_ops_rw (enforced via migration; default PUBLIC revoked)
-- ✅ Migration-user isolation: postgres superuser credentials in Secret Manager, accessible only to Atlas job (no runtime DDL)
+- ✅ Migration-user isolation: Atlas job uses Cloud SQL IAM auth with `SET ROLE archon_migrator` (no static credentials). `postgres` superuser password in Secret Manager as break-glass only, accessible to `gcp-security-admins` group (not mounted on any service or job by default).
 
 **Machine-Based Validation** (weekly):
 - Query IAM policy bindings on all projects
@@ -525,8 +525,10 @@ Implementation follows FedRAMP's recommended order:
 - Verify Cloud Logging is enabled on all projects
 - Verify log sink configurations match IaC
 - Verify audit_events table is being populated
+- Verify Cloud SQL database audit flags are active (`cloudsql.enable_pgaudit=on`, `pgaudit.log=ddl,role,write`, `log_statement=ddl`, `log_connections=on`, `log_disconnections=on`, `log_lock_waits=on`, `log_min_duration_statement=1000`)
+- Verify break-glass secret access alert policy is active (CRITICAL severity, fires on any `db-postgres-password` Secret Manager access)
 
-**Status**: ✅ Implemented (Cloud Logging as SIEM capability).
+**Status**: ✅ Implemented (Cloud Logging as SIEM capability; pgAudit for database-level audit; break-glass secret alerting).
 
 ### 6.2 Evaluating Configurations
 

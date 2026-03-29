@@ -123,6 +123,9 @@ Refer to the Incident Response Policy (POL-IR-001) for detailed procedures.
 | Unexpected GCP resource changes | Cloud Audit Logs | Unauthorized change investigation |
 | SCIM token creation/revocation | Application audit logger | Notification to org admin |
 | ClamAV malware detection | Upload handler | File quarantine + investigation |
+| Break-glass secret access (db-postgres-password) | Cloud Monitoring log-based metric + CRITICAL alert | Immediate investigation; verify authorized break-glass operation; rotate password if unauthorized |
+| Database DDL/role changes | pgAudit (`ddl,role,write`) via Cloud SQL flags | Review for unauthorized schema modifications |
+| Slow queries (>1s) | `log_min_duration_statement=1000` Cloud SQL flag | Performance investigation; potential abuse detection |
 
 ### 5.2 Incident Reporting
 

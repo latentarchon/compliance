@@ -143,6 +143,9 @@ The production baseline is defined by:
 | **Dependabot** | Dependency update automation |
 | **Drata** | Compliance monitoring and evidence collection |
 | **sqlc** | Type-safe SQL code generation |
+| **Atlas** | Database schema migration versioning and checksums |
+| **pgAudit** | PostgreSQL audit logging (DDL, role changes, writes) |
+| **IAM Auth Guardrail** | CI job that rejects password-path regressions in atlas-migrate configs |
 
 ---
 

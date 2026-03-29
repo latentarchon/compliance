@@ -218,9 +218,27 @@ HSTS is enforced with `max-age=63072000; includeSubDomains; preload` (2-year pin
 ### Secrets Management
 
 - **Zero secrets in container images**: All configuration via environment variables at runtime
-- **No static database passwords**: Cloud SQL IAM authentication only
+- **No static database passwords**: Cloud SQL IAM authentication only. The `postgres` superuser password exists in Secret Manager as break-glass only, accessible to `gcp-security-admins` group — not mounted on any service or job by default. A Cloud Monitoring alert (CRITICAL severity) fires on any access to this secret.
 - **No service account keys**: Workload Identity Federation (WIF) with OIDC for CI/CD
 - **Org policy enforcement**: `iam.disableServiceAccountKeyCreation` blocks SA key creation org-wide
+- **CI guardrail**: The infra CI pipeline (`iam-auth-guardrail` job) rejects PRs that introduce `DB_USER` or `DB_PASSWORD` into atlas-migrate configs, preventing regressions to password-based auth.
+
+### Cloud SQL Database Audit Flags
+
+PostgreSQL database-level auditing is enforced via Terraform-managed Cloud SQL database flags:
+
+| Flag | Value | Purpose |
+|------|-------|---------|
+| `cloudsql.enable_pgaudit` | `on` | Enables the pgAudit extension for detailed SQL audit logging |
+| `pgaudit.log` | `ddl,role,write` | Logs DDL statements, role changes, and write operations |
+| `log_statement` | `ddl` | Logs all DDL statements (CREATE, ALTER, DROP) |
+| `log_connections` | `on` | Logs all connection attempts (successful and failed) |
+| `log_disconnections` | `on` | Logs session termination with duration |
+| `log_lock_waits` | `on` | Logs lock waits exceeding `deadlock_timeout` |
+| `log_min_duration_statement` | `1000` | Logs queries taking longer than 1 second (slow query detection) |
+| `cloudsql.iam_authentication` | `on` | Enables IAM-based authentication (required for keyless auth) |
+
+These flags are defined in `infra/modules/cloud-sql/main.tf` and applied uniformly across staging and production.
 
 ### Schema future-proofing (no behavioral change today)
 
