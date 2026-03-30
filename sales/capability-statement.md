@@ -48,7 +48,7 @@ Latent Archon is a multi-tenant document intelligence platform that enables gove
 - Semantic near-duplicate detection (0.97 cosine similarity threshold) and immutable document versioning
 
 **CUI-Grade Security**
-- Two-project auth isolation (separate identity pools for end users and admins)
+- Three-project isolation (separate identity pools for end users and admins, dedicated ops project for data tier)
 - PostgreSQL Row-Level Security with fail-closed workspace scoping
 - TOTP MFA enforced on all data endpoints with step-up MFA for sensitive operations
 - Three least-privilege database roles mapped to GCP IAM service accounts
@@ -83,7 +83,7 @@ Latent Archon is a multi-tenant document intelligence platform that enables gove
 | Differentiator | Detail |
 |---------------|--------|
 | **Security-First Architecture** | Built from day one for CUI handling — not a commercial product retrofitted for government |
-| **Complete Data Isolation** | PostgreSQL RLS + vector store token restrictions + two-project auth isolation = zero cross-tenant leakage |
+| **Complete Data Isolation** | PostgreSQL RLS + vector store token restrictions + three-project isolation (auth + data tier) = zero cross-tenant leakage |
 | **FedRAMP-Ready Infrastructure** | 100% GCP FedRAMP High services; ~40% of NIST 800-53 Moderate controls inherited |
 | **Internal Red Team** | 44 automated attack scenarios across auth bypass, privilege escalation, and data exfiltration |
 | **FIPS 140-2 Cryptography** | All server-side TLS, hashing, and encryption use FIPS-validated BoringSSL (NIST cert #4407) via GOEXPERIMENT=boringcrypto |

@@ -63,7 +63,7 @@ Latent Archon is a CUI-compliant RAG (Retrieval-Augmented Generation) chatbot pl
 | **Authentication** | Firebase Auth with JWT verification, token caching (SHA-256 hashed keys), Firebase App Check |
 | **MFA** | TOTP-based multi-factor authentication enforced on all data endpoints; step-up MFA for sensitive operations |
 | **Session Management** | NIST 800-171 AC-12 compliant idle (30 min) and absolute (12 hr) timeouts |
-| **Multi-Tenancy** | Two-project auth isolation (separate Firebase pools), tenant ID enforcement at interceptor + host + header levels |
+| **Multi-Tenancy** | Three-project isolation (separate Firebase pools for app + admin, dedicated ops project for data tier), tenant ID enforcement at interceptor + host + header levels |
 | **Data Isolation** | PostgreSQL Row-Level Security (RLS) with fail-closed workspace scoping on all data tables |
 | **Database Roles** | Three least-privilege Postgres roles: read-only (app), read-write (admin), ops (processing) |
 | **API Protocol** | Connect-RPC with typed interceptor chain (auth → MFA → rate limit → logging) |
@@ -90,9 +90,9 @@ The system is deployed as three isolated Cloud Run services, each operating in a
 | `archon-admin` | `admin` | Admin API: org/workspace/document management | Firebase Auth (admin pool) |
 | `archon-ops` | `ops` | Internal: document processing, cron jobs | Google OIDC (service accounts) |
 
-### Two-Project Auth Isolation
+### Three-Project Isolation
 
-Authentication is split across two GCP projects to provide **complete auth pool isolation**:
+Authentication is split across two of the three GCP projects (app and admin) to provide **complete auth pool isolation**. The third project (ops) owns the entire data tier with no identity pool and no public ingress:
 
 - **`latentarchon-app`**: Firebase Auth user pool for app users
 - **`latentarchon-admin`**: Firebase Auth pool for admin users
@@ -927,7 +927,7 @@ go func() {
 |---|---|---|
 | **AC-2** | Account Management | Firebase Auth user management, org/workspace member CRUD, invite system with expiring tokens |
 | **AC-3** | Access Enforcement | RBAC (master_admin/admin/editor/viewer), workspace access checks, RLS |
-| **AC-4** | Information Flow Enforcement | RLS workspace scoping, vector search token restrictions, two-project auth isolation |
+| **AC-4** | Information Flow Enforcement | RLS workspace scoping, vector search token restrictions, three-project isolation (auth + data tier) |
 | **AC-5** | Separation of Duties | Three database roles (app_ro, admin_rw, ops_rw), three server modes |
 | **AC-6** | Least Privilege | Database roles, IAM service accounts, per-service permissions |
 | **AC-7** | Unsuccessful Login Attempts | Firebase Auth built-in lockout; rate limiting on auth endpoints |
@@ -2204,7 +2204,7 @@ Audience: Government security reviewers, enterprise buyers, and due diligence te
 
 ## Executive Summary
 
-- Two‑project GCP architecture isolates public app workloads from admin/ops systems, reducing blast radius and aligning with least privilege and data minimization.
+- Three‑project GCP architecture isolates public app workloads, admin systems, and the data tier (ops) into separate projects, reducing blast radius and aligning with least privilege and data minimization.
 - Strong perimeter: Global HTTPS load balancers fronted by Cloud Armor WAF with OWASP Top‑10 rules, rate limiting, method enforcement, origin restrictions, and bot blocking.
 - Defense‑in‑depth networking: Dedicated VPCs, private service networking to Cloud SQL, strict firewalling, Cloud NAT with logging, and an FQDN‑based egress deny‑by‑default policy with explicit allowlists (Google APIs and internal domains only).
 - Robust IAM: Service‑account based access, role scoping per service, cross‑project Cloud SQL access via `roles/cloudsql.client` + `roles/cloudsql.instanceUser`, and controlled impersonation.

@@ -35,14 +35,16 @@ The following NIST 800-53 control families are fully or partially inherited from
 
 ## 2. GCP Projects
 
-### Two-Project Architecture
+### Three-Project Architecture
 
 | Project | Environment | Project ID | Project Number | Purpose |
 |---|---|---|---|---|
-| Admin (staging) | Staging | `latentarchon-admin-staging` | 786733428651 | Admin API, ops, DB, storage, vector search, processing |
 | App (staging) | Staging | `latentarchon-app-staging` | 462649318418 | User-facing API, SPA, Identity Platform (user pool) |
-| Admin (production) | Production | `latentarchon-admin-prod` | _TBD_ | Same as staging admin |
+| Ops (staging) | Staging | `latentarchon-ops-staging` | _TBD_ | Data tier: DB, storage, KMS, AI/ML, task queue, DLP, ClamAV, ops service |
+| Admin (staging) | Staging | `latentarchon-admin-staging` | 786733428651 | Admin API, SPA, Identity Platform (admin pool) |
 | App (production) | Production | `latentarchon-app-prod` | _TBD_ | Same as staging app |
+| Ops (production) | Production | `latentarchon-ops-prod` | _TBD_ | Same as staging ops |
+| Admin (production) | Production | `latentarchon-admin-prod` | _TBD_ | Same as staging admin |
 
 Production projects are defined in `org/variables.tf` but not yet created via Terraform.
 
@@ -50,7 +52,8 @@ Production projects are defined in `org/variables.tf` but not yet created via Te
 
 | Grant | Source SA | Target Project | Roles | Purpose |
 |---|---|---|---|---|
-| DB access | `archon-app@latentarchon-app-*` | Admin project | `cloudsql.client`, `cloudsql.instanceUser` | Read-only database access from app API |
+| DB access (read-only) | `archon-app@latentarchon-app-*` | Ops project | `cloudsql.client`, `cloudsql.instanceUser` | Read-only database access from app API |
+| DB access (read-write) | `archon-admin@latentarchon-admin-*` | Ops project | `cloudsql.client`, `cloudsql.instanceUser` | Read-write database access from admin API |
 | Cloud Armor sync | `archon-admin@latentarchon-admin-*` | App project | `compute.securityAdmin` | IP allowlist sync across projects |
 
 ---
@@ -63,17 +66,17 @@ Production projects are defined in `org/variables.tf` but not yet created via Te
 |---|---|---|---|---|
 | `archon-app` | App | `SERVER_MODE=public` | User-facing API (conversation, search, auth) | 0–10 instances |
 | `app-spa` | App | nginx | React SPA for end users | 0–5 instances |
+| `archon-ops` | Ops | `SERVER_MODE=ops` | Background processing (embeddings, DLP, cron) | 1–5 instances |
+| `clamav` | Ops | ClamAV REST | Internal malware scanning service | 1–2 instances |
 | `archon-admin` | Admin | `SERVER_MODE=admin` | Admin API (org, workspace, document, member CRUD) | 0–10 instances |
-| `archon-ops` | Admin | `SERVER_MODE=ops` | Background processing (embeddings, DLP, cron) | 1–5 instances |
 | `admin-spa` | Admin | nginx | React SPA for administrators | 0–5 instances |
-| `clamav` | Admin | ClamAV REST | Internal malware scanning service | 1–2 instances |
 
 ### Cloud SQL
 
 | Attribute | Value |
 |---|---|
 | **Engine** | PostgreSQL 15 |
-| **Project** | Admin |
+| **Project** | Ops |
 | **Region** | `us-east1` |
 | **HA** | Regional (automatic failover) |
 | **Encryption** | CMEK via Cloud KMS (HSM-backed, 90-day rotation) |
@@ -112,17 +115,17 @@ Production projects are defined in `org/variables.tf` but not yet created via Te
 
 | Service | Project | Purpose |
 |---|---|---|
-| **Identity Platform** | Both | Firebase Auth with per-tenant IDP pools, magic link + TOTP MFA |
-| **Cloud Armor** | Both | WAF (OWASP CRS 3.3), DDoS protection, bot blocking, IP allowlisting |
-| **Global HTTPS LB** | Both | TLS termination (Certificate Manager), host-based routing |
-| **Cloud Tasks** | Admin | Async document processing queue |
-| **Document AI** | Admin | OCR and document text extraction |
-| **Cloud DLP** | Admin | PII and credential detection in uploaded documents |
-| **Cloud Monitoring** | Both | Metrics, alerting, dashboards |
-| **Cloud Logging** | Both | Centralized logging with CMEK encryption |
-| **Cloud Audit Logs** | Both | GCP resource change tracking + data access logging |
-| **Artifact Registry** | Both | Docker image storage with vulnerability scanning |
-| **Certificate Manager** | Both | Google-managed TLS certificates with DNS authorization |
+| **Identity Platform** | App + Admin | Firebase Auth with per-tenant IDP pools, magic link + TOTP MFA |
+| **Cloud Armor** | App + Admin | WAF (OWASP CRS 3.3), DDoS protection, bot blocking, IP allowlisting |
+| **Global HTTPS LB** | App + Admin | TLS termination (Certificate Manager), host-based routing |
+| **Cloud Tasks** | Ops | Async document processing queue |
+| **Document AI** | Ops | OCR and document text extraction |
+| **Cloud DLP** | Ops | PII and credential detection in uploaded documents |
+| **Cloud Monitoring** | All three | Metrics, alerting, dashboards |
+| **Cloud Logging** | All three | Centralized logging with CMEK encryption |
+| **Cloud Audit Logs** | All three | GCP resource change tracking + data access logging |
+| **Artifact Registry** | All three | Docker image storage with vulnerability scanning |
+| **Certificate Manager** | App + Admin | Google-managed TLS certificates with DNS authorization |
 | **Cloudflare** | External | Authoritative DNS with DNSSEC |
 
 ---
@@ -133,12 +136,12 @@ Production projects are defined in `org/variables.tf` but not yet created via Te
 
 | SA Name | Project | Purpose | Key Roles |
 |---|---|---|---|
-| `archon-app@` | App | App API runtime | `cloudsql.client`, `cloudsql.instanceUser` (cross-project) |
-| `archon-admin@` | Admin | Admin API runtime | `cloudsql.client`, `cloudsql.instanceUser`, `storage.objectAdmin`, `compute.securityAdmin` (cross-project) |
-| `archon-ops@` | Admin | Ops/background processing | `cloudsql.client`, `aiplatform.user`, `documentai.apiUser`, `dlp.user`, `cloudtasks.enqueuer` |
-| `github-actions@` | Both | CI/CD deployment | `run.admin`, `artifactregistry.writer` |
+| `archon-app@` | App | App API runtime | `cloudsql.client`, `cloudsql.instanceUser` (cross-project to ops) |
+| `archon-admin@` | Admin | Admin API runtime | `cloudsql.client`, `cloudsql.instanceUser` (cross-project to ops), `storage.objectAdmin` (cross-project to ops), `compute.securityAdmin` (cross-project to app) |
+| `archon-ops@` | Ops | Ops/background processing | `cloudsql.client`, `cloudsql.instanceUser`, `aiplatform.user`, `documentai.apiUser`, `dlp.user`, `cloudtasks.enqueuer`, `storage.objectAdmin` |
+| `github-actions@` | All three | CI/CD deployment | `run.admin`, `artifactregistry.writer` |
 | `gh-ci-terraform@` | Admin | Terraform plan in CI | `viewer`, `storage.objectAdmin` (state bucket) |
-| `terraform-sa@` | Both | Infrastructure provisioning | `editor`, `iam.securityAdmin`, `aiplatform.admin` |
+| `terraform-sa@` | All three | Infrastructure provisioning | `editor`, `iam.securityAdmin`, `aiplatform.admin` |
 
 ### Org Policies (enforced org-wide)
 
@@ -163,13 +166,13 @@ Production projects are defined in `org/variables.tf` but not yet created via Te
 
 ### VPC Configuration
 
-| Attribute | Admin Project | App Project |
-|---|---|---|
-| **CIDR** | `10.0.0.0/20` | `10.1.0.0/20` |
-| **Subnets** | Serverless VPC connector, private services | Serverless VPC connector |
-| **Cloud NAT** | Enabled (egress for ClamAV updates) | Disabled (no outbound needed) |
-| **Private Google Access** | Enabled | Enabled |
-| **PSC** | Vertex AI Vector Search endpoint | — |
+| Attribute | App Project | Ops Project | Admin Project |
+|---|---|---|---|
+| **CIDR** | `10.1.0.0/20` | `10.2.0.0/20` | `10.0.0.0/20` |
+| **Subnets** | Serverless VPC connector | Serverless VPC connector, private services | Serverless VPC connector |
+| **Cloud NAT** | Disabled (no outbound needed) | Enabled (egress for ClamAV updates) | Disabled (no outbound needed) |
+| **Private Google Access** | Enabled | Enabled | Enabled |
+| **PSC** | — | Vertex AI Vector Search endpoint | — |
 
 ### Egress Firewall (deny-by-default)
 

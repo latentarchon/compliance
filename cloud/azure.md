@@ -34,13 +34,15 @@ The following NIST 800-53 control families are fully or partially inherited from
 
 ## 2. Azure Subscriptions
 
-### Two-Subscription Architecture
+### Three-Subscription Architecture
 
 | Subscription | Environment | Alias | Purpose |
 |---|---|---|---|
-| App (staging) | Staging | `latentarchon-app` | User-facing API, SPA, AI Search, Azure OpenAI |
-| Admin (staging) | Staging | `latentarchon-admin` | Admin API, ops, PostgreSQL, Blob Storage, Service Bus, Document Intelligence |
+| App (staging) | Staging | `latentarchon-app` | User-facing API, SPA |
+| Ops (staging) | Staging | `latentarchon-ops` | Data tier: PostgreSQL, Blob Storage, Key Vault, AI Search, Azure OpenAI, Service Bus, Document Intelligence, AI Language, ops service, ClamAV |
+| Admin (staging) | Staging | `latentarchon-admin` | Admin API, SPA |
 | App (production) | Production | `latentarchon-app` | Same as staging app |
+| Ops (production) | Production | `latentarchon-ops` | Same as staging ops |
 | Admin (production) | Production | `latentarchon-admin` | Same as staging admin |
 
 Production subscriptions are defined in `infra/azure/environments/production/` but not yet provisioned.
@@ -55,17 +57,17 @@ Production subscriptions are defined in `infra/azure/environments/production/` b
 |---|---|---|---|---|
 | `archon-app` | App | `SERVER_MODE=public` | User-facing API (conversation, search, auth) | 0–10 replicas |
 | `app-spa` | App | nginx | React SPA for end users | 0–5 replicas |
+| `archon-ops` | Ops | `SERVER_MODE=ops` | Background processing (embeddings, DLP, cron) | 1–5 replicas |
+| `clamav` | Ops | ClamAV REST | Internal malware scanning service | 1–2 replicas |
 | `archon-admin` | Admin | `SERVER_MODE=admin` | Admin API (org, workspace, document, member CRUD) | 0–10 replicas |
-| `archon-ops` | Admin | `SERVER_MODE=ops` | Background processing (embeddings, DLP, cron) | 1–5 replicas |
 | `admin-spa` | Admin | nginx | React SPA for administrators | 0–5 replicas |
-| `clamav` | Admin | ClamAV REST | Internal malware scanning service | 1–2 replicas |
 
 ### PostgreSQL Flexible Server
 
 | Attribute | Value |
 |---|---|
 | **Engine** | PostgreSQL 15 |
-| **Subscription** | Admin |
+| **Subscription** | Ops |
 | **Region** | `eastus` |
 | **HA** | Zone-redundant (automatic failover) |
 | **Encryption** | CMEK via Key Vault |
@@ -105,21 +107,22 @@ Production subscriptions are defined in `infra/azure/environments/production/` b
 
 | Vault | Purpose | SKU | Rotation |
 |---|---|---|---|
-| Admin vault | Database encryption, storage encryption, application secrets | Premium (HSM-backed) | 90-day automatic |
+| Ops vault | Database encryption, storage encryption, application secrets | Premium (HSM-backed) | 90-day automatic |
 | App vault | Service-to-service secrets | Premium (HSM-backed) | 90-day automatic |
+| Admin vault | Service-to-service secrets | Premium (HSM-backed) | 90-day automatic |
 
 ### Other Services
 
 | Service | Subscription | Purpose |
 |---|---|---|
-| **Azure AD** | Both | Per-tenant SSO/SAML IdP registration (federated identity) |
-| **Front Door + WAF** | Both | Global edge with OWASP managed rules, DDoS protection, rate limiting |
-| **Service Bus** | Admin | Async document processing queue (+ dead letter queue) |
-| **Document Intelligence** | Admin | Document text extraction (OCR) |
-| **AI Language** | Admin | PII detection in uploaded documents |
-| **Azure Monitor** | Both | Logs, metrics, alerts, workbooks |
-| **Activity Log** | Both | Azure resource change tracking and audit trail |
-| **Container Registry** | Both | Docker image storage with vulnerability scanning |
+| **Azure AD** | App + Admin | Per-tenant SSO/SAML IdP registration (federated identity) |
+| **Front Door + WAF** | App + Admin | Global edge with OWASP managed rules, DDoS protection, rate limiting |
+| **Service Bus** | Ops | Async document processing queue (+ dead letter queue) |
+| **Document Intelligence** | Ops | Document text extraction (OCR) |
+| **AI Language** | Ops | PII detection in uploaded documents |
+| **Azure Monitor** | All three | Logs, metrics, alerts, workbooks |
+| **Activity Log** | All three | Azure resource change tracking and audit trail |
+| **Container Registry** | All three | Docker image storage with vulnerability scanning |
 | **Cloudflare** | External | Authoritative DNS with DNSSEC |
 
 ---
@@ -141,9 +144,9 @@ Azure deployments use **SSO/SAML exclusively** via Azure AD federation. There is
 
 | Identity | Service | Key Permissions |
 |---|---|---|
-| `archon-app-identity` | App API | PostgreSQL auth (read-only), AI Search reader, Azure OpenAI user |
-| `archon-admin-identity` | Admin API | PostgreSQL auth (read-write), Blob Storage (CRUD), Service Bus sender |
-| `archon-ops-identity` | Ops service | PostgreSQL auth (ops scope), Blob Storage (CRUD), Service Bus receiver, Document Intelligence, AI Language, Azure OpenAI |
+| `archon-app-identity` | App API | PostgreSQL auth (read-only, cross-subscription to ops), AI Search reader (cross-subscription to ops), Azure OpenAI user (cross-subscription to ops) |
+| `archon-ops-identity` | Ops service | PostgreSQL auth (ops scope), Blob Storage (CRUD), Service Bus receiver, Document Intelligence, AI Language, Azure OpenAI, AI Search |
+| `archon-admin-identity` | Admin API | PostgreSQL auth (read-write, cross-subscription to ops), Blob Storage (CRUD, cross-subscription to ops), Service Bus sender (cross-subscription to ops) |
 | `github-actions-identity` | CI/CD | Container Registry push, Container Apps deploy |
 
 ### Workload Identity Federation
@@ -173,14 +176,14 @@ Same PostgreSQL role model as GCP/AWS — roles are cloud-agnostic:
 
 ### VNet Configuration
 
-| Attribute | Admin Subscription | App Subscription |
-|---|---|---|
-| **CIDR** | `10.20.0.0/16` | `10.21.0.0/16` |
-| **AZs** | 3 (`eastus` zones 1/2/3) | 3 (`eastus` zones 1/2/3) |
-| **Subnets** | Container Apps, database (delegated), private endpoints | Container Apps, private endpoints |
-| **NAT Gateway** | Enabled | Enabled |
-| **Private Endpoints** | PostgreSQL, Blob Storage, Service Bus, Key Vault, Document Intelligence, AI Language | AI Search, Azure OpenAI, Key Vault |
-| **NSG Flow Logs** | Enabled → Storage Account | Enabled → Storage Account |
+| Attribute | App Subscription | Ops Subscription | Admin Subscription |
+|---|---|---|---|
+| **CIDR** | `10.21.0.0/16` | `10.22.0.0/16` | `10.20.0.0/16` |
+| **AZs** | 3 (`eastus` zones 1/2/3) | 3 (`eastus` zones 1/2/3) | 3 (`eastus` zones 1/2/3) |
+| **Subnets** | Container Apps, private endpoints | Container Apps, database (delegated), private endpoints | Container Apps, private endpoints |
+| **NAT Gateway** | Enabled | Enabled | Enabled |
+| **Private Endpoints** | Key Vault | PostgreSQL, Blob Storage, Service Bus, Key Vault, Document Intelligence, AI Language, AI Search, Azure OpenAI | Key Vault |
+| **NSG Flow Logs** | Enabled → Storage Account | Enabled → Storage Account | Enabled → Storage Account |
 
 ### Network Security Groups
 
@@ -257,7 +260,7 @@ Same PostgreSQL role model as GCP/AWS — roles are cloud-agnostic:
 
 Before deploying the Azure environment:
 
-1. **Azure AD tenant** with two subscriptions (app + admin) under a management group
+1. **Azure AD tenant** with three subscriptions (app + ops + admin) under a management group
 2. **Storage accounts** for Terraform state (one per subscription)
 3. **Azure AD app registration** for GitHub Actions workload identity federation
 4. **Front Door** custom domain with DNS validation via Cloudflare

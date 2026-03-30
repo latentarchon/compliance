@@ -21,14 +21,14 @@ This whitepaper describes the platform's security architecture across authentica
 
 ### Multi-Pool Auth Isolation
 
-Authentication is split across two isolated environments (GCP projects / AWS accounts / Azure subscriptions) with independent identity pools:
+Authentication is split across two of the three isolated environments (GCP projects / AWS accounts / Azure subscriptions), each with an independent identity pool. The third environment (ops) has no identity pool — it hosts the data tier and is accessed only via cross-environment IAM grants:
 
 | Pool | GCP | AWS | Azure | Users | Domain |
 |------|-----|-----|-------|-------|--------|
 | App (End Users) | Identity Platform (Firebase Auth) | SAML IdP providers | Azure AD federation | Agency analysts, viewers | `app.{cloud}.latentarchon.com` |
 | Admin (Org Admins) | Identity Platform (Firebase Auth) | SAML IdP providers | Azure AD federation | Org administrators, workspace managers | `admin.{cloud}.latentarchon.com` |
 
-This two-environment split provides **complete auth pool isolation** — a valid app-pool JWT cannot authenticate against the admin API, and vice versa. Credential compromise in one pool cannot escalate to the other.
+This three-environment split provides **complete auth pool isolation** — a valid app-pool JWT cannot authenticate against the admin API, and vice versa. Credential compromise in one pool cannot escalate to the other. The ops environment has no auth pool at all; it is a pure data tier with no public ingress.
 
 > **Cloud-specific auth models**: GCP deployments support self-service registration (magic link + TOTP MFA). AWS and Azure deployments use **SSO/SAML exclusively** — no self-service registration, no magic links. MFA is delegated to the customer's Identity Provider. All three clouds support SAML 2.0 SSO and SCIM 2.0 provisioning.
 
@@ -225,12 +225,21 @@ OAuth tokens are encrypted at rest using the cloud-native KMS service (Cloud KMS
 
 ### Cross-Environment Data Flow
 
-Only one narrow IAM grant crosses the environment boundary:
-- GCP: `roles/cloudsql.client` + `roles/cloudsql.instanceUser` for the app SA on the admin project
+Two narrow IAM grants cross environment boundaries — both targeting the ops environment which owns the entire data tier:
+
+**App → Ops (read-only database access)**:
+- GCP: `roles/cloudsql.client` + `roles/cloudsql.instanceUser` for the app SA on the ops project
 - AWS: Cross-account IAM role assumption for RDS access
 - Azure: Cross-subscription managed identity delegation for PostgreSQL access
 
-This enables app API read access to documents and workspace data from PostgreSQL. All other services are environment-isolated.
+**Admin → Ops (read-write database access)**:
+- GCP: `roles/cloudsql.client` + `roles/cloudsql.instanceUser` for the admin SA on the ops project
+- AWS: Cross-account IAM role assumption for RDS access
+- Azure: Cross-subscription managed identity delegation for PostgreSQL access
+
+Additionally, the admin SA holds `compute.securityAdmin` on the app environment for Cloud Armor IP allowlist sync.
+
+All data-tier services (database, object storage, KMS, vector search, LLM, document extraction, DLP, task queue, ClamAV) are isolated within the ops environment. The app and admin environments contain only their respective APIs, SPAs, identity pools, and WAF/LB infrastructure.
 
 ---
 
@@ -745,16 +754,17 @@ All infrastructure is defined in Terragrunt/Terraform with:
 
 ### Cloud Resource Hierarchy
 
-The platform uses an isolated **two-environment architecture** on each cloud, providing hard IAM boundaries, separate billing, independent audit trails, and blast-radius containment:
+The platform uses an isolated **three-environment architecture** on each cloud, providing hard IAM boundaries, separate billing, independent audit trails, data-plane compartmentalization, and blast-radius containment:
 
 | Concept | GCP | AWS | Azure |
 |---------|-----|-----|-------|
 | **Top-level** | Organization | AWS Organizations | Azure AD Tenant |
 | **Environment boundary** | Project | Account | Subscription |
 | **App environment** | `latentarchon-app-*` | `latentarchon-app` | `latentarchon-app` |
+| **Ops environment** | `latentarchon-ops-*` | `latentarchon-ops` | `latentarchon-ops` |
 | **Admin environment** | `latentarchon-admin-*` | `latentarchon-admin` | `latentarchon-admin` |
-| **Network isolation** | Shared VPC (host + service projects) | VPC per account | VNet per subscription |
-| **KMS isolation** | Dedicated KMS projects (Autokey) | KMS per account | Key Vault per subscription |
+| **Network isolation** | VPC per project | VPC per account | VNet per subscription |
+| **KMS isolation** | KMS keyring in ops project | KMS per account | Key Vault per subscription |
 | **Centralized logging** | Org-level log sink → central project | CloudTrail org trail → S3 | Activity Log → central Log Analytics |
 
 For the detailed resource hierarchy per cloud, see the [Cloud Environment Supplements](cloud/).

@@ -109,7 +109,7 @@ All infrastructure is defined in Terragrunt/Terraform and stored in version cont
 - **State**: Cloud storage backend with versioning and state locking
 - **Modules**: 14+ reusable modules per cloud provider (vpc/vnet, database, container, load-balancer, waf, service-accounts, identity, storage, kms, audit-logs, task-queue, ai-services, document-extraction, container-registry)
 - **Environments**: Separate staging and production configurations
-- **Projects**: Two-project architecture (admin + app) with per-project configs
+- **Projects**: Three-project architecture (admin + ops + app) with per-project configs
 
 ### 5.2 Container Baseline
 

@@ -374,7 +374,7 @@ Implementation follows FedRAMP's recommended order:
 - ✅ Serverless/managed containers only (Cloud Run / ECS Fargate / Container Apps) — no VMs to patch
 - ✅ Minimal container images (distroless/alpine base)
 - ✅ No SSH, no direct database access from internet
-- ✅ Two-environment isolation (blast radius containment)
+- ✅ Three-environment isolation (blast radius containment + data-plane compartmentalization)
 
 **Machine-Based Validation** (weekly):
 - Container image scan (Trivy) — no unnecessary packages

@@ -25,19 +25,19 @@ Latent Archon is a multi-tenant RAG (Retrieval-Augmented Generation) platform fo
 |-----------|-------------|---------|
 | App API | Cloud Run (`archon-app`) | `latentarchon-app-prod` |
 | Admin API | Cloud Run (`archon-admin`) | `latentarchon-admin-prod` |
-| Ops Service | Cloud Run (`archon-ops`) | `latentarchon-admin-prod` |
+| Ops Service | Cloud Run (`archon-ops`) | `latentarchon-ops-prod` |
 | App SPA | Cloud Run (nginx) | `latentarchon-app-prod` |
 | Admin SPA | Cloud Run (nginx) | `latentarchon-admin-prod` |
-| Database | Cloud SQL (PostgreSQL 15) | `latentarchon-admin-prod` |
-| Object Storage | Cloud Storage | `latentarchon-admin-prod` |
-| Vector Search | Vertex AI Vector Search | `latentarchon-admin-prod` |
-| Text Generation | Vertex AI (Gemini) | `latentarchon-admin-prod` |
-| Document Processing | Document AI | `latentarchon-admin-prod` |
+| Database | Cloud SQL (PostgreSQL 15) | `latentarchon-ops-prod` |
+| Object Storage | Cloud Storage | `latentarchon-ops-prod` |
+| Vector Search | Vertex AI Vector Search | `latentarchon-ops-prod` |
+| Text Generation | Vertex AI (Gemini) | `latentarchon-ops-prod` |
+| Document Processing | Document AI | `latentarchon-ops-prod` |
 | Identity | Identity Platform | Both projects |
 | WAF | Cloud Armor | Both projects |
 | Load Balancing | Global HTTPS LB | Both projects |
-| Key Management | Cloud KMS | `latentarchon-admin-prod` |
-| Task Queue | Cloud Tasks | `latentarchon-admin-prod` |
+| Key Management | Cloud KMS | `latentarchon-ops-prod` |
+| Task Queue | Cloud Tasks | `latentarchon-ops-prod` |
 | Logging | Cloud Logging + Cloud Monitoring | Both projects |
 | Container Registry | Artifact Registry | Both projects |
 | DNS/TLS | Certificate Manager | Both projects |
@@ -71,7 +71,7 @@ Controls are categorized by implementation responsibility:
 | AC-2(4) | Automated Audit Actions | Latent Archon | All account lifecycle events audit-logged with user/IP/timestamp |
 | AC-3 | Access Enforcement | Latent Archon | RBAC (master_admin, admin, editor, viewer) enforced per-RPC; PostgreSQL RLS (fail-closed); **org membership enforced at interceptor level** (orgless users rejected on all non-AuthService RPCs); **subdomain→org DB validation** rejects unknown org subdomains and cross-org mismatches; org slug format validated against DNS-safe regex + reserved-slug blocklist |
 | AC-4 | Information Flow Enforcement | Shared | VPC networking (private IP only); FQDN-based egress firewall (default deny all, explicit Google API allowlist); Cloud Armor WAF; RLS workspace scoping; vector store token restrictions; per-org IP allowlisting via Cloud Armor; **subdomain→org cross-org prevention** (Host subdomain resolved to org via DB, user's org must match) |
-| AC-5 | Separation of Duties | Latent Archon | Three Cloud Run services with distinct DB roles (app_ro, admin_rw, ops_rw); two-project auth isolation with **cross-pool identity bridging explicitly prohibited** — workspace access across pools uses explicit invite flow only (auto-invite on workspace creation; see `docs/POOL_ISOLATION.md`) |
+| AC-5 | Separation of Duties | Latent Archon | Three Cloud Run services with distinct DB roles (app_ro, admin_rw, ops_rw); three-project isolation (app, ops, admin) with **cross-pool identity bridging explicitly prohibited** — workspace access across pools uses explicit invite flow only (auto-invite on workspace creation; see `docs/POOL_ISOLATION.md`) |
 | AC-6 | Least Privilege | Shared | 15 specific IAM roles on terraform-sa; DB roles with minimal grants; per-service SA with scoped permissions |
 | AC-6(1) | Authorize Access to Security Functions | Latent Archon | Only master_admin can promote to master_admin; MFA reset restricted to admins with self-reset blocked |
 | AC-6(9) | Log Use of Privileged Functions | Latent Archon | All admin operations audit-logged; WARN-level for security-critical events |
@@ -250,7 +250,7 @@ Controls are categorized by implementation responsibility:
 | SC-21 | Secure Name/Address Resolution Service (Recursive/Caching) | Shared | DNSSEC validation on Cloudflare resolvers; GCP internal DNS resolves via Google Public DNS (DNSSEC-validating); ensures authenticity of DNS responses for all platform services |
 | SC-23 | Session Authenticity | Latent Archon | JWT-based sessions; TOTP MFA; **five-layer org isolation**: IDP pool presence, IDP pool header match, org membership gate, subdomain→org DB validation, cross-org check |
 | SC-28 | Protection of Information at Rest | Shared | AES-256 all storage; Cloud KMS CMEK available |
-| SC-39 | Process Isolation | GCP + Latent Archon | Cloud Run container isolation; three separate services; two-project split |
+| SC-39 | Process Isolation | GCP + Latent Archon | Cloud Run container isolation; three separate services; three-project split (app, ops, admin) |
 
 ### SI — System and Information Integrity
 

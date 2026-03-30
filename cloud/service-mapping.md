@@ -11,12 +11,13 @@ This document provides the canonical service equivalence mapping across all thre
 
 ## Architecture Pattern
 
-All three clouds follow an identical **two-account/project/subscription** split for blast-radius isolation:
+All three clouds follow an identical **three-account/project/subscription** split for blast-radius isolation and data-plane compartmentalization:
 
-| Logical Tier | GCP | AWS | Azure |
-|---|---|---|---|
-| **App environment** | GCP Project (`latentarchon-app-*`) | AWS Account (`latentarchon-app`) | Azure Subscription (`latentarchon-app`) |
-| **Admin environment** | GCP Project (`latentarchon-admin-*`) | AWS Account (`latentarchon-admin`) | Azure Subscription (`latentarchon-admin`) |
+| Logical Tier | GCP | AWS | Azure | Purpose |
+|---|---|---|---|---|
+| **App environment** | GCP Project (`latentarchon-app-*`) | AWS Account (`latentarchon-app`) | Azure Subscription (`latentarchon-app`) | User-facing API + SPA + identity pool (app users) |
+| **Ops environment** | GCP Project (`latentarchon-ops-*`) | AWS Account (`latentarchon-ops`) | Azure Subscription (`latentarchon-ops`) | Data tier: database, storage, KMS, AI/ML, task queue, DLP, ClamAV, ops service |
+| **Admin environment** | GCP Project (`latentarchon-admin-*`) | AWS Account (`latentarchon-admin`) | Azure Subscription (`latentarchon-admin`) | Admin API + SPA + identity pool (org admins) |
 
 ---
 

@@ -127,7 +127,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 **Implementation**: Separation of duties is enforced through:
 
 - **Service Isolation**: Three Cloud Run services (`archon-app`, `archon-admin`, `archon-ops`) operate with distinct PostgreSQL roles (`archon_app_ro`, `archon_admin_rw`, `archon_ops_rw`) enforced via migration `20260328120000_enforce_least_privilege_db_roles.sql`. Default `PUBLIC` privileges are revoked — only named roles have table access. The app service cannot modify reference data. The ops service has write access limited to document processing tables only.
-- **Project Isolation**: Two GCP projects with separate Identity Platform pools, Cloud Armor policies, and IAM configurations. Cross-pool identity bridging is explicitly prohibited (see `docs/POOL_ISOLATION.md`).
+- **Project Isolation**: Three GCP projects (app, ops, admin) with separate Identity Platform pools (app and admin), Cloud Armor policies, and IAM configurations. The ops project has no identity pool and no public ingress — it is a pure data tier. Cross-pool identity bridging is explicitly prohibited (see `docs/POOL_ISOLATION.md`).
 - **RBAC**: Only `master_admin` can promote others to `master_admin`. Self-MFA-reset is blocked. Last-admin guard prevents lockout.
 - **CI/CD**: Production deploys require PR approval. Terraform plans are posted as PR comments for review before apply.
 
@@ -1084,7 +1084,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The Latent Archon security architecture is integrated into the enterprise architecture through: (1) Two-project GCP architecture for blast-radius isolation; (2) Infrastructure-as-Code (Terraform/Terragrunt) ensuring security controls are embedded in infrastructure definitions; (3) Security Architecture Whitepaper documenting the complete security design; (4) Architecture decisions documented in ADRs and design docs (e.g., `POOL_ISOLATION.md`, `TENANT_CONFIGURATION.md`).
+**Implementation**: The Latent Archon security architecture is integrated into the enterprise architecture through: (1) Three-project GCP architecture for blast-radius isolation and data-plane compartmentalization; (2) Infrastructure-as-Code (Terraform/Terragrunt) ensuring security controls are embedded in infrastructure definitions; (3) Security Architecture Whitepaper documenting the complete security design; (4) Architecture decisions documented in ADRs and design docs (e.g., `POOL_ISOLATION.md`, `TENANT_CONFIGURATION.md`).
 
 ### PM-8: Critical Infrastructure Plan
 
@@ -1566,7 +1566,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The React SPAs (app and admin) are the only mobile code executed on client devices. SPAs are served from Cloud Run containers and execute in the browser sandbox. Content Security Policy (CSP) headers restrict script sources. No Java applets, Flash, ActiveX, or other plugin-based mobile code is used.
+**Implementation**: The React SPAs (app and admin) are the only mobile code executed on client devices. SPAs are served from Cloud Run containers in a gVisor sandbox. Content Security Policy (CSP) headers restrict script sources. No Java applets, Flash, ActiveX, or other plugin-based mobile code is used.
 
 ### SC-20: Secure Name/Address Resolution Service (Authoritative Source)
 
@@ -1615,7 +1615,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: Inherited (GCP) + CSP
 - **Status**: Implemented
 
-**Implementation**: Process isolation operates at multiple levels: (1) **Container isolation**: Cloud Run uses gVisor sandboxing for container isolation (GCP); (2) **Service isolation**: Three separate Cloud Run services with distinct service accounts and database roles; (3) **Project isolation**: Two GCP projects with separate IAM boundaries; (4) **Data isolation**: PostgreSQL RLS provides row-level data isolation between organizations.
+**Implementation**: Process isolation operates at multiple levels: (1) **Container isolation**: Cloud Run uses gVisor sandboxing for container isolation (GCP); (2) **Service isolation**: Three separate Cloud Run services with distinct service accounts and database roles; (3) **Project isolation**: Three GCP projects (app, ops, admin) with separate IAM boundaries; (4) **Data isolation**: PostgreSQL RLS provides row-level data isolation between organizations.
 
 ---
 
