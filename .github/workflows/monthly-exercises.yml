@@ -117,7 +117,7 @@ jobs:
             app_project:
               project_id: "latentarchon-app-staging"
               region: "us-east1"
-              api_endpoint: "https://api.app.staging.latentarchon.com"
+              api_endpoint: "https://api.app.fed.staging.latentarchon.com"
               cloud_sql:
                 connection_name: ""
                 database: ""
@@ -133,7 +133,7 @@ jobs:
             admin_project:
               project_id: "latentarchon-admin-staging"
               region: "us-east1"
-              api_endpoint: "https://api.admin.staging.latentarchon.com"
+              api_endpoint: "https://api.admin.fed.staging.latentarchon.com"
               cloud_sql:
                 connection_name: "latentarchon-admin-staging:us-east1:archon-db"
                 database: "archon"
