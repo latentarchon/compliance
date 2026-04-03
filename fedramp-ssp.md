@@ -559,6 +559,8 @@ The following algorithms are explicitly prohibited per NIST SP 800-131A:
 | **K** | Continuous Monitoring SOPs | `conmon-sops.md` |
 | **L** | Incident Response Tabletop Exercise | `incident-response-tabletop-exercise.md` |
 | **M** | Red Team Deployment Guide | `red-team-deployment-guide.md` |
+| **N** | Rules of Behavior | `rules-of-behavior.md` |
+| **O** | Separation of Duties Matrix | `separation-of-duties-matrix.md` |
 
 ---
 
