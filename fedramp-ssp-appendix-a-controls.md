@@ -1010,7 +1010,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Rules of behavior are documented in the Acceptable Use Policy (POL-AU-001, `policies/acceptable-use.md`). All personnel must acknowledge the rules of behavior before receiving system access. The policy covers: acceptable and prohibited system use, customer data handling, credential management, infrastructure use (IaC-only), personal device requirements, and incident reporting obligations. Violations result in tiered enforcement (warning → access suspension → termination).
+**Implementation**: Rules of behavior are documented in `rules-of-behavior.md` (ROB-LA-001) and the Acceptable Use Policy (POL-AU-001, `policies/acceptable-use.md`). Users must electronically accept the ROB before accessing either the app or admin frontend. Acceptance is enforced in-application: after authentication and MFA, the `AuthGate` component renders a `RobAcceptance` screen with a summary of rules, checkbox acknowledgment, and accept button. Acceptance is recorded server-side in the `rob_acceptances` database table (per user, per ROB version, per client app) with IP address and user-agent for audit. The backend REST endpoints `GET /api/auth/rob-status` and `POST /api/auth/accept-rob` gate access. When the ROB version is updated (backend `currentROBVersion` constant), all users must re-accept before regaining access. The policy covers: acceptable and prohibited system use, customer data handling, credential management, infrastructure use (IaC-only), personal device requirements, and incident reporting obligations. Violations result in tiered enforcement (warning → access suspension → termination).
 
 ### PL-4(1): Social Media and External Site/Application Usage Restrictions
 
@@ -1179,7 +1179,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: All personnel must sign before receiving system access: (1) Acceptable Use Policy acknowledgment; (2) Non-Disclosure Agreement (NDA) covering customer data and system architecture; (3) Rules of Behavior acknowledgment. Access agreements are reviewed and re-signed annually. Agreements are retained in HR records.
+**Implementation**: All personnel must sign before receiving system access: (1) Acceptable Use Policy acknowledgment; (2) Non-Disclosure Agreement (NDA) covering customer data and system architecture; (3) Rules of Behavior electronic acceptance (enforced in-application via `rob_acceptances` table — see PL-4). Access agreements are reviewed and re-signed annually (ROB re-acceptance is enforced by incrementing `currentROBVersion`). Agreements are retained in HR records and the `rob_acceptances` audit table (IP, user-agent, timestamp per acceptance).
 
 ### PS-7: External Personnel Security
 

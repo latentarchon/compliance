@@ -1,8 +1,8 @@
 # Latent Archon — FedRAMP System Security Plan (SSP)
 
 > **Document ID**: SSP-LA-001  
-> **Version**: 1.0 — DRAFT  
-> **Date**: March 2026  
+> **Version**: 1.1 — DRAFT  
+> **Date**: April 2026  
 > **Baseline**: NIST SP 800-53 Rev. 5 — Moderate Impact  
 > **System Name**: Latent Archon Document Intelligence Platform  
 > **System Owner**: Latent Archon, LLC  

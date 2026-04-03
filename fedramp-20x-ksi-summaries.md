@@ -1,8 +1,8 @@
 # FedRAMP 20x — Key Security Indicator Implementation Summaries
 
 > **Document ID**: KSI-LA-001
-> **Version**: 1.0 — DRAFT
-> **Date**: March 2026
+> **Version**: 1.1 — DRAFT
+> **Date**: April 2026
 > **System**: Latent Archon Document Intelligence Platform (LA-DIP)
 > **Baseline**: FedRAMP 20x Moderate
 
@@ -159,10 +159,12 @@ Implementation follows FedRAMP's recommended order:
 - ✅ All infrastructure changes go through Terraform/Terragrunt (IaC)
 - ✅ All code changes go through GitHub PR with required reviews
 - ✅ `terragrunt plan` output posted as PR comment for review
-- ⬜ Automated classification of "significant" vs "routine" changes (TODO)
+- ✅ Automated classification of "significant" vs "routine" changes via `scn-classify` workflows
 
 **Information Resources**:
 - `infra/.github/workflows/terragrunt-ci.yml` — plan on PR, drift detection on push
+- `{app,admin,backend,infra,redteam,red-infra}/.github/workflows/scn-classify.yml` — PR classification
+- `compliance/cmd/classify-scn/` — Go CLI for SCN classification
 - All repo `deploy.yml` workflows — build/test/deploy pipelines
 - `policies/change-management.md` — POL-CM-001
 - `configuration-management-plan.md`
@@ -176,7 +178,7 @@ Implementation follows FedRAMP's recommended order:
 - Review change log for potential significant changes
 - Classify per FedRAMP SCN criteria and notify if required
 
-**Status**: 🔧 Partial — IaC tracking is complete; automated significance classification is TODO.
+**Status**: ✅ Implemented — IaC tracking + automated SCN classification on all 6 code repos. PR comments classify changes as SIGNIFICANT or ROUTINE with required actions.
 
 ---
 
@@ -189,7 +191,7 @@ Implementation follows FedRAMP's recommended order:
 - ✅ Red team exercises run monthly (IR-3)
 - ✅ IaC drift detection runs weekly
 - ✅ Vulnerability scanning runs on every build
-- ⬜ KSI evidence collection runs on schedule
+- ✅ KSI evidence collection runs on schedule
 
 **Information Resources**:
 - `compliance/contingency-test/` — automated CP-4 test CLI
@@ -206,7 +208,7 @@ Implementation follows FedRAMP's recommended order:
 **Non-Machine-Based Validation** (quarterly):
 - PVA effectiveness review and trend analysis
 
-**Status**: 🔧 Partial — Individual validation components exist; unified KSI evidence pipeline being built.
+**Status**: ✅ Implemented — CP-4, IR-3, drift detection, vulnerability scanning, and KSI evidence collection all running on schedule.
 
 ---
 
@@ -218,9 +220,10 @@ Implementation follows FedRAMP's recommended order:
 - ✅ All infrastructure defined in Terraform/Terragrunt (secure defaults)
 - ✅ Cloud Armor WAF rules enforce OWASP CRS
 - ✅ Egress firewall deny-all-by-default
-- ⬜ Customer-facing secure configuration guide document (TODO)
+- ✅ Customer-facing secure configuration guide document
 
 **Information Resources**:
+- `customer-secure-configuration-guide.md` — GUIDE-SCG-001
 - `infra/modules/` — 14 Terraform modules with secure defaults
 - `infra/modules/cloud-armor/` — OWASP CRS, rate limiting, bot blocking
 - `backend/docs/TENANT_CONFIGURATION.md` — customer tenant setup guide
@@ -232,7 +235,7 @@ Implementation follows FedRAMP's recommended order:
 **Non-Machine-Based Validation** (per release):
 - Review new features for security configuration implications
 
-**Status**: 🔧 Partial — IaC secure defaults are complete; customer-facing SCG document is TODO.
+**Status**: ✅ Implemented — IaC secure defaults + customer-facing Secure Configuration Guide (GUIDE-SCG-001).
 
 ---
 
@@ -289,7 +292,7 @@ Implementation follows FedRAMP's recommended order:
 **Pass/Fail Criteria**:
 - ✅ Incident response plan documented (POL-IR-001)
 - ✅ Monthly red team exercises test IR procedures
-- ⬜ FedRAMP-specific notification timelines integrated (TODO)
+- ✅ FedRAMP-specific notification timelines integrated (POL-IR-001 §8.3, CAT 1-6)
 
 **Information Resources**:
 - `policies/incident-response.md` — POL-IR-001
@@ -303,7 +306,7 @@ Implementation follows FedRAMP's recommended order:
 **Non-Machine-Based Validation** (annually):
 - Tabletop exercise with FedRAMP notification procedures
 
-**Status**: 🔧 Partial — IR plan and exercises exist; FedRAMP-specific notification timelines need integration.
+**Status**: ✅ Implemented — IR plan includes FedRAMP ICP (§8.3): US-CERT/CISA reporting (CAT 1-6), FedRAMP PMO notification, Agency ISSO notification, with 1hr/2hr/1wk deadlines per category.
 
 ---
 
@@ -646,10 +649,10 @@ See Cloud Native Architecture §3.1.
 
 | Theme | KSIs | Status |
 |-------|------|--------|
-| Authorization by FedRAMP | 10 | 🔧 7/10 implemented |
+| Authorization by FedRAMP | 10 | ✅ 8/10 implemented (ADS pending OSCAL submission, CCM pending sponsor) |
 | Change Management | 1 | ✅ Complete |
 | Cloud Native Architecture | 8 | ✅ Complete |
-| Cybersecurity Education | 2 | 🔧 Partial |
+| Cybersecurity Education | 2 | 🔧 1/2 (persistent testing evidence format TBD) |
 | Identity and Access Management | 7 | ✅ Complete |
 | Incident Response | 4 | ✅ Complete |
 | Monitoring, Logging, Auditing | 5 | ✅ Complete |
@@ -661,8 +664,8 @@ See Cloud Native Architecture §3.1.
 **Remaining TODOs**:
 1. OSCAL SSP package generation and CI validation
 2. ~~FedRAMP security inbox~~ — DONE: using `gcp-security-admins@latentarchon.com`
-3. Automated SCN significance classification
-4. Customer-facing Secure Configuration Guide
+3. ~~Automated SCN significance classification~~ — DONE: `scn-classify` workflows on 6 repos
+4. ~~Customer-facing Secure Configuration Guide~~ — DONE: `customer-secure-configuration-guide.md`
 5. Cybersecurity education persistent testing evidence
-6. FedRAMP-specific ICP notification timelines
+6. ~~FedRAMP-specific ICP notification timelines~~ — DONE: integrated into POL-IR-001
 7. Agency sponsor engagement for CCM quarterly reviews

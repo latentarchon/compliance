@@ -3,9 +3,12 @@
 node_modules/
 dist/
 evidence/
-oscal/
 /ksi-evidence
 /classify-scn
 /verify-controls
 /check-ssp-iac-drift
 .cache/
+
+# Sensitive internal docs — do not push to govt repo
+sales/pipeline-targets.md
+archive/
