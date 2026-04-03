@@ -9,6 +9,29 @@ evidence/
 /check-ssp-iac-drift
 .cache/
 
-# Sensitive internal docs — do not push to govt repo
+# Sensitive internal docs — defense in depth
 sales/pipeline-targets.md
 archive/
+
+# Personnel PII — belongs in restricted HR system, not code repo
+cjis/personnel-tracker.md
+
+# CI configs with GCP project IDs, WIF paths, service accounts, bucket names
+cloudbuild-monthly.yaml
+cloudbuild-ksi.yaml
+.github/workflows/monthly-exercises.yml
+.github/workflows/ksi-evidence.yml
+
+# Cloud environment supplements with project IDs and resource names
+cloud/gcp.md
+cloud/aws.md
+cloud/azure.md
+
+# ConMon SOPs with project IDs, bucket names, CLI examples
+conmon-sops.md
+
+# Tabletop exercise with service account names, bucket names
+incident-response-tabletop-exercise.md
+
+# Service mapping with project IDs
+cloud/service-mapping.md
