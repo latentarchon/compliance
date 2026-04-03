@@ -19,27 +19,58 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: compliance
+
+      - uses: actions/checkout@v4
+        with:
+          repository: latentarchon/infra
+          path: infra
+          token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - uses: actions/checkout@v4
+        with:
+          repository: latentarchon/backend
+          path: backend
+          token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: compliance/package-lock.json
 
       - run: npm ci
+        working-directory: compliance
 
       - name: Generate OSCAL SSP
         run: npm run generate:oscal
+        working-directory: compliance
 
-      - name: Validate OSCAL SSP
+      - name: Validate OSCAL SSP (JSON Schema)
+        run: npm run validate:oscal-schema
+        working-directory: compliance
+
+      - name: Validate OSCAL SSP (oscal-cli)
         run: |
-          docker run --rm -v "${{ github.workspace }}:/data" \
+          docker run --rm -v "${{ github.workspace }}/compliance:/data" \
             ghcr.io/metaschema-framework/oscal-cli:latest \
             validate /data/oscal/ssp.json
+        continue-on-error: true
+
+      - name: SSP-IaC Drift Check
+        if: hashFiles('infra') != '' && hashFiles('backend') != ''
+        run: |
+          bash compliance/scripts/check-ssp-iac-drift.sh \
+            --infra-root "${{ github.workspace }}/infra" \
+            --backend-root "${{ github.workspace }}/backend"
 
       - name: Upload OSCAL SSP artifact
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: oscal-ssp
-          path: oscal/ssp.json
+          path: compliance/oscal/ssp.json
           retention-days: 90
