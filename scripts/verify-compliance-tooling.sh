@@ -187,6 +187,16 @@ else
   fail "cmd/classify-scn/main.go not found"
 fi
 
+if [ -f "$ROOT/cmd/verify-controls/main.go" ]; then
+  if go build -o /dev/null "$ROOT/cmd/verify-controls/" 2>/dev/null; then
+    pass "cmd/verify-controls builds cleanly"
+  else
+    fail "cmd/verify-controls fails to build"
+  fi
+else
+  fail "cmd/verify-controls/main.go not found"
+fi
+
 # Check that gcloud is available (needed for evidence collection)
 if command -v gcloud &>/dev/null; then
   ACCT=$(gcloud config get-value account 2>/dev/null || echo "none")
