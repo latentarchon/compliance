@@ -138,7 +138,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 
 **Implementation**:
 
-- **GCP IAM**: The Terraform service account has exactly 15 specific roles (no `roles/editor` or `roles/owner`). Each Cloud Run service account has scoped permissions for only the APIs it needs. Workload Identity Federation eliminates static service account keys.
+- **GCP IAM**: The Terraform service account has 20 IAM roles including `roles/editor` for broad infrastructure management (no `roles/owner`). Each Cloud Run service account has scoped permissions: `archon-ops` has 12 roles for document processing, `archon-admin` and `archon-app` receive cross-project grants for Cloud SQL, Cloud Tasks, GCS, and Vertex AI access only. Workload Identity Federation eliminates static service account keys.
 - **Database**: Four distinct PostgreSQL roles with minimum necessary grants, enforced via Atlas migration. Default `PUBLIC` privileges are revoked on all tables and sequences. `archon_app_ro` is read-only on reference data (SELECT + INSERT only for app persistence). `archon_ops_rw` is scoped to document processing tables (cannot touch org/member/invite data). Audit table is INSERT-only for non-admin roles. Schema migrations run under an `archon_migrator` role assumed via IAM auth (`SET ROLE`) — no static credentials are used in the normal migration path. A `postgres` superuser password exists in Secret Manager as a break-glass mechanism, accessible only to human security administrators and not mounted on any service or job by default.
 - **Application**: RBAC enforces per-RPC authorization. Viewers cannot modify data. Editors cannot manage members. Only admins can manage workspaces.
 - **Microsoft Graph**: Connection management (create, list, revoke) restricted to org admins. Sync source configuration requires workspace admin permission. Source-level sync history queries require workspace document-edit permission. OAuth refresh tokens encrypted via Cloud KMS before storage.
@@ -162,7 +162,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Privileged accounts include: (1) GCP Organization Owner — restricted to CEO, used for break-glass only; (2) Terraform service account — used only by CI/CD via WIF, 15 scoped roles; (3) `master_admin` application role — per-customer org admin. All privileged actions are audit-logged. No shared accounts are used.
+**Implementation**: Privileged accounts include: (1) GCP Organization Owner — restricted to CEO, used for break-glass only; (2) Terraform service account — used only by CI/CD via WIF, 20 IAM roles including `roles/editor`; (3) `master_admin` application role — per-customer org admin. All privileged actions are audit-logged. No shared accounts are used.
 
 ### AC-6(9): Log Use of Privileged Functions
 
@@ -217,7 +217,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 
 **Implementation**: The auth interceptor enforces two server-side session timeout checks on every request:
 
-1. **Idle Timeout**: Calculated from JWT `auth_time` claim. Default: 30 minutes. Configurable per-org: 5-480 minutes.
+1. **Idle Timeout**: Calculated from JWT `auth_time` claim. Default: 25 minutes. Configurable per-org: 5-480 minutes.
 2. **Absolute Timeout**: Calculated from JWT `iat` (issued-at) claim. Default: 12 hours. Configurable per-org: 60-1440 minutes.
 
 Organization administrators configure timeouts via `UpdateOrganizationSettings` RPC. The timeouts are stored in the organization settings JSONB and loaded on each request. Expired sessions receive `Unauthenticated` responses. The client SPAs detect this and redirect to the login page.
@@ -356,7 +356,7 @@ The event types are reviewed annually and updated as new features are added.
 - **Responsibility**: Inherited (GCP)
 - **Status**: Implemented
 
-**Implementation**: Cloud Logging provides auto-scaling log storage with no capacity limits. Application audit events are stored in the Cloud SQL `audit_events` table with no automatic expiration (indefinite retention). BigQuery audit dataset uses no table or partition expiration (CMEK-encrypted via US multi-region KMS keyring). GCS WORM audit buckets provide immutable long-term archival with locked retention policies (2 years in production). All storage uses cost-optimized tiering (STANDARD → NEARLINE → COLDLINE) with zero deletion.
+**Implementation**: Cloud Logging provides auto-scaling log storage with no capacity limits. Application audit events are stored in the Cloud SQL `audit_events` table with no automatic expiration (indefinite retention). BigQuery audit dataset uses no table or partition expiration (CMEK-encrypted via US multi-region KMS keyring). GCS WORM audit buckets provide immutable long-term archival with locked retention policies (7 years in production). All storage uses cost-optimized tiering (STANDARD → NEARLINE → COLDLINE) with zero deletion.
 
 ### AU-5: Response to Audit Logging Process Failures
 
@@ -548,7 +548,7 @@ At the infrastructure level, GCP Data Access audit logging is enabled for all cr
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Change access is restricted through: (1) GitHub branch protection rules requiring PR review and passing CI; (2) Terraform service account with scoped IAM roles (15 specific roles, no `roles/editor`); (3) Workload Identity Federation for keyless CI/CD authentication; (4) No direct production console access — all changes via IaC pipeline; (5) Artifact Registry image push restricted to CI/CD service account.
+**Implementation**: Change access is restricted through: (1) GitHub branch protection rules requiring PR review and passing CI; (2) Terraform service account with 20 IAM roles (including `roles/editor` for infrastructure management, no `roles/owner`); (3) Workload Identity Federation for keyless CI/CD authentication; (4) No direct production console access — all changes via IaC pipeline; (5) Artifact Registry image push restricted to CI/CD service account.
 
 ### CM-6: Configuration Settings
 
@@ -809,7 +809,7 @@ Password complexity and rotation policies are enforced by Identity Platform for 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Re-authentication is required: (1) After idle timeout expiration (default 30 minutes, per-org configurable); (2) After absolute session timeout (default 12 hours, per-org configurable); (3) For step-up operations (member management, document deletion, role changes) — requires MFA verification within last 5 minutes. Re-authentication forces full JWT refresh through Identity Platform.
+**Implementation**: Re-authentication is required: (1) After idle timeout expiration (default 25 minutes, per-org configurable); (2) After absolute session timeout (default 12 hours, per-org configurable); (3) For step-up operations (member management, document deletion, role changes) — requires MFA verification within last 5 minutes. Re-authentication forces full JWT refresh through Identity Platform.
 
 ---
 
@@ -1442,7 +1442,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Application and management functionality are separated through: (1) Two distinct GCP projects (app and admin) with separate Identity Platform pools; (2) Three Cloud Run services with distinct database roles (app_ro, admin_rw, ops_rw); (3) Admin operations require the `admin` or `master_admin` RBAC role, inaccessible from the app; (4) GCP management operations use separate IAM credentials from application service accounts.
+**Implementation**: Application and management functionality are separated through: (1) Three GCP projects (app, admin, ops) with two separate Identity Platform pools (app and admin); (2) Three Cloud Run services with distinct database roles (app_ro, admin_rw, ops_rw); (3) Admin operations require the `admin` or `master_admin` RBAC role, inaccessible from the app; (4) GCP management operations use separate IAM credentials from application service accounts.
 
 ### SC-4: Information in Shared System Resources
 
@@ -1467,7 +1467,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 
 - **External boundary**: Cloud Armor WAF (OWASP CRS, HTTP method enforcement, origin restriction, bot blocking, per-org IP allowlisting) → Global HTTPS Load Balancer → Cloud Run (private IP only)
 - **Internal boundary**: VPC with no public IPs on any service. FQDN-based egress firewall with default-deny-all. Only Google API endpoints are reachable outbound.
-- **Cross-project boundary**: Single narrow IAM grant (cloudsql.client) from app project to admin project database. No other cross-project access.
+- **Cross-project boundary**: Scoped cross-project IAM grants: `archon-admin` SA receives `cloudtasks.enqueuer` and `storage.objectAdmin` on the ops project; `archon-app` SA receives `aiplatform.user` and `storage.objectViewer` on the ops project; Cloud SQL access via `cloudsql.client` and `cloudsql.instanceUser`. Each grant is minimum-necessary for the service's function.
 - **Org boundary**: 5-layer org isolation in auth interceptor prevents cross-org request routing via DB-backed subdomain validation
 
 ### SC-7(3): Access Points
@@ -1756,7 +1756,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Information retention follows a zero-deletion policy for government compliance: (1) Customer documents: retained indefinitely with WORM retention policy (2-year locked in production, 1-year in staging), object versioning, and 90-day soft-delete recovery window; (2) Audit logs: indefinite retention in BigQuery (no table/partition expiration, CMEK-encrypted) + GCS WORM audit buckets (locked 2-year retention in production) + Cloud SQL `audit_events` table (no automatic expiration); (3) All GCS buckets: zero auto-delete lifecycle rules — old data tiers to NEARLINE (90 days) then COLDLINE (365 days) for cost optimization but is never deleted; (4) `force_destroy = false` on all buckets prevents accidental deletion via Terraform; (5) User PII: purged 90 days after account closure per privacy policy, with forensic preservation holds available for active investigations. No automated process permanently deletes any government record, audit trail, or document. Cryptographic erasure is available via CMEK key rotation for end-of-life data destruction when required by contract.
+**Implementation**: Information retention follows a zero-deletion policy for government compliance: (1) Customer documents: retained indefinitely with object versioning (all versions preserved), 90-day soft-delete recovery window, and CMEK encryption; (2) Audit logs: indefinite retention in BigQuery (no table/partition expiration, CMEK-encrypted) + GCS WORM audit buckets (7-year locked retention in production, 1-year unlocked in staging) + Cloud SQL `audit_events` table (no automatic expiration); (3) All GCS buckets: zero auto-delete lifecycle rules — old data tiers to NEARLINE (90 days) then COLDLINE (365 days) for cost optimization but is never deleted; (4) `force_destroy = false` on all buckets prevents accidental deletion via Terraform; (5) User PII: purged 90 days after account closure per privacy policy, with forensic preservation holds available for active investigations. No automated process permanently deletes any government record, audit trail, or document. Cryptographic erasure is available via CMEK key rotation for end-of-life data destruction when required by contract.
 
 ### SI-16: Memory Protection
 
