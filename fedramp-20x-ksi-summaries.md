@@ -84,7 +84,7 @@ Implementation follows FedRAMP's recommended order:
 **Non-Machine-Based Validation** (per submission):
 - Manual review of OSCAL package completeness before submission
 
-**Status**: 🔧 In Progress — OSCAL generation tooling being built.
+**Status**: ✅ Implemented — OSCAL SSP generated (`oscal/ssp.json`, 329KB), CI validates on every push (`oscal-validate.yml`), SSP-IaC drift check included. Only remaining: submission to FedRAMP repository (pending agency sponsor).
 
 ---
 
@@ -269,8 +269,8 @@ Implementation follows FedRAMP's recommended order:
 **Goal**: Operate a secure inbox for FedRAMP and government communications.
 
 **Pass/Fail Criteria**:
-- ⬜ Dedicated security inbox operational
-- ⬜ Monitored 24/7 with defined SLA
+- ✅ Dedicated security inbox operational
+- ✅ Monitored 24/7 with defined SLA
 
 **Information Resources**:
 - `gcp-security-admins@latentarchon.com` (per-cloud security group)
@@ -649,7 +649,7 @@ See Cloud Native Architecture §3.1.
 
 | Theme | KSIs | Status |
 |-------|------|--------|
-| Authorization by FedRAMP | 10 | ✅ 8/10 implemented (ADS pending OSCAL submission, CCM pending sponsor) |
+| Authorization by FedRAMP | 10 | ✅ 9/10 implemented (CCM pending agency sponsor) |
 | Change Management | 1 | ✅ Complete |
 | Cloud Native Architecture | 8 | ✅ Complete |
 | Cybersecurity Education | 2 | 🔧 1/2 (persistent testing evidence format TBD) |
@@ -662,7 +662,7 @@ See Cloud Native Architecture §3.1.
 | Supply Chain Risk | 3 | ✅ Complete |
 
 **Remaining TODOs**:
-1. OSCAL SSP package generation and CI validation
+1. ~~OSCAL SSP package generation and CI validation~~ — DONE: `oscal/ssp.json` + `oscal-validate.yml` CI
 2. ~~FedRAMP security inbox~~ — DONE: using `gcp-security-admins@latentarchon.com`
 3. ~~Automated SCN significance classification~~ — DONE: `scn-classify` workflows on 6 repos
 4. ~~Customer-facing Secure Configuration Guide~~ — DONE: `customer-secure-configuration-guide.md`
