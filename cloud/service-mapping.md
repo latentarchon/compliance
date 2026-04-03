@@ -15,9 +15,9 @@ All three clouds follow an identical **three-account/project/subscription** spli
 
 | Logical Tier | GCP | AWS | Azure | Purpose |
 |---|---|---|---|---|
-| **App environment** | GCP Project (`latentarchon-app-*`) | AWS Account (`latentarchon-app`) | Azure Subscription (`latentarchon-app`) | User-facing API + SPA + identity pool (app users) |
-| **Ops environment** | GCP Project (`latentarchon-ops-*`) | AWS Account (`latentarchon-ops`) | Azure Subscription (`latentarchon-ops`) | Data tier: database, storage, KMS, AI/ML, task queue, DLP, ClamAV, ops service |
-| **Admin environment** | GCP Project (`latentarchon-admin-*`) | AWS Account (`latentarchon-admin`) | Azure Subscription (`latentarchon-admin`) | Admin API + SPA + identity pool (org admins) |
+| **App environment** | GCP Project (`archon-fed-app-*`) | AWS Account (`archon-fed-app`) | Azure Subscription (`archon-fed-app`) | User-facing API + SPA + identity pool (app users) |
+| **Ops environment** | GCP Project (`archon-fed-ops-*`) | AWS Account (`archon-fed-ops`) | Azure Subscription (`archon-fed-ops`) | Data tier: database, storage, KMS, AI/ML, task queue, DLP, ClamAV, ops service |
+| **Admin environment** | GCP Project (`archon-fed-admin-*`) | AWS Account (`archon-fed-admin`) | Azure Subscription (`archon-fed-admin`) | Admin API + SPA + identity pool (org admins) |
 
 ---
 

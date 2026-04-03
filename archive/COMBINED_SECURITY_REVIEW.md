@@ -94,8 +94,8 @@ The system is deployed as three isolated Cloud Run services, each operating in a
 
 Authentication is split across two of the three GCP projects (app and admin) to provide **complete auth pool isolation**. The third project (ops) owns the entire data tier with no identity pool and no public ingress:
 
-- **`latentarchon-app`**: Firebase Auth user pool for app users
-- **`latentarchon-admin`**: Firebase Auth pool for admin users
+- **`archon-fed-app`**: Firebase Auth user pool for app users
+- **`archon-fed-admin`**: Firebase Auth pool for admin users
 
 This prevents cross-pool authentication attacks — a valid app user token cannot authenticate against the admin API, and vice versa.
 
@@ -1262,8 +1262,8 @@ The platform uses a **multi-project GCP architecture** for workload isolation:
 
 | Project | Purpose | Surface |
 |---------|---------|---------|
-| `latentarchon-app-prod` | App API, Vertex AI, Firebase Auth (user pool) | `app.latentarchon.com` |
-| `latentarchon-admin-prod` | Admin API, Ops, Cloud SQL, GCS, Document AI | `admin.latentarchon.com` |
+| `archon-fed-app-prod` | App API, Vertex AI, Firebase Auth (user pool) | `app.latentarchon.com` |
+| `archon-fed-admin-prod` | Admin API, Ops, Cloud SQL, GCS, Document AI | `admin.latentarchon.com` |
 | `prod-vpc-latentarchon` | Shared VPC host — centralized network control | Internal |
 | `central-log-latentarchon` | Centralized logging and monitoring | Internal |
 | `kms-proj-*` | Dedicated KMS Autokey projects per environment folder | Internal |
@@ -1333,12 +1333,12 @@ Organization (latentarchon.com)
 │   ├── staging-vpc-latentarchon  (Shared VPC Host — Staging)
 │   └── central-log-latentarchon  (Centralized Logging & Monitoring)
 ├── Production/
-│   ├── latentarchon-app-prod    (App: App API + SPA)
-│   ├── latentarchon-admin-prod   (Admin: API + Ops + Data)
+│   ├── archon-fed-app-prod    (App: App API + SPA)
+│   ├── archon-fed-admin-prod   (Admin: API + Ops + Data)
 │   └── kms-proj-*                (KMS Autokey)
 ├── Non-Production/
-│   ├── latentarchon-app-staging
-│   ├── latentarchon-admin-staging
+│   ├── archon-fed-app-staging
+│   ├── archon-fed-admin-staging
 │   └── kms-proj-*
 └── Development/
     └── kms-proj-*
@@ -2218,8 +2218,8 @@ Audience: Government security reviewers, enterprise buyers, and due diligence te
 Source: `infra/README.md`, `infra/modules/*`, `infra/environments/production/*`.
 
 - Split projects
-  - App project (`latentarchon-app-prod`): Cloud Run API (`archon-app`), SPA hosting (`app-spa`), Cloud Armor, Identity Platform, Vertex AI client usage.
-  - Admin project (`latentarchon-admin-prod`): Cloud Run (`archon-admin`, `archon-ops` [IAM‑private]), Cloud SQL (PostgreSQL 15), GCS documents bucket, Cloud Tasks, Document AI OCR, Vertex AI indices, Cloud Armor.
+  - App project (`archon-fed-app-prod`): Cloud Run API (`archon-app`), SPA hosting (`app-spa`), Cloud Armor, Identity Platform, Vertex AI client usage.
+  - Admin project (`archon-fed-admin-prod`): Cloud Run (`archon-admin`, `archon-ops` [IAM‑private]), Cloud SQL (PostgreSQL 15), GCS documents bucket, Cloud Tasks, Document AI OCR, Vertex AI indices, Cloud Armor.
 - Load Balancers
   - Global HTTPS LB per project with managed certs; host‑based routing sends SPA domains to SPA backend and API domains to API backend.
 - Cloud Armor WAF
@@ -2342,7 +2342,7 @@ Sources: `org/org-policy.tf`, `org/network.tf`, `org/folders.tf`, `org/iam.tf`.
 9. SCC and posture management: Ensure Security Command Center (Standard/Enterprise) is enabled across projects with notifications integrated.
 10. Supply chain: Ensure image vulnerability scanning (Container Analysis) is enabled; consider Binary Authorization or signed artifacts (SLSA‑aligned) for sensitive environments.
 11. DR/Resilience: Evaluate cross‑region read replica or backup export strategy for Cloud SQL; document RTO/RPO per customer SLAs.
-12. ~~Staging environment~~: **Provisioned** — `latentarchon-app-staging` and `latentarchon-admin-staging` projects created in Non-Production folder with full infrastructure parity.
+12. ~~Staging environment~~: **Provisioned** — `archon-fed-app-staging` and `archon-fed-admin-staging` projects created in Non-Production folder with full infrastructure parity.
 
 ## Evidence and File References
 
@@ -2405,7 +2405,7 @@ The platform deliberately separates admin and end-user functionality into indepe
 |---|---|---|
 | **Purpose** | Org/workspace/document/member management | Document Q&A with RAG |
 | **Dev Port** | 3001 | 3000 |
-| **Firebase Project** | `latentarchon-admin` | `latentarchon-app` |
+| **Firebase Project** | `archon-fed-admin` | `archon-fed-app` |
 | **API Surface** | OrganizationService, WorkspaceService, DocumentService, AuditService, AuthService | ConversationService, ChatMessageService, WorkspaceService, AuthService |
 | **Production Domain** | `admin.latentarchon.com` | `app.latentarchon.com` |
 

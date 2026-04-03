@@ -38,12 +38,12 @@ The following NIST 800-53 control families are fully or partially inherited from
 
 | Subscription | Environment | Alias | Purpose |
 |---|---|---|---|
-| App (staging) | Staging | `latentarchon-app` | User-facing API, SPA |
-| Ops (staging) | Staging | `latentarchon-ops` | Data tier: PostgreSQL, Blob Storage, Key Vault, AI Search, Azure OpenAI, Service Bus, Document Intelligence, AI Language, ops service, ClamAV |
-| Admin (staging) | Staging | `latentarchon-admin` | Admin API, SPA |
-| App (production) | Production | `latentarchon-app` | Same as staging app |
-| Ops (production) | Production | `latentarchon-ops` | Same as staging ops |
-| Admin (production) | Production | `latentarchon-admin` | Same as staging admin |
+| App (staging) | Staging | `archon-fed-app` | User-facing API, SPA |
+| Ops (staging) | Staging | `archon-fed-ops` | Data tier: PostgreSQL, Blob Storage, Key Vault, AI Search, Azure OpenAI, Service Bus, Document Intelligence, AI Language, ops service, ClamAV |
+| Admin (staging) | Staging | `archon-fed-admin` | Admin API, SPA |
+| App (production) | Production | `archon-fed-app` | Same as staging app |
+| Ops (production) | Production | `archon-fed-ops` | Same as staging ops |
+| Admin (production) | Production | `archon-fed-admin` | Same as staging admin |
 
 Production subscriptions are defined in `infra/azure/environments/production/` but not yet provisioned.
 

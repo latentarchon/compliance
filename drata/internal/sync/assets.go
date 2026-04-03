@@ -34,32 +34,32 @@ func ArchonAssets() []AssetDef {
 		// --- GCP Infrastructure ---
 		{
 			Name:        "Cloud Run — archon-app (App API)",
-			Description: "User-facing app API service. Handles streaming conversation, message retrieval, auth. Runs on Cloud Run in latentarchon-app project. Distroless container, FIPS 140-2 BoringCrypto binary.",
+			Description: "User-facing app API service. Handles streaming conversation, message retrieval, auth. Runs on Cloud Run in archon-fed-app project. Distroless container, FIPS 140-2 BoringCrypto binary.",
 			AssetType:   "VIRTUAL",
 		},
 		{
 			Name:        "Cloud Run — archon-admin (Admin API)",
-			Description: "Admin API service. Handles org/workspace/document/member CRUD, invites, document ingestion. Runs on Cloud Run in latentarchon-admin project. Distroless container, FIPS 140-2 BoringCrypto binary.",
+			Description: "Admin API service. Handles org/workspace/document/member CRUD, invites, document ingestion. Runs on Cloud Run in archon-fed-admin project. Distroless container, FIPS 140-2 BoringCrypto binary.",
 			AssetType:   "VIRTUAL",
 		},
 		{
 			Name:        "Cloud Run — archon-ops (Ops Backend)",
-			Description: "Internal operations service. Handles document processing, embedding generation, cron tasks. Runs on Cloud Run in latentarchon-admin project. Not publicly accessible. Distroless container.",
+			Description: "Internal operations service. Handles document processing, embedding generation, cron tasks. Runs on Cloud Run in archon-fed-admin project. Not publicly accessible. Distroless container.",
 			AssetType:   "VIRTUAL",
 		},
 		{
 			Name:        "Cloud Run — app-spa (App Frontend)",
-			Description: "App SPA served via nginx-unprivileged on Cloud Run in latentarchon-app project. React/TypeScript/TailwindCSS. Domain: app.latentarchon.com.",
+			Description: "App SPA served via nginx-unprivileged on Cloud Run in archon-fed-app project. React/TypeScript/TailwindCSS. Domain: app.latentarchon.com.",
 			AssetType:   "VIRTUAL",
 		},
 		{
 			Name:        "Cloud Run — admin-spa (Admin Frontend)",
-			Description: "Admin SPA served via nginx-unprivileged on Cloud Run in latentarchon-admin project. React/TypeScript/TailwindCSS. Domain: admin.latentarchon.com.",
+			Description: "Admin SPA served via nginx-unprivileged on Cloud Run in archon-fed-admin project. React/TypeScript/TailwindCSS. Domain: admin.latentarchon.com.",
 			AssetType:   "VIRTUAL",
 		},
 		{
 			Name:        "Cloud Run — ClamAV (Malware Scanner)",
-			Description: "ClamAV antivirus service for document upload scanning. Runs on Cloud Run in latentarchon-admin project. Internal-only, not publicly accessible.",
+			Description: "ClamAV antivirus service for document upload scanning. Runs on Cloud Run in archon-fed-admin project. Internal-only, not publicly accessible.",
 			AssetType:   "VIRTUAL",
 		},
 		{
@@ -109,12 +109,12 @@ func ArchonAssets() []AssetDef {
 		},
 		{
 			Name:        "Identity Platform — Admin Pool",
-			Description: "Firebase Auth / Identity Platform for admin users (latentarchon-admin project). Email magic link + TOTP MFA. Separate from app pool for blast-radius isolation.",
+			Description: "Firebase Auth / Identity Platform for admin users (archon-fed-admin project). Email magic link + TOTP MFA. Separate from app pool for blast-radius isolation.",
 			AssetType:   "VIRTUAL",
 		},
 		{
 			Name:        "Identity Platform — App Pool",
-			Description: "Firebase Auth / Identity Platform for app users (latentarchon-app project). Email magic link + TOTP MFA. SAML SSO + SCIM provisioning for enterprise tenants.",
+			Description: "Firebase Auth / Identity Platform for app users (archon-fed-app project). Email magic link + TOTP MFA. SAML SSO + SCIM provisioning for enterprise tenants.",
 			AssetType:   "VIRTUAL",
 		},
 		{

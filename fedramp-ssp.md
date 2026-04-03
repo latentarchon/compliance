@@ -158,11 +158,11 @@ Each customer deployment uses services from a **single cloud provider**. For det
 
 Latent Archon uses a **three-environment architecture** (GCP: projects, AWS: accounts, Azure: subscriptions) for blast-radius isolation and data-plane compartmentalization:
 
-- **App Environment** (`latentarchon-app-*`): Contains the user-facing app API and SPA. Has its own identity pool, WAF policy, and load balancer. The app service identity has **read-only** database access (`app_ro` PostgreSQL role) via cross-environment database IAM grants to the ops environment.
+- **App Environment** (`archon-fed-app-*`): Contains the user-facing app API and SPA. Has its own identity pool, WAF policy, and load balancer. The app service identity has **read-only** database access (`app_ro` PostgreSQL role) via cross-environment database IAM grants to the ops environment.
 
-- **Ops Environment** (`latentarchon-ops-*`): Contains the entire data tier — database (PostgreSQL), object storage, key management, vector search, LLM inference, document extraction, DLP/PII scanning, task queue, malware scanning (ClamAV), and the ops background-processing service. Has no identity pool and no public ingress — all access is cross-environment via IAM grants. The ops service identity has `ops_rw` database access.
+- **Ops Environment** (`archon-fed-ops-*`): Contains the entire data tier — database (PostgreSQL), object storage, key management, vector search, LLM inference, document extraction, DLP/PII scanning, task queue, malware scanning (ClamAV), and the ops background-processing service. Has no identity pool and no public ingress — all access is cross-environment via IAM grants. The ops service identity has `ops_rw` database access.
 
-- **Admin Environment** (`latentarchon-admin-*`): Contains the admin API and SPA. Has its own identity pool, WAF policy, and load balancer. The admin service identity has `admin_rw` database access via cross-environment database IAM grants to the ops environment.
+- **Admin Environment** (`archon-fed-admin-*`): Contains the admin API and SPA. Has its own identity pool, WAF policy, and load balancer. The admin service identity has `admin_rw` database access via cross-environment database IAM grants to the ops environment.
 
 **Cross-pool identity bridging is explicitly prohibited.** Users who exist in both pools (admin and app) are treated as separate identities. Workspace access across pools uses an explicit invite flow only (see `docs/POOL_ISOLATION.md`).
 
@@ -170,8 +170,8 @@ Latent Archon uses a **three-environment architecture** (GCP: projects, AWS: acc
 
 | Environment | Purpose | Cloud Environments | Access |
 |-------------|---------|-------------------|--------|
-| Production | Live customer data | `latentarchon-app-prod`, `latentarchon-ops-prod`, `latentarchon-admin-prod` (per cloud) | Restricted to CI/CD + emergency break-glass |
-| Staging | Pre-production validation | `latentarchon-app-staging`, `latentarchon-ops-staging`, `latentarchon-admin-staging` (per cloud) | Engineering team |
+| Production | Live customer data | `archon-fed-app-prod`, `archon-fed-ops-prod`, `archon-fed-admin-prod` (per cloud) | Restricted to CI/CD + emergency break-glass |
+| Staging | Pre-production validation | `archon-fed-app-staging`, `archon-fed-ops-staging`, `archon-fed-admin-staging` (per cloud) | Engineering team |
 | Development | Local development | N/A (local Docker Compose) | Individual developers |
 
 All environments are managed via Terraform/Terragrunt. No manual cloud console changes are permitted in staging or production.
@@ -314,14 +314,14 @@ All database roles operate under PostgreSQL Row-Level Security (RLS). RLS polici
 ```
 ┌─ Authorization Boundary ─────────────────────────────────────────────────┐
 │                                                                          │
-│  ┌─ App Environment (latentarchon-app-*) ─────────────────────────┐   │
+│  ┌─ App Environment (archon-fed-app-*) ─────────────────────────┐   │
 │  │  WAF → Load Balancer → App SPA (container)                      │   │
 │  │                       → App API (container)                      │   │
 │  │  Identity Pool (App Users)                                       │   │
 │  │  Logging + Monitoring │ Container Registry                        │   │
 │  └──────────────────────────────────────────────────────────────────┘   │
 │           │ Cross-environment: database IAM grant (read-only)           │
-│  ┌─ Ops Environment (latentarchon-ops-*) ─────────────────────────┐   │
+│  ┌─ Ops Environment (archon-fed-ops-*) ─────────────────────────┐   │
 │  │  Ops Service (container) ←── no public ingress                    │   │
 │  │  ClamAV (container) ←── internal only                             │   │
 │  │  PostgreSQL 15 ←── RLS enforced                                  │   │
@@ -331,7 +331,7 @@ All database roles operate under PostgreSQL Row-Level Security (RLS). RLS polici
 │  │  Logging + Monitoring │ Container Registry                        │   │
 │  └──────────────────────────────────────────────────────────────────┘   │
 │           │ Cross-environment: database IAM grant (read-write)          │
-│  ┌─ Admin Environment (latentarchon-admin-*) ──────────────────────┐   │
+│  ┌─ Admin Environment (archon-fed-admin-*) ──────────────────────┐   │
 │  │  WAF → Load Balancer → Admin SPA (container)                     │   │
 │  │                       → Admin API (container)                     │   │
 │  │  Identity Pool (Admin Users)                                      │   │

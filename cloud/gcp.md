@@ -39,12 +39,12 @@ The following NIST 800-53 control families are fully or partially inherited from
 
 | Project | Environment | Project ID | Project Number | Purpose |
 |---|---|---|---|---|
-| App (staging) | Staging | `latentarchon-app-staging` | 462649318418 | User-facing API, SPA, Identity Platform (user pool) |
-| Ops (staging) | Staging | `latentarchon-ops-staging` | _TBD_ | Data tier: DB, storage, KMS, AI/ML, task queue, DLP, ClamAV, ops service |
-| Admin (staging) | Staging | `latentarchon-admin-staging` | 786733428651 | Admin API, SPA, Identity Platform (admin pool) |
-| App (production) | Production | `latentarchon-app-prod` | _TBD_ | Same as staging app |
-| Ops (production) | Production | `latentarchon-ops-prod` | _TBD_ | Same as staging ops |
-| Admin (production) | Production | `latentarchon-admin-prod` | _TBD_ | Same as staging admin |
+| App (staging) | Staging | `archon-fed-app-staging` | 462649318418 | User-facing API, SPA, Identity Platform (user pool) |
+| Ops (staging) | Staging | `archon-fed-ops-staging` | _TBD_ | Data tier: DB, storage, KMS, AI/ML, task queue, DLP, ClamAV, ops service |
+| Admin (staging) | Staging | `archon-fed-admin-staging` | 786733428651 | Admin API, SPA, Identity Platform (admin pool) |
+| App (production) | Production | `archon-fed-app-prod` | _TBD_ | Same as staging app |
+| Ops (production) | Production | `archon-fed-ops-prod` | _TBD_ | Same as staging ops |
+| Admin (production) | Production | `archon-fed-admin-prod` | _TBD_ | Same as staging admin |
 
 Production projects are defined in `org/variables.tf` but not yet created via Terraform.
 
@@ -52,9 +52,9 @@ Production projects are defined in `org/variables.tf` but not yet created via Te
 
 | Grant | Source SA | Target Project | Roles | Purpose |
 |---|---|---|---|---|
-| DB access (read-only) | `archon-app@latentarchon-app-*` | Ops project | `cloudsql.client`, `cloudsql.instanceUser` | Read-only database access from app API |
-| DB access (read-write) | `archon-admin@latentarchon-admin-*` | Ops project | `cloudsql.client`, `cloudsql.instanceUser` | Read-write database access from admin API |
-| Cloud Armor sync | `archon-admin@latentarchon-admin-*` | App project | `compute.securityAdmin` | IP allowlist sync across projects |
+| DB access (read-only) | `archon-app@archon-fed-app-*` | Ops project | `cloudsql.client`, `cloudsql.instanceUser` | Read-only database access from app API |
+| DB access (read-write) | `archon-admin@archon-fed-admin-*` | Ops project | `cloudsql.client`, `cloudsql.instanceUser` | Read-write database access from admin API |
+| Cloud Armor sync | `archon-admin@archon-fed-admin-*` | App project | `compute.securityAdmin` | IP allowlist sync across projects |
 
 ---
 

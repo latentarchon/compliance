@@ -38,12 +38,12 @@ The following NIST 800-53 control families are fully or partially inherited from
 
 | Account | Environment | Account Alias | Purpose |
 |---|---|---|---|
-| App (staging) | Staging | `latentarchon-app` | User-facing API, SPA |
-| Ops (staging) | Staging | `latentarchon-ops` | Data tier: RDS, S3, KMS, OpenSearch, Bedrock, SQS, Textract, Comprehend, ops service, ClamAV |
-| Admin (staging) | Staging | `latentarchon-admin` | Admin API, SPA |
-| App (production) | Production | `latentarchon-app` | Same as staging app |
-| Ops (production) | Production | `latentarchon-ops` | Same as staging ops |
-| Admin (production) | Production | `latentarchon-admin` | Same as staging admin |
+| App (staging) | Staging | `archon-fed-app` | User-facing API, SPA |
+| Ops (staging) | Staging | `archon-fed-ops` | Data tier: RDS, S3, KMS, OpenSearch, Bedrock, SQS, Textract, Comprehend, ops service, ClamAV |
+| Admin (staging) | Staging | `archon-fed-admin` | Admin API, SPA |
+| App (production) | Production | `archon-fed-app` | Same as staging app |
+| Ops (production) | Production | `archon-fed-ops` | Same as staging ops |
+| Admin (production) | Production | `archon-fed-admin` | Same as staging admin |
 
 Production accounts are defined in `infra/aws/environments/production/` but not yet provisioned.
 

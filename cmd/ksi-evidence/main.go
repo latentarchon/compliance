@@ -57,14 +57,14 @@ type ProjectConfig struct {
 func envConfig(env string) ProjectConfig {
 	if env == "production" {
 		return ProjectConfig{
-			AppProject:   "latentarchon-app-prod",
-			AdminProject: "latentarchon-admin-prod",
+			AppProject:   "archon-fed-app-prod",
+			AdminProject: "archon-fed-admin-prod",
 			Region:       "us-east1",
 		}
 	}
 	return ProjectConfig{
-		AppProject:   "latentarchon-app-staging",
-		AdminProject: "latentarchon-admin-staging",
+		AppProject:   "archon-fed-app-staging",
+		AdminProject: "archon-fed-admin-staging",
 		Region:       "us-east1",
 	}
 }

@@ -1,0 +1,41 @@
+# Cloud Build — KSI Evidence Collection
+#
+# Triggered by: Cloud Scheduler (weekly, Monday 6am UTC)
+# Collects KSI (Key Security Indicators) evidence and uploads to GCS.
+#
+# Replaces: .github/workflows/ksi-evidence.yml
+
+substitutions:
+  _TARGET_ENV: staging
+  _GO_VERSION: '1.25'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  - id: collect
+    name: golang:${_GO_VERSION}
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        mkdir -p /workspace/evidence
+        go run ./cmd/ksi-evidence --env "${_TARGET_ENV}"
+
+  - id: upload
+    name: gcr.io/cloud-builders/gsutil
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        DATE=$(date +%Y-%m-%d)
+        gsutil -m cp -r /workspace/evidence/* gs://${PROJECT_ID}-build-artifacts/ksi-evidence/${_TARGET_ENV}/$${DATE}/ || true
+    waitFor: ['collect']
+
+artifacts:
+  objects:
+    location: gs://${PROJECT_ID}-build-artifacts/ksi-evidence/${BUILD_ID}/
+    paths:
+      - /workspace/evidence/*
+
+timeout: 600s

@@ -17,11 +17,11 @@ permissions:
   id-token: write
 
 env:
-  ADMIN_PROJECT_ID: latentarchon-admin-staging
-  APP_PROJECT_ID: latentarchon-app-staging
+  ADMIN_PROJECT_ID: archon-fed-admin-staging
+  APP_PROJECT_ID: archon-fed-app-staging
   REGION: us-east1
   DB_INSTANCE: archon-db
-  GCS_DOCUMENTS_BUCKET: latentarchon-admin-staging-documents
+  GCS_DOCUMENTS_BUCKET: archon-fed-admin-staging-documents
   KMS_KEYRING: archon
   KMS_KEY: archon-key
 
@@ -46,7 +46,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: projects/786733428651/locations/global/workloadIdentityPools/github-pool/providers/github-provider
-          service_account: gh-deploy@latentarchon-admin-staging.iam.gserviceaccount.com
+          service_account: gh-deploy@archon-fed-admin-staging.iam.gserviceaccount.com
 
       - name: Run contingency plan test
         run: |
@@ -115,7 +115,7 @@ jobs:
             max_concurrency: 1
           targets:
             app_project:
-              project_id: "latentarchon-app-staging"
+              project_id: "archon-fed-app-staging"
               region: "us-east1"
               api_endpoint: "https://api.app.fed.staging.latentarchon.com"
               cloud_sql:
@@ -131,14 +131,14 @@ jobs:
                 key_name: ""
               service_accounts: []
             admin_project:
-              project_id: "latentarchon-admin-staging"
+              project_id: "archon-fed-admin-staging"
               region: "us-east1"
               api_endpoint: "https://api.admin.fed.staging.latentarchon.com"
               cloud_sql:
-                connection_name: "latentarchon-admin-staging:us-east1:archon-db"
+                connection_name: "archon-fed-admin-staging:us-east1:archon-db"
                 database: "archon"
               gcs:
-                documents_bucket: "latentarchon-admin-staging-documents"
+                documents_bucket: "archon-fed-admin-staging-documents"
               cloud_tasks:
                 queue_name: "document-processing"
                 region: "us-east1"
@@ -146,7 +146,7 @@ jobs:
                 key_ring: "archon"
                 key_name: "archon-key"
               service_accounts:
-                - "archon-admin@latentarchon-admin-staging.iam.gserviceaccount.com"
+                - "archon-admin@archon-fed-admin-staging.iam.gserviceaccount.com"
           auth:
             firebase_api_key: ""
             app_test_email: ""

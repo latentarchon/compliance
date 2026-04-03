@@ -30,7 +30,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: projects/786733428651/locations/global/workloadIdentityPools/github-pool/providers/github-provider
-          service_account: gh-ci-terraform@latentarchon-admin-staging.iam.gserviceaccount.com
+          service_account: gh-ci-terraform@archon-fed-admin-staging.iam.gserviceaccount.com
           create_credentials_file: true
 
       - uses: actions/setup-go@v5

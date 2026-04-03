@@ -760,9 +760,9 @@ The platform uses an isolated **three-environment architecture** on each cloud, 
 |---------|-----|-----|-------|
 | **Top-level** | Organization | AWS Organizations | Azure AD Tenant |
 | **Environment boundary** | Project | Account | Subscription |
-| **App environment** | `latentarchon-app-*` | `latentarchon-app` | `latentarchon-app` |
-| **Ops environment** | `latentarchon-ops-*` | `latentarchon-ops` | `latentarchon-ops` |
-| **Admin environment** | `latentarchon-admin-*` | `latentarchon-admin` | `latentarchon-admin` |
+| **App environment** | `archon-fed-app-*` | `archon-fed-app` | `archon-fed-app` |
+| **Ops environment** | `archon-fed-ops-*` | `archon-fed-ops` | `archon-fed-ops` |
+| **Admin environment** | `archon-fed-admin-*` | `archon-fed-admin` | `archon-fed-admin` |
 | **Network isolation** | VPC per project | VPC per account | VNet per subscription |
 | **KMS isolation** | KMS keyring in ops project | KMS per account | Key Vault per subscription |
 | **Centralized logging** | Org-level log sink → central project | CloudTrail org trail → S3 | Activity Log → central Log Analytics |

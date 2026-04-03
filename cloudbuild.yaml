@@ -1,0 +1,74 @@
+# Cloud Build — Compliance Pipeline
+#
+# Triggered by: push to main (paths: **.md, scripts/**, package.json)
+# Generates OSCAL SSP, validates it, builds compliance PDFs,
+# and uploads artifacts to GCS.
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  # ═══════════════════════════════════════════════════════════════════════
+  # Step 1: Install Node dependencies
+  # ═══════════════════════════════════════════════════════════════════════
+  - id: install
+    name: node:22-alpine
+    entrypoint: npm
+    args: ['ci']
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Step 2: Generate OSCAL SSP
+  # ═══════════════════════════════════════════════════════════════════════
+  - id: generate-oscal
+    name: node:22-alpine
+    entrypoint: npm
+    args: ['run', 'generate:oscal']
+    waitFor: ['install']
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Step 3: Validate OSCAL SSP
+  # ═══════════════════════════════════════════════════════════════════════
+  - id: validate-oscal
+    name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        docker run --rm -v /workspace:/data \
+          ghcr.io/metaschema-framework/oscal-cli:latest \
+          validate /data/oscal/ssp.json
+    waitFor: ['generate-oscal']
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Step 4: Build compliance PDFs
+  # ═══════════════════════════════════════════════════════════════════════
+  - id: build-pdfs
+    name: node:22-alpine
+    entrypoint: npm
+    args: ['run', 'build:pdfs']
+    waitFor: ['install']
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Step 5: Upload artifacts to GCS
+  # ═══════════════════════════════════════════════════════════════════════
+  - id: upload-artifacts
+    name: gcr.io/cloud-builders/gsutil
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        DATE=$(date +%Y-%m-%d)
+        # Upload OSCAL SSP
+        gsutil cp oscal/ssp.json gs://${PROJECT_ID}-build-artifacts/compliance/$${DATE}/oscal-ssp.json || true
+        # Upload PDFs
+        gsutil cp dist/*.pdf gs://${PROJECT_ID}-build-artifacts/compliance/$${DATE}/ || true
+    waitFor: ['validate-oscal', 'build-pdfs']
+
+artifacts:
+  objects:
+    location: gs://${PROJECT_ID}-build-artifacts/compliance/${BUILD_ID}/
+    paths:
+      - oscal/ssp.json
+      - dist/*.pdf
+
+timeout: 900s

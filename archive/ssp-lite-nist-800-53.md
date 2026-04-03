@@ -23,21 +23,21 @@ Latent Archon is a multi-tenant RAG (Retrieval-Augmented Generation) platform fo
 
 | Component | GCP Service | Project |
 |-----------|-------------|---------|
-| App API | Cloud Run (`archon-app`) | `latentarchon-app-prod` |
-| Admin API | Cloud Run (`archon-admin`) | `latentarchon-admin-prod` |
-| Ops Service | Cloud Run (`archon-ops`) | `latentarchon-ops-prod` |
-| App SPA | Cloud Run (nginx) | `latentarchon-app-prod` |
-| Admin SPA | Cloud Run (nginx) | `latentarchon-admin-prod` |
-| Database | Cloud SQL (PostgreSQL 15) | `latentarchon-ops-prod` |
-| Object Storage | Cloud Storage | `latentarchon-ops-prod` |
-| Vector Search | Vertex AI Vector Search | `latentarchon-ops-prod` |
-| Text Generation | Vertex AI (Gemini) | `latentarchon-ops-prod` |
-| Document Processing | Document AI | `latentarchon-ops-prod` |
+| App API | Cloud Run (`archon-app`) | `archon-fed-app-prod` |
+| Admin API | Cloud Run (`archon-admin`) | `archon-fed-admin-prod` |
+| Ops Service | Cloud Run (`archon-ops`) | `archon-fed-ops-prod` |
+| App SPA | Cloud Run (nginx) | `archon-fed-app-prod` |
+| Admin SPA | Cloud Run (nginx) | `archon-fed-admin-prod` |
+| Database | Cloud SQL (PostgreSQL 15) | `archon-fed-ops-prod` |
+| Object Storage | Cloud Storage | `archon-fed-ops-prod` |
+| Vector Search | Vertex AI Vector Search | `archon-fed-ops-prod` |
+| Text Generation | Vertex AI (Gemini) | `archon-fed-ops-prod` |
+| Document Processing | Document AI | `archon-fed-ops-prod` |
 | Identity | Identity Platform | Both projects |
 | WAF | Cloud Armor | Both projects |
 | Load Balancing | Global HTTPS LB | Both projects |
-| Key Management | Cloud KMS | `latentarchon-ops-prod` |
-| Task Queue | Cloud Tasks | `latentarchon-ops-prod` |
+| Key Management | Cloud KMS | `archon-fed-ops-prod` |
+| Task Queue | Cloud Tasks | `archon-fed-ops-prod` |
 | Logging | Cloud Logging + Cloud Monitoring | Both projects |
 | Container Registry | Artifact Registry | Both projects |
 | DNS/TLS | Certificate Manager | Both projects |
