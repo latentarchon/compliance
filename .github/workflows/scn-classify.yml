@@ -65,3 +65,18 @@ jobs:
               repo: context.repo.repo,
               body: body
             });
+
+      - name: Enforce SCN acknowledgment
+        if: github.event_name == 'pull_request' && steps.scn.outputs.classification == 'SIGNIFICANT'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = context.payload.pull_request.labels.map(l => l.name);
+            if (!labels.includes('scn-acknowledged')) {
+              core.setFailed(
+                'This PR modifies security-critical components (SIGNIFICANT classification). ' +
+                'Add the "scn-acknowledged" label after filing an SCN with the FedRAMP PMO, or confirming no SCN is required.'
+              );
+            } else {
+              core.info('SCN acknowledged via label — check passed.');
+            }

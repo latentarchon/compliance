@@ -652,7 +652,7 @@ See Cloud Native Architecture §3.1.
 | Authorization by FedRAMP | 10 | ✅ 9/10 implemented (CCM pending agency sponsor) |
 | Change Management | 1 | ✅ Complete |
 | Cloud Native Architecture | 8 | ✅ Complete |
-| Cybersecurity Education | 2 | 🔧 1/2 (persistent testing evidence format TBD) |
+| Cybersecurity Education | 2 | ✅ Complete (training tracker + persistent testing evidence in EDU-LA-001) |
 | Identity and Access Management | 7 | ✅ Complete |
 | Incident Response | 4 | ✅ Complete |
 | Monitoring, Logging, Auditing | 5 | ✅ Complete |
@@ -664,8 +664,11 @@ See Cloud Native Architecture §3.1.
 **Remaining TODOs**:
 1. ~~OSCAL SSP package generation and CI validation~~ — DONE: `oscal/ssp.json` + `oscal-validate.yml` CI
 2. ~~FedRAMP security inbox~~ — DONE: using `gcp-security-admins@latentarchon.com`
-3. ~~Automated SCN significance classification~~ — DONE: `scn-classify` workflows on 6 repos
+3. ~~Automated SCN significance classification~~ — DONE: `scn-classify` workflows on 7 repos, now enforced as required CI checks (blocks merge without `scn-acknowledged` label)
 4. ~~Customer-facing Secure Configuration Guide~~ — DONE: `customer-secure-configuration-guide.md`
-5. Cybersecurity education persistent testing evidence
+5. ~~Cybersecurity education persistent testing evidence~~ — DONE: `cybersecurity-education-tracker.md` (EDU-LA-001)
 6. ~~FedRAMP-specific ICP notification timelines~~ — DONE: integrated into POL-IR-001
-7. Agency sponsor engagement for CCM quarterly reviews
+7. ~~ISSO appointment letter~~ — DONE: `isso-appointment-letter.md` (ISSO-APPT-001)
+8. ~~Session concurrency limiting (AC-10)~~ — DONE: `user_sessions` table + auth interceptor enforcement, `MAX_CONCURRENT_SESSIONS` config
+9. ~~Government repo mirror workflow~~ — DONE: `govt-mirror.yml` scheduled daily + on push to main/staging
+10. Agency sponsor engagement for CCM quarterly reviews (requires external engagement)

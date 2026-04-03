@@ -1,0 +1,40 @@
+name: Government Repository Mirror
+
+on:
+  push:
+    branches: [main, staging]
+  schedule:
+    # Daily at 06:00 UTC (2:00 AM ET)
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    if: vars.GOVT_REPO_URL != ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to government repository
+        env:
+          GOVT_REPO_URL: ${{ vars.GOVT_REPO_URL }}
+          GOVT_REPO_TOKEN: ${{ secrets.GOVT_REPO_TOKEN }}
+        run: |
+          # Configure git for the mirror push
+          git config user.name "Latent Archon CI"
+          git config user.email "gcp-security-admins@latentarchon.com"
+
+          # Build authenticated URL (https://<token>@github.com/org/repo.git)
+          AUTH_URL=$(echo "$GOVT_REPO_URL" | sed "s|https://|https://${GOVT_REPO_TOKEN}@|")
+
+          # Add government remote
+          git remote add govt "$AUTH_URL" 2>/dev/null || git remote set-url govt "$AUTH_URL"
+
+          # Push current branch
+          BRANCH="${GITHUB_REF##refs/heads/}"
+          echo "Mirroring branch: $BRANCH"
+          git push govt "HEAD:refs/heads/$BRANCH" --force
+
+          echo "✅ Successfully mirrored $BRANCH to government repository"
