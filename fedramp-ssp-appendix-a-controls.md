@@ -419,7 +419,7 @@ The event types are reviewed annually and updated as new features are added.
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: Audit records are retained indefinitely with a zero-deletion policy across all tiers: (1) Cloud Logging: 30 days in hot storage (configurable via log bucket retention); (2) Database `audit_events` table: indefinite retention (no automatic expiration); (3) BigQuery audit dataset: indefinite retention (no table or partition expiration, CMEK-encrypted); (4) GCS WORM audit buckets: 2-year locked retention in production (1-year unlocked in staging), with object versioning and 90-day soft-delete; (5) All GCS lifecycle rules tier storage class for cost optimization (NEARLINE at 90 days, COLDLINE at 365 days) but never delete objects. No automated process permanently deletes any audit data. Forensic preservation holds can additionally exempt specific data from any future policy changes.
+**Implementation**: Audit records are retained indefinitely with a zero-deletion policy across all tiers: (1) Cloud Logging: 30 days in hot storage (configurable via log bucket retention); (2) Database `audit_events` table: indefinite retention (no automatic expiration); (3) BigQuery audit dataset: indefinite retention (no table or partition expiration, CMEK-encrypted); (4) GCS WORM audit buckets: 7-year locked retention in production (1-year unlocked in staging), with object versioning and 90-day soft-delete; (5) All GCS lifecycle rules tier storage class for cost optimization (NEARLINE at 90 days, COLDLINE at 365 days) but never delete objects. No automated process permanently deletes any audit data. Forensic preservation holds can additionally exempt specific data from any future policy changes.
 
 ### AU-12: Audit Record Generation
 
@@ -666,8 +666,8 @@ At the infrastructure level, GCP Data Access audit logging is enabled for all cr
 
 **Implementation**: Backup strategy by component:
 
-- **Cloud SQL**: Automated daily backups with 30-day retention + point-in-time recovery (PITR) with < 5 minute RPO. Backups encrypted with CMEK (Cloud KMS).
-- **Cloud Storage**: Object versioning enabled with 365-day retention. Soft delete with 30-day recovery window.
+- **Cloud SQL**: Automated daily backups (14 retained, count-based) + point-in-time recovery (PITR) with 7-day transaction log retention. Backups start at 03:00 UTC, stored in the same region. Backups encrypted with CMEK (Cloud KMS). Maintenance window: Sunday 04:00 UTC, stable update track.
+- **Cloud Storage**: Object versioning enabled (all versions preserved indefinitely via lifecycle rules — current objects transition to nearline after 90 days, archived versions transition to coldline after 90 days, no deletion). Soft delete with 90-day recovery window. CMEK encryption via Cloud KMS.
 - **Terraform State**: Stored in GCS with versioning. State backup is inherent.
 - **Vertex AI Indexes**: Rebuilt from source documents via ops service. RPO = time to re-embed (hours for large collections).
 - **Configuration**: All configuration in Git with full version history.
@@ -951,7 +951,7 @@ Password complexity and rotation policies are enforced by Identity Platform for 
 - **Responsibility**: Inherited (GCP) + CSP
 - **Status**: Implemented
 
-**Implementation**: All data is stored encrypted at rest using AES-256-GCM with Cloud KMS-managed keys (CMEK). Cloud Storage uses versioning with 365-day retention. Cloud SQL uses automated encrypted backups. All storage is within US regions per data sovereignty requirements.
+**Implementation**: All data is stored encrypted at rest using AES-256-GCM with Cloud KMS-managed keys (CMEK). Cloud Storage uses object versioning (all versions preserved indefinitely) with 90-day soft-delete recovery and CMEK encryption. Cloud SQL uses automated encrypted backups with CMEK. Audit data is stored in immutable WORM buckets with 7-year locked retention in production. All storage is within US regions per data sovereignty requirements.
 
 ### MP-5: Media Transport
 
@@ -1531,7 +1531,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Key management uses Cloud KMS: (1) CMEK keys for Cloud SQL and GCS encryption (AES-256, automatic rotation every 365 days); (2) Per-tenant CMEK anchor via `organizations.kms_key_name` column for future per-tenant encryption key isolation; (3) JWT signing keys managed by Google Identity Platform (automatic rotation); (4) SCIM tokens are random 32-byte values, SHA-256 hashed before storage; (5) No static service account keys — all service authentication uses Workload Identity Federation; (6) TLS certificate keys managed by Google Certificate Manager (automatic renewal); (7) Cloud KMS `app_secrets` key (AES-256-GCM, HSM-backed, 90-day rotation) encrypts Microsoft Graph OAuth refresh tokens before database storage. See Security Whitepaper: "Schema future-proofing".
+**Implementation**: Key management uses Cloud KMS with HSM-backed keys (FIPS 140-2 Level 3) and automatic 90-day rotation: (1) CMEK keys encrypt data at rest for Cloud SQL, Cloud Storage, BigQuery (audit logs), Cloud Logging, Vertex AI, Artifact Registry, Cloud Tasks, and application-level secrets — all using AES-256-GCM with 90-day automatic rotation and 30-day destroy-scheduled safety windows; (2) Per-tenant CMEK anchor via `organizations.kms_key_name` column for future per-tenant encryption key isolation; (3) JWT signing keys managed by Google Identity Platform (automatic rotation); (4) SCIM tokens are random 32-byte values, SHA-256 hashed before storage; (5) No static service account keys — all service authentication uses Workload Identity Federation; (6) TLS certificate keys managed by Google Certificate Manager (automatic renewal); (7) Cloud KMS `app_secrets` key (AES-256-GCM, HSM-backed, 90-day rotation) encrypts Microsoft Graph OAuth refresh tokens before database storage; (8) KMS key lifecycle alerts monitor for key disable, destroy, and version state changes with notifications to security operations. See Security Whitepaper: "Schema future-proofing".
 
 ### SC-12(1): Availability
 
@@ -1601,7 +1601,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: All data at rest is encrypted with Customer-Managed Encryption Keys (CMEK) backed by Cloud KMS HSMs (FIPS 140-2 Level 3): (1) Cloud SQL: AES-256 with CMEK (90-day auto-rotation); (2) Cloud Storage: AES-256-GCM with CMEK; (3) BigQuery audit datasets: AES-256 with CMEK via US multi-region KMS keyring (location must match dataset); (4) Vertex AI: CMEK; (5) Artifact Registry: CMEK; (6) Cloud Logging: CMEK via regional KMS keyring; (7) Terraform state: Encrypted in GCS with versioning and CMEK; (8) Microsoft Graph OAuth refresh tokens: AES-256-GCM with Cloud KMS `app_secrets` key (HSM-backed, 90-day rotation) — application-level encryption before database storage, providing defense-in-depth on top of Cloud SQL CMEK. Two KMS keyrings per project: regional (`us-east1`) for Cloud SQL/GCS/Vertex AI/AR/Logging, and multi-region (`us`) for BigQuery. All keys use HSM protection, 90-day rotation, and `prevent_destroy` lifecycle rules. Cryptographic erasure is supported by rotating CMEK keys.
+**Implementation**: All data at rest is encrypted with Customer-Managed Encryption Keys (CMEK) backed by Cloud KMS HSMs (FIPS 140-2 Level 3): (1) Cloud SQL: AES-256 with CMEK (90-day auto-rotation); (2) Cloud Storage: AES-256-GCM with CMEK; (3) BigQuery audit datasets: AES-256 with CMEK via US multi-region KMS keyring (location must match dataset); (4) Vertex AI: CMEK; (5) Artifact Registry: CMEK; (6) Cloud Logging: CMEK via regional KMS keyring; (7) Terraform state: Encrypted in GCS with versioning and CMEK; (8) Microsoft Graph OAuth refresh tokens: AES-256-GCM with Cloud KMS `app_secrets` key (HSM-backed, 90-day rotation) — application-level encryption before database storage, providing defense-in-depth on top of Cloud SQL CMEK. Two KMS keyrings per project: regional (`us-east4`) for Cloud SQL/GCS/Vertex AI/AR/Logging, and multi-region (`us`) for BigQuery. All keys use HSM protection, 90-day rotation, and `prevent_destroy` lifecycle rules. Cryptographic erasure is supported by rotating CMEK keys.
 
 ### SC-28(1): Cryptographic Protection
 

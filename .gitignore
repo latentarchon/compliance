@@ -6,3 +6,5 @@ evidence/
 oscal/
 /ksi-evidence
 /classify-scn
+/verify-controls
+.cache/
