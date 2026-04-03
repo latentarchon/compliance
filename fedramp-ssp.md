@@ -556,6 +556,9 @@ The following algorithms are explicitly prohibited per NIST SP 800-131A:
 | **H** | Supply Chain Risk Management Plan (SCRMP) | `supply-chain-risk-management-plan.md` |
 | **I** | Plan of Action and Milestones (POA&M) | _See below_ |
 | **J** | Privacy Impact Assessment (PIA) | `privacy-impact-assessment.md` |
+| **K** | Continuous Monitoring SOPs | `conmon-sops.md` |
+| **L** | Incident Response Tabletop Exercise | `incident-response-tabletop-exercise.md` |
+| **M** | Red Team Deployment Guide | `red-team-deployment-guide.md` |
 
 ---
 
@@ -633,6 +636,10 @@ The following algorithms are explicitly prohibited per NIST SP 800-131A:
 | POA-8 | Cross-project Cloud Armor IAM for IP allowlisting | Medium | SC-7 | Engineering | Q2 2026 | Open |
 | POA-9 | Implement periodic Cloud Armor reconciliation job | Low | SC-7 | Engineering | Q3 2026 | Open |
 | POA-10 | Admin UI for IP allowlist management | Low | AC-3 | Engineering | Q3 2026 | Open |
+| POA-11 | Deploy red team infrastructure via Terraform (red-infra/) | Low | CA-8 | Engineering | Q3 2026 | Open |
+| POA-12 | Promote SCN classifier from advisory to required CI check | Low | CM-3 | Engineering | Q3 2026 | Open |
+| POA-13 | Enable App Check enforcement in Firebase (currently unenforced) | Medium | IA-9 | Engineering | Q2 2026 | Open |
+| POA-14 | Implement session concurrency limiting (AC-10 max sessions per user) | Low | AC-10 | Engineering | Q4 2026 | Open |
 
 ---
 
