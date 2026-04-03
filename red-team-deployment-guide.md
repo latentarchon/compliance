@@ -80,7 +80,7 @@ The red team infrastructure runs in an **isolated GCP project** (`latentarchon-r
 
 **Prerequisites**:
 1. Create `latentarchon-redteam` GCP project (add to `org/` terraform or create via `gcloud`)
-2. Create state bucket: `gsutil mb -l us-east1 gs://latentarchon-redteam-tfstate`
+2. Create state bucket: `gsutil mb -l us-east4 gs://latentarchon-redteam-tfstate`
 3. Enable APIs: `compute.googleapis.com`, `logging.googleapis.com`, `storage.googleapis.com`, `monitoring.googleapis.com`
 4. Grant `gh-ci-terraform` SA viewer access on redteam project (for CI plan)
 

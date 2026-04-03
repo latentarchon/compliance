@@ -14,7 +14,7 @@
 substitutions:
   _ADMIN_PROJECT_ID: archon-fed-admin-staging
   _APP_PROJECT_ID: archon-fed-app-staging
-  _REGION: us-east1
+  _REGION: us-east4
   _DB_INSTANCE: archon-db
   _GCS_DOCUMENTS_BUCKET: archon-fed-ops-staging-documents
   _KMS_KEYRING: archon

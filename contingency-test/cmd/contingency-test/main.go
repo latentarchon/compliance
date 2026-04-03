@@ -9,7 +9,7 @@
 //
 //	--project-id       GCP project ID (admin project)
 //	--app-project-id   GCP project ID (app project)
-//	--region           GCP region (default: us-east1)
+//	--region           GCP region (default: us-east4)
 //	--db-instance      Cloud SQL instance name
 //	--documents-bucket GCS documents bucket name
 //	--kms-keyring      KMS key ring name
@@ -36,7 +36,7 @@ import (
 func main() {
 	projectID := flag.String("project-id", os.Getenv("PROJECT_ID"), "GCP admin project ID")
 	appProjectID := flag.String("app-project-id", os.Getenv("APP_PROJECT_ID"), "GCP app project ID")
-	region := flag.String("region", envOrDefault("REGION", "us-east1"), "GCP region")
+	region := flag.String("region", envOrDefault("REGION", "us-east4"), "GCP region")
 	dbInstance := flag.String("db-instance", os.Getenv("DB_INSTANCE"), "Cloud SQL instance name")
 	documentsBucket := flag.String("documents-bucket", os.Getenv("GCS_DOCUMENTS_BUCKET"), "GCS documents bucket")
 	kmsKeyring := flag.String("kms-keyring", os.Getenv("KMS_KEYRING"), "KMS key ring name")

@@ -19,7 +19,7 @@ permissions:
 env:
   ADMIN_PROJECT_ID: archon-fed-admin-staging
   APP_PROJECT_ID: archon-fed-app-staging
-  REGION: us-east1
+  REGION: us-east4
   DB_INSTANCE: archon-db
   GCS_DOCUMENTS_BUCKET: archon-fed-admin-staging-documents
   KMS_KEYRING: archon
@@ -116,7 +116,7 @@ jobs:
           targets:
             app_project:
               project_id: "archon-fed-app-staging"
-              region: "us-east1"
+              region: "us-east4"
               api_endpoint: "https://api.app.fed.staging.latentarchon.com"
               cloud_sql:
                 connection_name: ""
@@ -132,16 +132,16 @@ jobs:
               service_accounts: []
             admin_project:
               project_id: "archon-fed-admin-staging"
-              region: "us-east1"
+              region: "us-east4"
               api_endpoint: "https://api.admin.fed.staging.latentarchon.com"
               cloud_sql:
-                connection_name: "archon-fed-admin-staging:us-east1:archon-db"
+                connection_name: "archon-fed-admin-staging:us-east4:archon-db"
                 database: "archon"
               gcs:
                 documents_bucket: "archon-fed-admin-staging-documents"
               cloud_tasks:
                 queue_name: "document-processing"
-                region: "us-east1"
+                region: "us-east4"
               kms:
                 key_ring: "archon"
                 key_name: "archon-key"

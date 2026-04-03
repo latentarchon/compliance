@@ -60,10 +60,16 @@ jobs:
             validate /data/oscal/ssp.json
         continue-on-error: true
 
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache-dependency-path: compliance/go.sum
+
       - name: SSP-IaC Drift Check
         if: hashFiles('infra') != '' && hashFiles('backend') != ''
+        working-directory: compliance
         run: |
-          bash compliance/scripts/check-ssp-iac-drift.sh \
+          go run ./cmd/check-ssp-iac-drift \
             --infra-root "${{ github.workspace }}/infra" \
             --backend-root "${{ github.workspace }}/backend"
 

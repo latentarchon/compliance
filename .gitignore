@@ -7,4 +7,5 @@ oscal/
 /ksi-evidence
 /classify-scn
 /verify-controls
+/check-ssp-iac-drift
 .cache/

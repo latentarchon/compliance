@@ -303,7 +303,7 @@ These flags are defined in the cloud-specific database module (`infra/{gcp,aws,a
 ### Schema future-proofing (no behavioral change today)
 
 - `organizations.kms_key_name` — Per-tenant CMEK anchor for future customer-managed key isolation.
-- `organizations.data_region` — Default `us-east1`; enables future per-tenant data residency constraints.
+- `organizations.data_region` — Default `us-east4`; enables future per-tenant data residency constraints.
 - `audit_events.session_id` and `audit_events.mfa_method` — Additional audit information per AU-3(1) for session correlation and MFA method tracking.
 
 ---

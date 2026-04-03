@@ -77,7 +77,7 @@ Production projects are defined in `org/variables.tf` but not yet created via Te
 |---|---|
 | **Engine** | PostgreSQL 15 |
 | **Project** | Ops |
-| **Region** | `us-east1` |
+| **Region** | `us-east4` |
 | **HA** | Regional (automatic failover) |
 | **Encryption** | CMEK via Cloud KMS (HSM-backed, 90-day rotation) |
 | **Auth** | IAM authentication only (no static passwords in normal operation) |
@@ -99,17 +99,17 @@ Production projects are defined in `org/variables.tf` but not yet created via Te
 |---|---|
 | **Embedding model** | `gemini-embedding-2-preview` (3072 native dims, MRL-truncated to 768) |
 | **Embedding API region** | `us-central1` |
-| **Vector Search index** | `us-east1` (PSC endpoint, private networking) |
+| **Vector Search index** | `us-east4` (PSC endpoint, private networking) |
 | **LLM** | Gemini 2.5 Pro (streaming + non-streaming) |
-| **LLM region** | `us-east1` |
+| **LLM region** | `us-east4` |
 
 ### Cloud KMS
 
 | Keyring | Location | Keys | Protection |
 |---|---|---|---|
-| Regional | `us-east1` | Cloud SQL, GCS, Vertex AI, Artifact Registry, Cloud Logging | HSM (L3), 90-day rotation |
+| Regional | `us-east4` | Cloud SQL, GCS, Vertex AI, Artifact Registry, Cloud Logging | HSM (L3), 90-day rotation |
 | Multi-region | `us` | BigQuery (audit dataset) | HSM (L3), 90-day rotation |
-| App secrets | `us-east1` | Microsoft Graph OAuth token encryption | HSM (L3), 90-day rotation |
+| App secrets | `us-east4` | Microsoft Graph OAuth token encryption | HSM (L3), 90-day rotation |
 
 ### Other Services
 

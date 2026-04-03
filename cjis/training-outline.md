@@ -110,7 +110,7 @@ After completing the training modules, personnel must:
    - What is advanced authentication? (MFA)
    - What should you do if you suspect unauthorized CJI access?
    - What triggers a self-reporting obligation?
-   - Where is Latent Archon CJI stored? (GCP us-east1)
+   - Where is Latent Archon CJI stored? (GCP us-east4)
    - Who is the state CSA? (State-specific criminal justice services agency)
    - What are the consequences of CJIS policy violations?
 

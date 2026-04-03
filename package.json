@@ -8,7 +8,7 @@
     "generate:oscal": "node scripts/generate-oscal-ssp.mjs",
     "validate:oscal": "docker run --rm -v \"$(pwd):/data\" ghcr.io/metaschema-framework/oscal-cli:latest validate /data/oscal/ssp.json",
     "validate:oscal-schema": "node scripts/validate-oscal-schema.mjs",
-    "check:drift": "bash scripts/check-ssp-iac-drift.sh",
+    "check:drift": "go run ./cmd/check-ssp-iac-drift",
     "clean": "rm -rf dist/ oscal/ .cache/"
   },
   "devDependencies": {

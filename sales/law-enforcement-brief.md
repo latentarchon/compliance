@@ -90,7 +90,7 @@ We didn't retrofit a commercial product for law enforcement. Latent Archon was b
 
 - **No data on your devices** — Everything stays in our secured cloud; nothing is downloaded or cached locally
 - **No AI training on your data** — Your documents are never used to train AI models. Ever.
-- **Data stays in the US** — All processing and storage in CONUS (Google Cloud us-east1, South Carolina)
+- **Data stays in the US** — All processing and storage in CONUS (Google Cloud us-east4, South Carolina)
 - **You own your data** — Export or delete at any time. Full data portability.
 - **44 automated security tests** — We attack our own system monthly to find vulnerabilities before anyone else does
 - **Real-time admin alerts** — Org admins receive instant email notifications on security events (failed logins, role changes, user deactivations)

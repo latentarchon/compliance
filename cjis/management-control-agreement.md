@@ -161,7 +161,7 @@ Contractor does not currently use subcontractors for CJI processing. If subcontr
 
 All CJI processed under this agreement is stored and processed within:
 
-- **Region**: Google Cloud Platform `us-east1` (Moncks Corner, South Carolina)
+- **Region**: Google Cloud Platform `us-east4` (Moncks Corner, South Carolina)
 - **Country**: United States (CONUS)
 - **Backup region**: GCP-managed within CONUS
 
