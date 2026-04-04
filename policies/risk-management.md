@@ -3,11 +3,13 @@
 > **Policy ID**: POL-RM-001  
 > **Version**: 1.0  
 > **Effective Date**: March 2026  
-> **Owner**: Chief Executive / Security Lead  
+> **Owner**: CEO / ISSO  
 > **Review Cycle**: Annual  
 > **NIST 800-53 Controls**: RA-1, RA-2, RA-3, PM-9, PM-28
 
 ---
+
+> **Organizational context**: Latent Archon is a founder-led, automation-first security organization. The CEO/ISSO directs risk management while an integrated automation workforce continuously monitors for threats and vulnerabilities. As the team scales, role-specific duties will transfer to dedicated personnel (POA-15, POA-16). See SOD-LA-001.
 
 ## 1. Purpose
 
@@ -170,8 +172,8 @@ Latent Archon maintains a **low risk appetite** for customer data security and r
 
 | Activity | Frequency | Owner |
 |----------|-----------|-------|
-| Risk register review | Quarterly | Security Lead |
-| Full risk re-assessment | Annual | CEO + Security Lead |
+| Risk register review | Quarterly | CEO / ISSO |
+| Full risk re-assessment | Annual | CEO / ISSO |
 | New risk identification | Continuous | All personnel |
 | Post-incident risk update | On occurrence | Incident Commander |
 | Vulnerability-driven re-scoring | On critical CVE | Engineering |
@@ -185,8 +187,8 @@ Latent Archon maintains a **low risk appetite** for customer data security and r
 | Role | Responsibility |
 |------|---------------|
 | **CEO** | Approves risk appetite, accepts High/Critical residual risks, final authority on risk decisions |
-| **Security Lead** | Maintains risk register, conducts assessments, reports to CEO, coordinates treatment |
-| **Engineering Lead** | Implements technical controls, provides feasibility assessment for treatments |
+| **CEO / ISSO** | Maintains risk register, conducts assessments, coordinates treatment |
+| **Automation Workforce** | Continuously monitors for threats, vulnerabilities, and drift; provides machine-verified evidence |
 | **All Personnel** | Report potential risks, participate in risk identification |
 
 ---

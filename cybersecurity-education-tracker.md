@@ -1,7 +1,7 @@
 # Cybersecurity Education — Training & Testing Evidence Tracker
 
 > **Document ID**: EDU-LA-001  
-> **Version**: 1.0  
+> **Version**: 1.1  
 > **Date**: April 2026  
 > **Owner**: ISSO (CEO)  
 > **Review Cycle**: Annual  
@@ -28,7 +28,8 @@ This document tracks completion of security awareness training, role-based train
 | Name | Role | Training Topic | Completion Date | Certificate/Record | Next Due |
 |------|------|---------------|-----------------|-------------------|----------|
 | Andrew Hendel | CEO / Engineer | OWASP Top 10 + Secure Go Development | April 2026 | Internal | April 2027 |
-| Andrew Hendel | CEO / DevOps | Cloud Security (GCP/AWS/Azure), Terraform Security, IAM | April 2026 | Internal | April 2027 |
+| Andrew Hendel | CEO / DevOps | Cloud Security (GCP), Terraform Security, IAM | April 2026 | Internal | April 2027 |
+<!-- MULTI-CLOUD: Original also listed AWS and Azure in training topic. -->
 | Andrew Hendel | CEO / Management | Risk Management, NIST 800-53, FedRAMP 20x | April 2026 | Internal | April 2027 |
 
 ### 2.3 Incident Response Training (Annual)
@@ -50,10 +51,12 @@ This document tracks completion of security awareness training, role-based train
 ### 3.1 Phishing Simulation Campaigns
 
 | Campaign ID | Date | Type | Target | Result | Follow-Up |
-|-------------|------|------|--------|--------|-----------|
-| PHISH-2026-Q2 | Q2 2026 | Simulated phishing email | All personnel | Scheduled | Training remediation if clicked |
+|-------------|------|------|--------|--------|----------|
+| _N/A_ | _N/A_ | _N/A_ | _N/A_ | _N/A_ | _N/A_ |
 
-**Process**:
+> **Automation-first note**: Adversarial personnel testing (phishing simulation) will be activated as the team scales (POA-17). Currently, organizational security competence is validated through continuous automated adversarial testing: monthly 44-attack red team suite, continuous vulnerability scanning, and weekly KSI evidence collection.
+
+**Process** (to be activated post-first-hire):
 1. Simulated phishing emails sent semi-annually (per POL-AT-001 §3.1)
 2. Results tracked: delivered, opened, clicked, reported
 3. Personnel who click receive immediate remediation training
@@ -76,15 +79,17 @@ The following automated tests run on a recurring schedule and serve as persisten
 
 ### 3.3 Knowledge Verification
 
-| Assessment | Audience | Frequency | Method | Passing Score |
-|-----------|----------|-----------|--------|---------------|
-| Security awareness quiz | All personnel | Annual (with training) | Online quiz | 80% |
-| Incident response drill | IR team | Semi-annual (tabletop) | Scenario walkthrough | Participation required |
-| Secure coding review | Engineers | Per PR | Code review checklist | Approval required |
+| Assessment | Audience | Frequency | Method | Passing Score | Current Status |
+|-----------|----------|-----------|--------|---------------|----------------|
+| Security awareness quiz | All personnel | Annual (with training) | Online quiz | 80% | CEO self-assessment (Drata) |
+| Incident response drill | IR team | Semi-annual (tabletop) | Documented scenario walkthrough (see IR-TTX-001) | Participation required | CEO walkthrough + automated red team |
+| Secure coding review | Engineers | Per PR | CI security scanning (6 automated scanners) | All checks must pass | Automated — no human reviewer (POA-16) |
 
 ---
 
 ## 4. New Hire Onboarding Checklist
+
+> **Note**: This checklist is ready for use as the team scales (POA-15, POA-16).
 
 - [ ] Security awareness training completed (within 5 business days)
 - [ ] Role-based training completed (within 10 business days)

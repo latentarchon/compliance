@@ -3,11 +3,13 @@
 > **Document ID**: CJIS-PS-001  
 > **Version**: 1.0  
 > **Date**: March 2026  
-> **Owner**: Chief Executive / Security Lead  
+> **Owner**: CEO / ISSO  
 > **Review Cycle**: Annual  
 > **CJIS Ref**: §5.12 — Personnel Security
 
 ---
+
+> **Organizational context**: Latent Archon is a founder-led, automation-first security organization. CJIS procedures will be activated when a law enforcement customer requiring CJI access is onboarded. References to "Security Lead" describe the target-state role (POA-15); until that hire, the CEO / ISSO fulfills all duties. See SOD-LA-001.
 
 ## 1. Purpose
 

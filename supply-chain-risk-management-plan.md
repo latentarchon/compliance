@@ -18,7 +18,8 @@ This Supply Chain Risk Management Plan (SCRMP) establishes the framework for ide
 ### 1.2 Scope
 
 This plan covers all external components within or supporting the authorization boundary:
-- Cloud infrastructure providers (GCP, AWS, Azure)
+- Cloud infrastructure provider (GCP)
+<!-- MULTI-CLOUD: Original also listed AWS and Azure. -->
 - Source code management and CI/CD (GitHub)
 - Open-source software dependencies (Go modules, NPM packages)
 - Container base images
@@ -34,8 +35,9 @@ This plan covers all external components within or supporting the authorization 
 | Vendor | Service | Criticality | FedRAMP Status | Review Frequency |
 |--------|---------|------------|----------------|-----------------|
 | **Google Cloud Platform** | Infrastructure (Cloud Run, Cloud SQL, GCS, Vertex AI, Cloud KMS, Identity Platform, Cloud Armor, Cloud Tasks, Cloud Logging) | Critical | FedRAMP High | Quarterly |
-| **Amazon Web Services** | Infrastructure (ECS Fargate, RDS, S3, Bedrock, KMS, WAFv2, SQS, CloudWatch, OpenSearch, Textract) | Critical | FedRAMP High | Quarterly |
-| **Microsoft Azure** | Infrastructure (Container Apps, PostgreSQL Flex, Blob Storage, Azure OpenAI, Key Vault, Front Door WAF, Service Bus, Azure Monitor) | Critical | FedRAMP High | Quarterly |
+<!-- MULTI-CLOUD: Original also included:
+| Amazon Web Services | Infrastructure (ECS Fargate, RDS, S3, Bedrock, KMS, WAFv2, SQS, CloudWatch, OpenSearch, Textract) | Critical | FedRAMP High | Quarterly |
+| Microsoft Azure | Infrastructure (Container Apps, PostgreSQL Flex, Blob Storage, Azure OpenAI, Key Vault, Front Door WAF, Service Bus, Azure Monitor) | Critical | FedRAMP High | Quarterly | -->
 | **GitHub** | Source control, CI/CD (Actions), Dependabot | High | SOC 2 Type II | Semi-annual |
 | **Cloudflare** | DNS, DNSSEC | Medium | FedRAMP Moderate | Annual |
 | **Drata** | Compliance automation | Low | SOC 2 Type II | Annual |
@@ -64,9 +66,9 @@ Each customer deployment uses a **single cloud provider**. The vendor risk for t
 
 ### 3.1 Risk: Compromised Cloud Provider Service
 
-- **Likelihood**: Very Low (all three CSPs are FedRAMP High authorized with continuous monitoring)
+- **Likelihood**: Very Low (GCP is FedRAMP High authorized with continuous monitoring)
 - **Impact**: Critical
-- **Mitigations**: CSP FedRAMP High authorization with continuous monitoring; CMEK encryption ensures the cloud provider cannot access data at rest without Latent Archon's keys; multi-environment architecture limits blast radius; identical security controls applied across all clouds via Terraform/Terragrunt
+- **Mitigations**: CSP FedRAMP High authorization with continuous monitoring; CMEK encryption ensures the cloud provider cannot access data at rest without Latent Archon's keys; multi-environment architecture limits blast radius; security controls applied via Terraform/Terragrunt
 - **Residual Risk**: Very Low
 
 ### 3.2 Risk: Compromised Open-Source Dependency
@@ -145,7 +147,7 @@ Per the Vendor Risk Management Policy (POL-VR-001):
 ### 4.3 Build Pipeline Security
 
 1. **Workload Identity Federation**: No static service account keys; short-lived tokens via OIDC
-2. **Immutable Artifacts**: Container images stored in cloud-native registry (AR / ECR / ACR) with immutable tags enabled and CMEK encryption (HSM-backed)
+2. **Immutable Artifacts**: Container images stored in Artifact Registry with immutable tags enabled and CMEK encryption (HSM-backed)
 3. **Security Gates**: Build fails if Trivy detects Critical/High vulnerabilities (`exit-code: 1`)
 4. **Image Signing**: All images signed with Cosign keyless signing (Sigstore OIDC identity from GitHub Actions)
 5. **Signature Verification**: `cosign verify` required before every container deploy — checks certificate identity (`github.com/latentarchon/*`) and OIDC issuer (`token.actions.githubusercontent.com`)
@@ -155,7 +157,7 @@ Per the Vendor Risk Management Policy (POL-VR-001):
 ### 4.4 Infrastructure Supply Chain
 
 1. **Terraform Provider Pinning**: Providers locked by version and hash in .terraform.lock.hcl
-2. **State Protection**: Terraform state stored in cloud-native storage (GCS / S3 / Blob) with versioning and encryption
+2. **State Protection**: Terraform state stored in GCS with versioning and encryption
 3. **Plan Review**: All infrastructure changes require human review of `terragrunt plan` output
 4. **Drift Detection**: Weekly `terragrunt plan` to detect configuration drift
 

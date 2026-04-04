@@ -18,11 +18,11 @@ policies/                          # 11 governance policies (NIST 800-53 aligned
   acceptable-use.md                # POL-AU-001 — Acceptable/prohibited use
   security-awareness-training.md   # POL-AT-001 — Training requirements
   physical-security.md             # POL-PE-001 — Physical security (CSP inherited)
-cloud/                             # Cloud-specific supplements (per-provider details)
+cloud/                             # Cloud-specific supplements
   gcp.md                           # GCP service mapping and FedRAMP authorization
-  aws.md                           # AWS service mapping and FedRAMP authorization
-  azure.md                         # Azure service mapping and FedRAMP authorization
-  service-mapping.md               # Cross-cloud service equivalence table
+  aws.md                           # AWS supplement (commented out — GCP-only focus)
+  azure.md                         # Azure supplement (commented out — GCP-only focus)
+  service-mapping.md               # Cross-cloud equivalence table (commented out — GCP-only focus)
 drata/                             # Drata API integration CLI tool (Go)
 sales/                             # Sales and procurement collateral
   capability-statement.md
@@ -61,7 +61,7 @@ vulnerability-scanning-strategy.md # Vulnerability scanning strategy (DOC-VS-001
 | Document | Audience | Purpose |
 |----------|----------|---------|
 | `policies/*` | Internal / ATO package | Written governance policies for NIST compliance |
-| `cloud/*` | Internal / ATO package | Cloud-specific implementation details per CSP |
+| `cloud/*` | Internal / ATO package | Cloud-specific implementation details (GCP active; AWS/Azure commented out) |
 | `security-whitepaper.md` | Customers / procurement | Technical security architecture overview |
 | `fedramp-ssp.md` | ATO / compliance officers | FedRAMP System Security Plan |
 | `ssp-lite-nist-800-53.md` | ATO / compliance officers | Control-by-control NIST 800-53 mapping |

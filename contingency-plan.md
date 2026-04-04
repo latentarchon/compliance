@@ -2,7 +2,7 @@
 
 > **Document ID**: ISCP-LA-001
 > **Parent Document**: SSP-LA-001 (fedramp-ssp.md, Appendix D)
-> **Version**: 1.0 — DRAFT
+> **Version**: 1.1 — DRAFT
 > **Date**: March 2026
 > **System Name**: Latent Archon Document Intelligence Platform
 > **Plan Owner**: Andrew Hendel, CEO
@@ -14,7 +14,9 @@
 
 ### 1.1 Purpose
 
-This Information System Contingency Plan (ISCP) establishes procedures to recover the Latent Archon Document Intelligence Platform following a disruption. The plan addresses service degradation, component failure, and regional disaster scenarios for a cloud-native SaaS system deployable on Google Cloud Platform, Amazon Web Services, or Microsoft Azure.
+This Information System Contingency Plan (ISCP) establishes procedures to recover the Latent Archon Document Intelligence Platform following a disruption. The plan addresses service degradation, component failure, and regional disaster scenarios for a cloud-native SaaS system deployed on Google Cloud Platform.
+
+<!-- MULTI-CLOUD: Original stated deployable on GCP, AWS, or Azure. -->
 
 ### 1.2 Applicability
 
@@ -35,16 +37,18 @@ The ISCP covers:
 
 ### 2.1 System Description
 
-Latent Archon is a multi-tenant document intelligence SaaS platform deployable on GCP, AWS, or Azure. The system consists of:
+Latent Archon is a multi-tenant document intelligence SaaS platform deployed on GCP. The system consists of:
 - **3 container services**: archon-app (user-facing), archon-admin (admin API), archon-ops (background processing)
-- **Managed PostgreSQL 15**: Primary data store with RLS (Cloud SQL / RDS / PostgreSQL Flexible Server)
-- **Object storage**: Document file storage (GCS / S3 / Blob Storage)
-- **AI services**: Vector search and LLM inference (Vertex AI / Bedrock+OpenSearch / Azure OpenAI+AI Search)
-- **Identity**: Authentication with two pools: app and admin (Identity Platform / SAML federation / Azure AD)
-- **WAF**: DDoS and application-layer protection (Cloud Armor / WAFv2 / Front Door WAF)
-- **KMS**: Encryption key management (Cloud KMS / AWS KMS / Key Vault)
+- **Managed PostgreSQL 15**: Primary data store with RLS (Cloud SQL)
+- **Object storage**: Document file storage (GCS)
+- **AI services**: Vector search and LLM inference (Vertex AI)
+- **Identity**: Authentication with two pools: app and admin (Identity Platform)
+- **WAF**: DDoS and application-layer protection (Cloud Armor)
+- **KMS**: Encryption key management (Cloud KMS)
 
-All infrastructure is managed via Terraform/Terragrunt, enabling reproducible deployment to any region on any supported cloud.
+<!-- MULTI-CLOUD: Original also listed RDS/PostgreSQL Flexible Server, S3/Blob Storage, Bedrock+OpenSearch/Azure OpenAI+AI Search, SAML federation/Azure AD, WAFv2/Front Door WAF, AWS KMS/Key Vault. -->
+
+All infrastructure is managed via Terraform/Terragrunt, enabling reproducible deployment to any GCP region.
 
 ### 2.2 Recovery Objectives
 
@@ -59,16 +63,30 @@ All infrastructure is managed via Terraform/Terragrunt, enabling reproducible de
 
 ## 3. Roles and Responsibilities
 
+### 3.1 Founder-Led Contingency Team
+
 | Role | Person | Responsibilities |
-|------|--------|-----------------|
-| **Contingency Plan Coordinator** | CEO (Andrew Hendel) | Activate plan, authorize recovery actions, approve communications |
-| **Security Lead / ISSO** | Security Lead | Assess security impact, coordinate forensics, manage incident overlap |
-| **Operations Lead** | Engineering Lead | Execute recovery procedures, validate service restoration |
+|------|--------|------------------|
+| **Contingency Plan Coordinator / ISSO** | Andrew Hendel (CEO) | Activate plan, authorize and execute recovery actions, assess security impact, notify stakeholders |
+| **Automation Workforce** | Cloud Monitoring / Cloud Build | Detection, alerting, automated health checks, evidence preservation |
+
+> Automated monitoring provides continuous detection and alerting. The CEO directs assessment, activation, recovery, and communication. As the team scales (POA-15, POA-16), responsibilities will be distributed across dedicated roles.
+
+<details>
+<summary>📍 Growth Plan: Expanded contingency team</summary>
+
+| Role | Person | Responsibilities |
+|------|--------|------------------|
+| **Contingency Plan Coordinator** | CEO | Activate plan, authorize recovery actions, approve communications |
+| **Security Lead / ISSO** | Security Lead (POA-15) | Assess security impact, coordinate forensics, manage incident overlap |
+| **Operations Lead** | Engineering Lead (POA-16) | Execute recovery procedures, validate service restoration |
 | **Communications Lead** | CEO | Notify customers, FedRAMP PMO, agency liaisons |
 
-### 3.1 Activation Authority
+</details>
 
-The Contingency Plan Coordinator (CEO) has sole authority to activate the ISCP. In the CEO's absence, the Security Lead assumes activation authority. Activation is warranted when:
+### 3.2 Activation Authority
+
+The Contingency Plan Coordinator (CEO) has authority to activate the ISCP. Activation is warranted when:
 - A Tier 1 or Tier 2 component is unavailable for > 30 minutes
 - A regional GCP outage affects the production deployment
 - A security incident requires system isolation and rebuild
@@ -81,12 +99,13 @@ The Contingency Plan Coordinator (CEO) has sole authority to activate the ISCP. 
 ### 4.1 Notification Procedures
 
 1. **Detection**: Disruption detected via Cloud Monitoring alerts, customer reports, or manual observation
-2. **Assessment**: Operations Lead assesses scope and affected tiers within 15 minutes
+2. **Assessment**: CEO assesses scope and affected tiers within 15 minutes
 3. **Activation Decision**: CEO decides whether to activate ISCP within 30 minutes of detection
-4. **Team Notification**: All contingency team members notified via:
-   - Primary: Slack #incident channel
-   - Secondary: Email to engineering distribution list
-   - Tertiary: Phone tree for Tier 1 failures
+4. **Team Notification**: Lean team notified via:
+   - Primary: Email to engineering distribution list
+   - Secondary: Slack #incident channel
+   - Tertiary: Phone tree for Tier 1 failures (as team scales)
+5. **Incident Log Initiation**: CEO begins incident log documenting timeline, decisions, and actions taken
 
 ### 4.2 External Notification Timeline
 
@@ -126,7 +145,8 @@ The Contingency Plan Coordinator (CEO) has sole authority to activate the ISCP. 
 **Recovery Steps**:
 
 1. **Assess** (5 min): Check container service logs for crash loops, OOM, or configuration errors.
-2. **If recent deployment caused failure**: Roll back to previous revision (GCP: `gcloud run services update-traffic`; AWS: ECS task definition rollback; Azure: Container Apps revision revert).
+2. **If recent deployment caused failure**: Roll back to previous revision (`gcloud run services update-traffic`).
+<!-- MULTI-CLOUD: Original also included AWS ECS task definition rollback and Azure Container Apps revision revert. -->
 3. **If infrastructure issue**: Redeploy from container registry using pinned image digest.
 4. **If regional issue**: Deploy to alternate region using Terragrunt with updated region variable.
 5. **Validate**: Health checks, end-to-end API test, audit log verification.

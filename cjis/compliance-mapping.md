@@ -3,7 +3,7 @@
 > **Document ID**: CJIS-MAP-001  
 > **Version**: 1.0  
 > **Date**: March 2026  
-> **Owner**: Chief Executive / Security Lead  
+> **Owner**: CEO / ISSO  
 > **Review Cycle**: Annual (aligned with FBI CJIS Security Policy updates)  
 > **Applicable Standard**: FBI CJIS Security Policy v5.9.5
 

@@ -3,11 +3,13 @@
 > **Policy ID**: POL-IS-001  
 > **Version**: 1.0  
 > **Effective Date**: March 2026  
-> **Owner**: Chief Executive / Security Lead  
+> **Owner**: CEO / ISSO  
 > **Review Cycle**: Annual  
 > **NIST 800-53 Controls**: PL-1, PL-2, PM-1, PM-2, PM-9, PM-10, PM-11
 
 ---
+
+> **Organizational context**: Latent Archon is a founder-led, automation-first security organization. The CEO/ISSO directs all security functions while an integrated automation workforce independently executes scanning, deployment, monitoring, and evidence collection. As the team scales, role-specific duties will transfer to dedicated personnel (POA-15, POA-16). See SOD-LA-001 for the automation-first security architecture.
 
 ## 1. Purpose
 
@@ -42,11 +44,9 @@ This policy applies to:
 
 | Role | Security Responsibilities |
 |------|--------------------------|
-| **CEO** | Ultimate accountability for information security program; approves security policies; authorizes risk acceptance decisions |
-| **CTO / Engineering Lead** | Technical security decisions; architecture review; emergency change authority; infrastructure security |
-| **Security Lead** | Policy development and maintenance; security assessments; incident response coordination; compliance monitoring |
-| **All Engineers** | Secure coding practices; code review participation; vulnerability remediation; incident reporting |
-| **All Personnel** | Security awareness; policy compliance; incident reporting; acceptable use adherence |
+| **CEO / ISSO** | Security program leadership: policy, technical decisions, architecture, incident response, compliance monitoring, risk acceptance | Andrew Hendel |
+| **CI/CD System** | Independent automated security scanning, deployment gating, drift detection — acts as second actor | GitHub Actions / Cloud Build |
+| **Customer Admin** | Security awareness within their org; incident reporting; acceptable use adherence | Per-customer agency |
 
 ### 4.2 Policy Hierarchy
 
@@ -94,13 +94,13 @@ Latent Archon's security program is based on **NIST SP 800-53 Rev. 5 Moderate** 
 
 | Activity | Frequency | Owner |
 |----------|-----------|-------|
-| Drata automated compliance monitoring | Continuous | Security Lead |
-| Red team attack suite execution | Monthly | Engineering |
-| Policy review and update | Annual | Security Lead |
-| Access review | Quarterly | Security Lead |
-| Vulnerability scanning (Dependabot + Trivy) | Continuous (automated) | Engineering |
-| Risk assessment review | Annual | CEO + Security Lead |
-| Penetration testing | Annual (external) | Security Lead |
+| Drata automated compliance monitoring | Continuous | Automated (CEO verifies) |
+| Red team attack suite execution | Monthly | Automated (CEO reviews) |
+| Policy review and update | Annual | CEO / ISSO |
+| Access review | Quarterly | CEO / ISSO + automated drift checker |
+| Vulnerability scanning (Dependabot + Trivy) | Continuous (automated) | Automated |
+| Risk assessment review | Annual | CEO / ISSO |
+| Penetration testing | Annual (external) | 3PAO (POA-1) |
 
 ---
 

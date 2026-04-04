@@ -3,11 +3,13 @@
 > **Policy ID**: POL-EN-001  
 > **Version**: 1.0  
 > **Effective Date**: March 2026  
-> **Owner**: Chief Executive / Engineering Lead  
+> **Owner**: CEO / ISSO  
 > **Review Cycle**: Annual  
 > **NIST 800-53 Controls**: SC-8, SC-12, SC-13, SC-28
 
 ---
+
+> **Organizational context**: Latent Archon is a founder-led, automation-first security organization. Cryptographic controls are enforced by the cloud platform (KMS auto-rotation, managed TLS, BoringCrypto FIPS). The CEO/ISSO directs encryption policy. See SOD-LA-001.
 
 ## 1. Purpose
 
@@ -60,17 +62,20 @@ The following are explicitly prohibited:
 
 | Service | Encryption | Key Type | Rotation |
 |---------|-----------|----------|----------|
-| **PostgreSQL** (Cloud SQL / RDS / PostgreSQL Flex) | AES-256 | CMEK via cloud KMS (HSM) | Automatic, 90-day schedule |
-| **Object Storage** (GCS / S3 / Blob) | AES-256 | CMEK via cloud KMS (HSM) | Automatic, 90-day schedule |
-| **Vector Search** (Vertex AI / OpenSearch / AI Search) | AES-256 | CMEK via cloud KMS (HSM) | Automatic, 90-day schedule |
-| **Container Registry** (AR / ECR / ACR) | AES-256 | CMEK via cloud KMS (HSM) | Automatic, 90-day schedule |
+| **PostgreSQL** (Cloud SQL) | AES-256 | CMEK via Cloud KMS (HSM) | Automatic, 90-day schedule |
+| **Object Storage** (GCS) | AES-256 | CMEK via Cloud KMS (HSM) | Automatic, 90-day schedule |
+<!-- MULTI-CLOUD: Original also listed RDS/PostgreSQL Flex and S3/Blob. -->
+| **Vector Search** (Vertex AI) | AES-256 | CMEK via Cloud KMS (HSM) | Automatic, 90-day schedule |
+| **Container Registry** (Artifact Registry) | AES-256 | CMEK via Cloud KMS (HSM) | Automatic, 90-day schedule |
+<!-- MULTI-CLOUD: Original also listed OpenSearch/AI Search and ECR/ACR. -->
 | **Audit Log Storage** | AES-256 | CMEK via cloud KMS (HSM) | Automatic, 90-day schedule |
 | **Cloud Logging** | AES-256 | CMEK via cloud KMS (HSM) | Automatic, 90-day schedule |
 | **Terraform State** | AES-256 | Cloud-managed | Cloud-managed rotation |
 
 ### 4.2 Customer-Managed Encryption Keys (CMEK)
 
-- Cloud KMS / AWS KMS / Key Vault keys are provisioned via Terraform (`infra/*/modules/kms/`)
+- Cloud KMS keys are provisioned via Terraform (`infra/gcp/modules/kms/`)
+<!-- MULTI-CLOUD: Original also listed AWS KMS and Key Vault via infra/*/modules/kms/. -->
 - Dedicated keys per environment for database, storage, logging, AI services, and container registry
 - All keys use HSM protection level (FIPS 140-2 Level 3)
 - Per-tenant CMEK anchor: `organizations.kms_key_name` column stores the KMS key resource name for each tenant, enabling future per-tenant encryption key isolation
@@ -175,7 +180,7 @@ This links the BoringSSL FIPS 140-2 validated module (Certificate #4407) for all
 | Certificate expiration monitoring | Continuous (automated) | Cloud certificate manager |
 | Secret scanning (Gitleaks) | On every commit (CI) | Engineering |
 | FIPS compliance verification | On each build (BoringCrypto) | CI/CD |
-| Encryption policy review | Annual | Security Lead |
+| Encryption policy review | Annual | CEO / ISSO |
 
 ---
 

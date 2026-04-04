@@ -3,11 +3,13 @@
 > **Policy ID**: POL-CM-001  
 > **Version**: 1.0  
 > **Effective Date**: March 2026  
-> **Owner**: Chief Executive / Engineering Lead  
+> **Owner**: CEO / ISSO  
 > **Review Cycle**: Annual  
 > **NIST 800-53 Controls**: CM-1, CM-2, CM-3, CM-4, CM-5, CM-6, CM-7, CM-8, CM-11
 
 ---
+
+> **Organizational context**: Latent Archon is a founder-led, automation-first security organization. The CEO/ISSO directs all change management while an integrated automation workforce independently enforces security gates, deployment controls, and drift detection. As the team scales, role-specific duties will transfer to dedicated personnel (POA-15, POA-16). See SOD-LA-001 for the automation-first security architecture.
 
 ## 1. Purpose
 
@@ -23,7 +25,8 @@ This policy applies to all changes affecting:
 - Infrastructure as code (Terragrunt/Terraform modules)
 - Database schema and migrations
 - CI/CD pipeline configuration
-- Cloud provider settings and IAM (GCP / AWS / Azure)
+- Cloud provider settings and IAM (GCP)
+<!-- MULTI-CLOUD: Original also listed AWS and Azure. -->
 - Third-party dependencies
 - Operational runbooks and documentation
 
@@ -33,10 +36,10 @@ This policy applies to all changes affecting:
 
 | Category | Examples | Approval Required | Lead Time |
 |----------|---------|-------------------|-----------|
-| **Standard** | Bug fixes, dependency updates, documentation | 1 reviewer | Same day |
-| **Normal** | New features, API changes, schema migrations | 2 reviewers | 1–3 days |
-| **Significant** | Infrastructure changes, security controls, IAM | CTO + Security Lead | 3–5 days |
-| **Emergency** | Security patches, incident remediation | CTO (retroactive review within 24 hrs) | Immediate |
+| **Standard** | Bug fixes, dependency updates, documentation | CI security gates (independent) | Same day |
+| **Normal** | New features, API changes, schema migrations | CI security gates (independent) | 1–3 days |
+| **Significant** | Infrastructure changes, security controls, IAM | CI security gates + SCN classifier + CEO documents rationale | 3–5 days |
+| **Emergency** | Security patches, incident remediation | CEO authorizes (retroactive PR within 24 hrs) | Immediate |
 
 ---
 
@@ -65,17 +68,17 @@ All changes begin as a GitHub Pull Request (PR) against the relevant repository:
   - **Backend**: `go build`, `go vet`, `go test`
   - **Frontend**: `pnpm typecheck`, `pnpm build`
   - **Infrastructure**: `terragrunt fmt`, `terragrunt validate`, `terragrunt plan` (posted as PR comment)
-- **Security Review**: Changes to auth, IAM, RBAC, RLS, or encryption require Security Lead review
+- **Security Review**: Changes to auth, IAM, RBAC, RLS, or encryption are flagged by SCN classifier as SIGNIFICANT (require `scn-acknowledged` label)
 - **Impact Analysis**: Infrastructure PRs include Terraform plan output showing exact resource changes
 
 ### 4.3 Approval
 
 | Change Category | Required Approvals |
 |----------------|-------------------|
-| Standard | 1 code owner |
-| Normal | 2 reviewers (at least 1 code owner) |
-| Significant | CTO + Security Lead |
-| Emergency | CTO (post-incident review within 24 hrs) |
+| Standard | CI security gates pass (independent) |
+| Normal | CI security gates pass (independent) |
+| Significant | CI security gates + SCN acknowledgment + CEO rationale documented |
+| Emergency | CEO authorizes; post-incident PR within 24 hrs |
 
 ### 4.4 Deployment
 
@@ -244,7 +247,7 @@ All changes are tracked across multiple systems:
 | Infrastructure drift detection | On every push to main | CI/CD (automated) |
 | Terraform state audit | Monthly | Engineering |
 | CI/CD pipeline review | Quarterly | Engineering + Security |
-| Change management policy review | Annually | Security Lead |
+| Change management policy review | Annually | CEO / ISSO |
 
 ---
 

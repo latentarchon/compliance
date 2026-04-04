@@ -2,7 +2,7 @@
 
 > **Document ID**: CONMON-LA-001
 > **Parent Document**: SSP-LA-001 (fedramp-ssp.md, Appendix G)
-> **Version**: 1.0 — DRAFT
+> **Version**: 1.1 — DRAFT
 > **Date**: March 2026
 > **System Name**: Latent Archon Document Intelligence Platform
 > **Plan Owner**: Andrew Hendel, CEO
@@ -35,30 +35,33 @@ This plan covers monitoring of all security controls within the authorization bo
 | SCN classification | Per-PR | Go CLI (`cmd/classify-scn`) analyzes diffs; posts PR comment |
 | OSCAL SSP validation | Per-PR | CI generates OSCAL v1.1.3 JSON and validates schema |
 | Configuration compliance check | Weekly | Drata automated monitoring sync |
-| Access review (IAM/RBAC) | Monthly | Manual review of cloud IAM and application RBAC |
-| Security control assessment | Annual | 3PAO assessment |
-| Penetration testing | Annual | 3PAO or qualified assessor |
-| Red team exercises | Monthly | Internal red team suite (44 attacks) |
-| POA&M review | Monthly | Manual review and Drata sync |
-| SSP update | Annual + on significant change | Manual review |
-| Contingency plan test | Annual | Tabletop exercise |
+| Access review (IAM/RBAC) | Monthly | CEO review assisted by automated drift checker |
+| Security control assessment | Annual | 3PAO assessment (POA-1) |
+| Penetration testing | Annual | 3PAO or qualified assessor (POA-1) |
+| Red team exercises | Monthly | Automated red team suite (44 attacks) — no human initiation required |
+| POA&M review | Monthly | CEO review and Drata sync |
+| SSP update | Annual + on significant change | CEO review |
+| Contingency plan test | Monthly | Automated contingency-test CLI (backup/PITR/health checks) |
 
 ### 2.2 Automated Monitoring Tools
 
 | Tool | What It Monitors | Alert Mechanism |
 |------|-----------------|----------------|
-| **Cloud Monitoring** (Cloud Monitoring / CloudWatch / Azure Monitor) | CPU, memory, latency, error rates, database metrics | Alert policies → notification channels |
-| **WAF Analytics** (Cloud Armor / WAFv2 / Front Door WAF) | WAF rule matches, DDoS events, blocked requests, bot traffic | Dashboard + alert policies |
+| **Cloud Monitoring** | CPU, memory, latency, error rates, database metrics | Alert policies → notification channels |
+| **WAF Analytics** (Cloud Armor) | WAF rule matches, DDoS events, blocked requests, bot traffic | Dashboard + alert policies |
 | **Cloud Audit Logs** | All cloud resource changes, data access events | Log-based alerts |
 | **Application Audit Logger** | Authentication, authorization, data access, role changes, SCIM events | WARN-level events → email notifications |
 | **Dependabot** | Dependency vulnerabilities across all repositories | GitHub alerts + automated PRs |
 | **Drata** | Control implementation status, evidence freshness, personnel compliance | Dashboard + weekly sync report |
 | **CI/CD Security Pipeline** | SAST findings, container vulnerabilities, secret exposure, image signing (Cosign) | Build failure + PR blocking |
-| **DLP** (Cloud DLP / Comprehend / AI Language) | PII, credentials, and financial data in uploaded documents (pre-RAG scanning) | DLP findings logged; optional redaction via de-identify template |
+| **DLP** (Cloud DLP) | PII, credentials, and financial data in uploaded documents (pre-RAG scanning) | DLP findings logged; optional redaction via de-identify template |
+<!-- MULTI-CLOUD: Original monitoring tools also referenced CloudWatch, Azure Monitor, WAFv2, Front Door WAF, Comprehend, AI Language. -->
 | **Security Alert Policies** | WAF block spikes, 5xx error rate, database auth failures, IAM privilege escalation, KMS key lifecycle, secret access | Cloud monitoring alert → notification channels |
 | **KSI Evidence Collector** | Network firewall rules, container services, WAF policies, KMS rotation, log sinks, container images, DB backups, storage versioning | Weekly CI artifact (365-day retention) |
 | **SCN Classifier** | Security-critical file changes in PRs (30+ patterns) | PR comment (advisory, non-blocking) |
 | **OSCAL Validator** | SSP structural conformance to OSCAL v1.1.3 schema | PR check (advisory, non-blocking) |
+
+> **Automation-first note**: All automated monitoring runs independently without human initiation. Monthly manual reviews (access review, POA&M, vulnerability triage) are directed by the CEO. As the team scales (POA-15), these duties will transfer to dedicated personnel. See SOD-LA-001 §5 for the automation-first security architecture.
 
 ---
 
@@ -83,7 +86,7 @@ Per FedRAMP ConMon requirements:
 | Severity | CVSS Score | Remediation Deadline | Escalation |
 |----------|-----------|---------------------|------------|
 | **Critical** | 9.0 - 10.0 | 30 days | CEO notified immediately |
-| **High** | 7.0 - 8.9 | 30 days | Security Lead notified within 24 hours |
+| **High** | 7.0 - 8.9 | 30 days | CEO / ISSO notified within 24 hours |
 | **Medium** | 4.0 - 6.9 | 90 days | Tracked in POA&M |
 | **Low** | 0.1 - 3.9 | 180 days | Tracked in POA&M |
 
@@ -91,7 +94,7 @@ Per FedRAMP ConMon requirements:
 
 - **Monthly**: Vulnerability scan summary included in ConMon report
 - **Unique Vulnerabilities**: Each new finding logged as POA&M item with owner, target date, and remediation plan
-- **False Positives**: Documented with justification and approved by Security Lead
+- **False Positives**: Documented with justification and approved by CEO / ISSO
 - **Deviation Requests**: Submitted to FedRAMP PMO for vulnerabilities that cannot meet SLA
 
 ---
@@ -200,18 +203,20 @@ The Drata sync CLI (`drata-sync`) automatically uploads the following evidence w
 
 The KSI evidence collector (`cmd/ksi-evidence`) runs weekly via GitHub Actions and collects machine-readable evidence from cloud APIs. The collector auto-detects the target cloud provider and queries the appropriate APIs:
 
-| KSI Theme | Evidence File | GCP API | AWS API | Azure API |
-|-----------|--------------|---------|---------|----------|
-| IAM: Non-user authentication | `ksi-iam-sa-keys.json` | IAM Credentials | IAM Access Keys | Azure AD App Credentials |
-| IAM: Least privilege | `ksi-iam-bindings.json` | Resource Manager | IAM Policies | RBAC Role Assignments |
-| CNA: Network restrictions | `ksi-cna-firewall.json` | Compute Firewalls | Security Groups | NSG Rules |
-| CNA: Attack surface | `ksi-cna-services.json` | Cloud Run Services | ECS Services | Container Apps |
-| CNA: DDoS protection | `ksi-cna-armor.json` | Compute Security Policies | WAFv2 Web ACLs | Front Door WAF Policies |
-| SVC: Cryptographic modules | `ksi-svc-kms.json` | Cloud KMS | AWS KMS | Key Vault |
-| MLA: SIEM integration | `ksi-mla-sinks.json` | Cloud Logging Config | CloudWatch Log Groups | Azure Monitor Diagnostics |
-| VDR: Vulnerability scanning | `ksi-vdr-images.json` | Artifact Registry | ECR | Container Registry |
-| REC: Recovery capabilities | `ksi-rec-db-backup.json` | Cloud SQL Admin | RDS Snapshots | PostgreSQL Flex Backups |
-| REC: Storage versioning | `ksi-rec-storage-versioning.json` | Cloud Storage | S3 Versioning | Blob Versioning |
+| KSI Theme | Evidence File | GCP API |
+|-----------|--------------|--------|
+| IAM: Non-user authentication | `ksi-iam-sa-keys.json` | IAM Credentials |
+| IAM: Least privilege | `ksi-iam-bindings.json` | Resource Manager |
+| CNA: Network restrictions | `ksi-cna-firewall.json` | Compute Firewalls |
+| CNA: Attack surface | `ksi-cna-services.json` | Cloud Run Services |
+| CNA: DDoS protection | `ksi-cna-armor.json` | Compute Security Policies |
+| SVC: Cryptographic modules | `ksi-svc-kms.json` | Cloud KMS |
+| MLA: SIEM integration | `ksi-mla-sinks.json` | Cloud Logging Config |
+| VDR: Vulnerability scanning | `ksi-vdr-images.json` | Artifact Registry |
+| REC: Recovery capabilities | `ksi-rec-db-backup.json` | Cloud SQL Admin |
+| REC: Storage versioning | `ksi-rec-storage-versioning.json` | Cloud Storage |
+
+<!-- MULTI-CLOUD: Original table included AWS API (IAM Access Keys, IAM Policies, Security Groups, ECS Services, WAFv2 Web ACLs, AWS KMS, CloudWatch Log Groups, ECR, RDS Snapshots, S3 Versioning) and Azure API (Azure AD App Credentials, RBAC Role Assignments, NSG Rules, Container Apps, Front Door WAF Policies, Key Vault, Azure Monitor Diagnostics, Container Registry, PostgreSQL Flex Backups, Blob Versioning) columns. -->
 
 Each collection run produces a `manifest.json` with SHA-256 checksums and byte counts for every evidence file. Evidence artifacts are uploaded to GitHub Actions with 365-day retention.
 

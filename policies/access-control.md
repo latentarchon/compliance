@@ -3,11 +3,13 @@
 > **Policy ID**: POL-AC-001  
 > **Version**: 1.0  
 > **Effective Date**: March 2026  
-> **Owner**: Chief Executive / Security Lead  
+> **Owner**: CEO / ISSO  
 > **Review Cycle**: Annual  
 > **NIST 800-53 Controls**: AC-1, AC-2, AC-3, AC-5, AC-6, AC-7, AC-11, AC-12, AC-14, AC-17
 
 ---
+
+> **Organizational context**: Latent Archon is a founder-led, automation-first security organization. The CEO/ISSO directs access control while automation independently enforces IAM policy, detects drift, and maintains immutable audit trails. As the team scales, role-specific duties will transfer to dedicated personnel (POA-15, POA-16). See SOD-LA-001 for the automation-first security architecture.
 
 ## 1. Purpose
 
@@ -21,7 +23,8 @@ This policy applies to:
 
 - All Latent Archon employees, contractors, and partners with access to production systems
 - All customer-facing platform access (end users, org admins)
-- Cloud infrastructure (GCP / AWS / Azure), CI/CD pipelines, source code repositories
+- Cloud infrastructure (GCP), CI/CD pipelines, source code repositories
+<!-- MULTI-CLOUD: Original also listed AWS and Azure. -->
 - Third-party integrations and service accounts
 
 ---
@@ -33,7 +36,7 @@ This policy applies to:
 | Account Type | Authorization | Provisioning | Deprovisioning |
 |-------------|--------------|--------------|----------------|
 | **Employee (Cloud IAM)** | CEO/CTO approval | Manual via Terraform | Same-day on termination |
-| **CI/CD Service Account** | Engineering lead approval | Terraform (WIF, no keys) | Terraform destroy |
+| **CI/CD Service Account** | CEO / ISSO approval | Terraform (WIF, no keys) | Terraform destroy |
 | **Customer Org Admin** | Customer authorization + Latent Archon provisioning | Identity Platform tenant creation | SCIM or manual |
 | **Customer End User** | Org admin invite | Magic link or SSO/SCIM JIT | SCIM DELETE or org admin removal |
 | **Database Role** | Infrastructure as code | IAM-based database authentication | Terraform |
@@ -226,7 +229,8 @@ Organization administrators can configure CIDR-based IP allowlists enforced at t
 - All platform access is remote by design (cloud-native SaaS)
 - TLS 1.2+ enforced on all connections
 - HSTS with 2-year max-age and preload
-- WAF with OWASP Core Rule Set (Cloud Armor / WAFv2 / Front Door WAF)
+- WAF with OWASP Core Rule Set (Cloud Armor)
+<!-- MULTI-CLOUD: Original also listed WAFv2 (AWS) and Front Door WAF (Azure). -->
 - CORS strict origin allowlist (localhost only in development)
 
 ---
@@ -235,14 +239,14 @@ Organization administrators can configure CIDR-based IP allowlists enforced at t
 
 | Activity | Frequency | Owner |
 |----------|-----------|-------|
-| IAM role review | Quarterly | Security Lead |
+| IAM role review | Quarterly | CEO / ISSO |
 | Customer admin access review | Quarterly | Operations |
 | Service account audit | Quarterly | Engineering |
 | RBAC configuration review | Semi-annually | Engineering + Security |
 | Failed auth monitoring | Continuous (automated alerts) | Security |
 | Privilege escalation monitoring | Continuous (audit log alerts) | Security |
 | Security email notifications | Real-time (async) | Automated |
-| Policy review and update | Annually | Security Lead |
+| Policy review and update | Annually | CEO / ISSO |
 
 ### 9.1 Security Email Notifications
 

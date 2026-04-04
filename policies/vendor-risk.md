@@ -3,11 +3,13 @@
 > **Policy ID**: POL-VR-001  
 > **Version**: 1.0  
 > **Effective Date**: March 2026  
-> **Owner**: Chief Executive / Security Lead  
+> **Owner**: CEO / ISSO  
 > **Review Cycle**: Annual  
 > **NIST 800-53 Controls**: SA-1, SA-4, SA-9, SA-12, SR-1, SR-2, SR-3
 
 ---
+
+> **Organizational context**: Latent Archon is a founder-led, automation-first security organization. The CEO/ISSO directs vendor risk management. Automated dependency scanning (Dependabot, govulncheck) continuously monitors third-party supply chain risk. See SOD-LA-001.
 
 ## 1. Purpose
 
@@ -19,7 +21,8 @@ This policy establishes requirements for assessing, approving, monitoring, and m
 
 This policy applies to:
 
-- Cloud infrastructure providers (GCP, AWS, Azure)
+- Cloud infrastructure provider (GCP)
+<!-- MULTI-CLOUD: Original also listed AWS and Azure. -->
 - SaaS/PaaS service dependencies
 - Open-source software libraries and frameworks
 - Contractor and consulting engagements with system access
@@ -33,23 +36,26 @@ This policy applies to:
 
 | Tier | Criteria | Examples | Review Frequency |
 |------|----------|---------|-----------------|
-| **Critical** | Processes or stores customer data; single point of failure | GCP, AWS, Azure (container services, database, storage, AI, identity) | Continuous + Annual deep review |
+| **Critical** | Processes or stores customer data; single point of failure | GCP (container services, database, storage, AI, identity) | Continuous + Annual deep review |
+<!-- MULTI-CLOUD: Original also listed AWS and Azure as Critical tier vendors. -->
 | **High** | Has access to production systems or code; integral to operations | GitHub (source control, CI/CD), Microsoft (Graph API), Go/Node runtime | Semi-annual |
 | **Medium** | Supports development or has indirect data access | Dependabot, development tooling, monitoring integrations | Annual |
 | **Low** | No data access; easily replaceable | Documentation tools, design tools, project management | Biennial |
 
 ### 3.2 Critical Vendors: Cloud Infrastructure Providers
 
-Latent Archon deploys on GCP, AWS, or Azure (one provider per customer). Each provider is assessed identically:
+Latent Archon deploys on GCP. The provider is assessed as follows:
+
+<!-- MULTI-CLOUD: Original stated deployment on GCP, AWS, or Azure (one per customer) with identical assessment. -->
 
 | Control | Implementation |
 |---------|---------------|
-| **FedRAMP Authorization** | All three CSPs hold FedRAMP High authorization |
+| **FedRAMP Authorization** | GCP holds FedRAMP High authorization |
 | **SOC 2 Type II** | Annual audit reports reviewed per provider |
 | **ISO 27001/27017/27018** | Certifications maintained by each CSP |
 | **BAA** | Available from each CSP for HIPAA-regulated workloads |
 | **Data Processing Terms** | CSP-specific Data Processing Addendum in effect |
-| **Vendor Lock-in Mitigation** | PostgreSQL (portable), standard container images, Terraform IaC (multi-cloud), Connect-RPC (protocol-agnostic), cloud-agnostic Go backend with per-provider adapters |
+| **Vendor Lock-in Mitigation** | PostgreSQL (portable), standard container images, Terraform IaC, Connect-RPC (protocol-agnostic), cloud-agnostic Go backend |
 
 See [cloud supplements](../cloud/) for per-provider service details and FedRAMP authorization IDs.
 
@@ -103,10 +109,10 @@ Before engaging any new Critical or High tier vendor:
 
 | Vendor Tier | Approval Required |
 |-------------|------------------|
-| Critical | CEO + Security Lead |
-| High | CTO + Security Lead |
-| Medium | Engineering Lead |
-| Low | Any team lead |
+| Critical | CEO / ISSO |
+| High | CEO / ISSO |
+| Medium | CEO / ISSO |
+| Low | CEO / ISSO |
 
 ---
 
@@ -191,8 +197,9 @@ Open-source dependencies are managed as a supply chain risk:
 | Subprocessor | Service | Data Access | FedRAMP |
 |-------------|---------|-------------|---------|
 | Google Cloud Platform | Infrastructure (compute, storage, AI, identity) | Customer documents, messages, embeddings | High |
+<!-- MULTI-CLOUD: Original also included:
 | Amazon Web Services | Infrastructure (compute, storage, AI, identity) | Customer documents, messages, embeddings | High |
-| Microsoft Azure | Infrastructure (compute, storage, AI, identity) | Customer documents, messages, embeddings | High |
+| Microsoft Azure | Infrastructure (compute, storage, AI, identity) | Customer documents, messages, embeddings | High | -->
 | Microsoft | Graph API (SharePoint/OneDrive sync), Entra ID (OAuth2) | Read-only access to customer Microsoft 365 documents (downloaded and stored in cloud) | High |
 | GitHub | Source control, CI/CD | Source code (no customer data) | SOC 2 |
 

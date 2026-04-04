@@ -33,7 +33,7 @@ These rules apply to:
 - I will not share my credentials, MFA device, or session tokens with anyone.
 - I will not attempt to access accounts, data, or workspaces that I am not authorized to use.
 - I will lock or log out of my session when leaving my workstation unattended.
-- I will report any suspected credential compromise to the Security Lead immediately.
+- I will report any suspected credential compromise to the CEO / ISSO immediately.
 
 ### 3.2 Data Handling
 
@@ -48,7 +48,7 @@ These rules apply to:
 - I will use the system only for authorized business purposes.
 - I will not attempt to circumvent security controls, access controls, or audit mechanisms.
 - I will not install unauthorized software or modify system configurations without approval.
-- I will not introduce malware, test tools, or attack code into production or staging environments without explicit authorization from the Security Lead.
+- I will not introduce malware, test tools, or attack code into production or staging environments without explicit authorization from the CEO / ISSO.
 - I will comply with all applicable federal, state, and local laws while using the system.
 
 ### 3.4 Infrastructure and Code
@@ -61,7 +61,7 @@ These rules apply to:
 
 ### 3.5 Incident Reporting
 
-- I will immediately report any suspected security incident, data breach, or policy violation to the Security Lead.
+- I will immediately report any suspected security incident, data breach, or policy violation to the CEO / ISSO.
 - I will preserve evidence and not attempt to investigate or remediate on my own without coordination.
 - I will cooperate fully with incident response and forensic investigation activities.
 - I will not disclose incident details outside the authorized incident response team.
@@ -124,7 +124,7 @@ By signing below, I acknowledge that I have read, understand, and agree to compl
 
 ## 9. Annual Re-Acknowledgment
 
-These rules must be re-acknowledged annually. The Security Lead maintains a log of all acknowledgments.
+These rules must be re-acknowledged annually. The CEO / ISSO maintains a log of all acknowledgments (via Drata).
 
 | Name | Role | Initial Acknowledgment | Last Re-Acknowledgment |
 |------|------|----------------------|----------------------|

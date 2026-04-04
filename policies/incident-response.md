@@ -3,11 +3,13 @@
 > **Policy ID**: POL-IR-001  
 > **Version**: 1.1  
 > **Effective Date**: March 2026  
-> **Owner**: Chief Executive / Security Lead  
+> **Owner**: CEO / ISSO  
 > **Review Cycle**: Annual  
 > **NIST 800-53 Controls**: IR-1, IR-2, IR-3, IR-4, IR-5, IR-6, IR-6(1), IR-7, IR-8, IR-9
 
 ---
+
+> **Organizational context**: Latent Archon is a founder-led, automation-first security organization. The automation workforce provides continuous detection and alerting; immutable audit logs provide forensic evidence independent of any human actor. The CEO/ISSO directs incident response. As the team scales, dedicated IR roles will be staffed (POA-15, POA-16). See SOD-LA-001 for the automation-first security architecture.
 
 ## 1. Purpose
 
@@ -60,10 +62,10 @@ This policy covers security incidents affecting:
 
 | Role | Responsibility | Primary | Backup |
 |------|---------------|---------|--------|
-| **Incident Commander (IC)** | Overall incident coordination, decision authority | CEO/CTO | Security Lead |
-| **Technical Lead** | Investigation, containment, eradication | Engineering Lead | Senior Engineer |
-| **Communications Lead** | Customer notification, status updates | CEO | Operations |
-| **Forensics** | Evidence collection, root cause analysis | Security Lead | Engineering Lead |
+| **Incident Commander (IC)** | Overall incident coordination, decision authority | CEO / ISSO | _N/A (single operator)_ |
+| **Technical Lead** | Investigation, containment, eradication | CEO / ISSO | _N/A (single operator)_ |
+| **Communications Lead** | Customer notification, status updates | CEO / ISSO | _N/A (single operator)_ |
+| **Forensics** | Evidence collection, root cause analysis | Automated (immutable Cloud Audit Logs + pgAudit) | CEO reviews |
 
 ### 4.2 Contact Escalation
 

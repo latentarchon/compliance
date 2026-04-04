@@ -39,7 +39,8 @@ Implementation follows FedRAMP's recommended order:
 **Goal**: Define and document the complete authorization boundary for the LA-DIP system.
 
 **Pass/Fail Criteria**:
-- ✅ All cloud environments (GCP projects / AWS accounts / Azure subscriptions), services, and data flows are documented in the SSP
+- ✅ All cloud environments (GCP projects), services, and data flows are documented in the SSP
+<!-- MULTI-CLOUD: Original also listed AWS accounts and Azure subscriptions. -->
 - ✅ Authorization boundary diagram includes all components within scope
 - ✅ External interconnections are documented with data flow direction and protocol
 
@@ -424,7 +425,8 @@ Implementation follows FedRAMP's recommended order:
 - ✅ TOTP MFA enforced on all data endpoints (auth interceptor)
 - ✅ Step-up MFA for sensitive operations
 - ✅ MFA enrollment required before accessing workspace data
-- ✅ GCP: Backend rejects JWTs without `sign_in_second_factor` claim; AWS/Azure: MFA delegated to customer IdP
+- ✅ Backend rejects JWTs without `sign_in_second_factor` claim
+<!-- MULTI-CLOUD: Original also noted AWS/Azure MFA delegated to customer IdP. -->
 
 **Information Resources**:
 - `backend/cmd/server/connect_interceptors.go` — MFA enforcement in auth interceptor
@@ -432,7 +434,8 @@ Implementation follows FedRAMP's recommended order:
 - `fedramp-ssp.md` §7.2 (Authentication Requirements)
 
 **Machine-Based Validation** (weekly):
-- GCP: Query Identity Platform verify MFA enabled on all tenants; AWS/Azure: verify SAML-only auth configuration
+- Query Identity Platform to verify MFA enabled on all tenants
+<!-- MULTI-CLOUD: Original also included AWS/Azure SAML-only auth verification. -->
 - Application audit logs: no data access without MFA claim
 
 **Status**: ✅ Implemented.
@@ -516,7 +519,8 @@ Implementation follows FedRAMP's recommended order:
 **Goal**: Centralized, tamper-resistant logging of events.
 
 **Pass/Fail Criteria**:
-- ✅ Cloud-native logging (Cloud Logging / CloudWatch / Azure Monitor): centralized, immutable, structured JSON
+- ✅ Cloud-native logging (Cloud Logging): centralized, immutable, structured JSON
+<!-- MULTI-CLOUD: Original also listed CloudWatch (AWS) and Azure Monitor. -->
 - ✅ Application audit_events table: user actions with IP, user-agent, metadata, session_id, mfa_method
 - ✅ Cloud audit logs: admin activity + data access (cloud API calls)
 - ✅ Log sink to GCS for long-term retention
@@ -571,7 +575,8 @@ See Cloud Native Architecture §3.1.
 **Goal**: Automated management and rotation of secrets.
 
 **Pass/Fail Criteria**:
-- ✅ Cloud KMS / AWS KMS / Key Vault: CMEK with automatic rotation (HSM-backed)
+- ✅ Cloud KMS: CMEK with automatic rotation (HSM-backed)
+<!-- MULTI-CLOUD: Original also listed AWS KMS and Key Vault. -->
 - ✅ Secrets management: database credentials with rotation schedule
 - ✅ Secret access alerting: monitoring fires on any secret access
 - ✅ WIF: eliminates SA key secrets entirely
@@ -591,7 +596,8 @@ See Cloud Native Architecture §3.1.
 **Goal**: Cryptographic methods validate integrity of machine-based resources.
 
 **Pass/Fail Criteria**:
-- ✅ Docker image digests (SHA-256) in container registry (AR / ECR / ACR)
+- ✅ Docker image digests (SHA-256) in container registry (Artifact Registry)
+<!-- MULTI-CLOUD: Original also listed ECR (AWS) and ACR (Azure). -->
 - ✅ Cosign keyless image signing (Sigstore OIDC) — every image cryptographically signed in CI
 - ✅ Cosign signature verification required before every container deploy
 - ✅ Digest-pinned deploys (`image@sha256:...`) — no mutable tag references
@@ -612,7 +618,8 @@ See Cloud Native Architecture §3.1.
 
 **Pass/Fail Criteria**:
 - ✅ Supply Chain Risk Management Plan documented
-- ✅ Vendor risk register (4 vendors: GCP/AWS/Azure Critical, GitHub High)
+- ✅ Vendor risk register (2 vendors: GCP Critical, GitHub High)
+<!-- MULTI-CLOUD: Original listed 4 vendors including AWS and Azure as Critical. -->
 - ✅ Risk register (12 entries, inherent/residual scoring)
 - ✅ Dependabot on all 9 repos
 - ✅ SBOM per build

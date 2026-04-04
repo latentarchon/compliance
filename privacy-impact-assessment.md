@@ -13,7 +13,9 @@
 
 ### 1.1 System Description
 
-Latent Archon is a multi-tenant SaaS document intelligence platform that enables government agencies to securely upload, process, search, and interact with documents using AI-powered retrieval-augmented generation (RAG). The system is deployable on Google Cloud Platform, Amazon Web Services, or Microsoft Azure (all FedRAMP High authorized). Each customer deployment runs on a single cloud provider.
+Latent Archon is a multi-tenant SaaS document intelligence platform that enables government agencies to securely upload, process, search, and interact with documents using AI-powered retrieval-augmented generation (RAG). The system is deployed on Google Cloud Platform (FedRAMP High authorized).
+
+<!-- MULTI-CLOUD: Original stated deployable on GCP, AWS, or Azure with single cloud per customer. -->
 
 ### 1.2 Purpose of the PIA
 
@@ -37,7 +39,8 @@ This PIA identifies and evaluates privacy risks associated with the collection, 
 
 ### 2.2 PII in Customer Documents
 
-Customer agencies upload documents that may contain any category of PII depending on agency mission. Latent Archon does not parse or extract PII from documents — documents are processed for text extraction (Document AI / Textract / Document Intelligence) and semantic embedding only. The system treats all document content as CUI.
+Customer agencies upload documents that may contain any category of PII depending on agency mission. Latent Archon does not parse or extract PII from documents — documents are processed for text extraction (Document AI) and semantic embedding only.
+<!-- MULTI-CLOUD: Original also listed Textract (AWS) and Document Intelligence (Azure). --> The system treats all document content as CUI.
 
 | PII Category | System Awareness | Protection |
 |-------------|-----------------|------------|
@@ -61,17 +64,19 @@ Customer agencies upload documents that may contain any category of PII dependin
 
 | Location | PII Stored | Encryption | Access Control |
 |----------|-----------|------------|----------------|
-| **PostgreSQL** (Cloud SQL / RDS / PostgreSQL Flex) | Email, name, auth UID, external ID, audit events (IP, UA) | CMEK AES-256 (FIPS 140-2 L3 HSM) | RLS + DB role separation |
-| **Identity Provider** (Identity Platform / SAML IdP / Azure AD) | Email, name, MFA seed, password hash | Provider-managed encryption | Admin SDK / SAML (SA-scoped) |
-| **Object Storage** (GCS / S3 / Blob) | Document files (may contain PII) | CMEK AES-256 | Workspace-scoped object paths + IAM |
-| **Vector Store** (Vertex AI / OpenSearch / AI Search) | Document text embeddings (may encode PII semantics) | Provider-managed encryption | Workspace-scoped vector tokens |
-| **Cloud Logging** (Cloud Logging / CloudWatch / Azure Monitor) | IP addresses, user agents, request metadata | Provider-managed encryption | IAM (logging viewer role) |
+| **PostgreSQL** (Cloud SQL) | Email, name, auth UID, external ID, audit events (IP, UA) | CMEK AES-256 (FIPS 140-2 L3 HSM) | RLS + DB role separation |
+| **Identity Provider** (Identity Platform) | Email, name, MFA seed, password hash | Provider-managed encryption | Admin SDK / SAML (SA-scoped) |
+| **Object Storage** (GCS) | Document files (may contain PII) | CMEK AES-256 | Workspace-scoped object paths + IAM |
+| **Vector Store** (Vertex AI) | Document text embeddings (may encode PII semantics) | Provider-managed encryption | Workspace-scoped vector tokens |
+| **Cloud Logging** | IP addresses, user agents, request metadata | Provider-managed encryption | IAM (logging viewer role) |
+
+<!-- MULTI-CLOUD: Original also listed RDS/PostgreSQL Flex, SAML IdP/Azure AD, S3/Blob, OpenSearch/AI Search, CloudWatch/Azure Monitor. -->
 
 ### 3.3 PII Sharing
 
 | Recipient | PII Shared | Purpose | Mechanism |
 |-----------|-----------|---------|-----------|
-| **Cloud Provider** (GCP / AWS / Azure) | All stored PII (as infrastructure provider) | Infrastructure hosting | CSP Data Processing Terms |
+| **Cloud Provider** (GCP) | All stored PII (as infrastructure provider) | Infrastructure hosting | CSP Data Processing Terms |
 | **Customer Agency Admins** | Member emails, names, audit events | Organization management | Admin API (RBAC-gated) |
 | **Customer SIEM** | Audit events (IP, UA, email) | Security monitoring | Log export (opt-in) |
 

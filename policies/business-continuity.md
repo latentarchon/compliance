@@ -3,11 +3,13 @@
 > **Policy ID**: POL-BC-001  
 > **Version**: 1.0  
 > **Effective Date**: March 2026  
-> **Owner**: Chief Executive / Engineering Lead  
+> **Owner**: CEO / ISSO  
 > **Review Cycle**: Annual  
 > **NIST 800-53 Controls**: CP-1, CP-2, CP-4, CP-6, CP-7, CP-9, CP-10
 
 ---
+
+> **Organizational context**: Latent Archon is a founder-led, automation-first security organization. Continuity controls are largely automated: backups, health checks, and contingency tests run continuously. The CEO/ISSO directs recovery decisions. See SOD-LA-001.
 
 ## 1. Purpose
 
@@ -19,7 +21,8 @@ This policy establishes requirements for maintaining the continuity of Latent Ar
 
 This policy applies to:
 
-- All production and staging infrastructure on whichever cloud hosts the deployment (GCP, AWS, or Azure)
+- All production and staging infrastructure on GCP
+<!-- MULTI-CLOUD: Original stated GCP, AWS, or Azure. -->
 - All customer data (documents, messages, embeddings, account data)
 - All supporting systems (CI/CD, monitoring, DNS, load balancers)
 - All personnel involved in incident response and recovery
@@ -57,7 +60,8 @@ This policy applies to:
 | **Encryption** | CMEK (AES-256 via cloud KMS) |
 | **Cross-region backup** | Configurable (not currently enabled — single-region deployment) |
 
-Cloud-specific service: Cloud SQL (GCP) / RDS PostgreSQL (AWS) / PostgreSQL Flexible Server (Azure).
+Cloud-specific service: Cloud SQL (GCP).
+<!-- MULTI-CLOUD: Original also listed RDS PostgreSQL (AWS) and PostgreSQL Flexible Server (Azure). -->
 
 ### 4.2 Object Storage (Documents)
 
@@ -69,7 +73,8 @@ Cloud-specific service: Cloud SQL (GCP) / RDS PostgreSQL (AWS) / PostgreSQL Flex
 | **Soft delete** | 30-day soft delete before permanent removal |
 | **Redundancy** | Regional with automatic replication across zones |
 
-Cloud-specific service: GCS (GCP) / S3 (AWS) / Blob Storage (Azure).
+Cloud-specific service: GCS (GCP).
+<!-- MULTI-CLOUD: Original also listed S3 (AWS) and Blob Storage (Azure). -->
 
 ### 4.3 Infrastructure Configuration
 
@@ -116,7 +121,8 @@ Cloud-specific service: GCS (GCP) / S3 (AWS) / Blob Storage (Azure).
 
 **Recovery**:
 1. Container platform auto-heals by replacing failed instances (automatic)
-2. If deployment-related: roll back to previous revision (GCP: `gcloud run services update-traffic`; AWS: ECS task definition rollback; Azure: Container Apps revision revert)
+2. If deployment-related: roll back to previous revision (`gcloud run services update-traffic`)
+<!-- MULTI-CLOUD: Original also included AWS ECS task definition rollback and Azure Container Apps revision revert. -->
 3. If persistent: redeploy from container registry latest known-good image
 4. Verify via health check and smoke test
 
@@ -127,7 +133,8 @@ Cloud-specific service: GCS (GCP) / S3 (AWS) / Blob Storage (Azure).
 **Detection**: Application errors on document access, user-reported missing documents
 
 **Recovery**:
-1. List object versions using cloud-native CLI (gsutil / aws s3api / az storage blob)
+1. List object versions using `gsutil`
+<!-- MULTI-CLOUD: Original also listed aws s3api and az storage blob. -->
 2. Restore specific version from versioning history
 3. For bulk restore: script to restore latest non-deleted version of all objects
 4. Verify document count matches database records
@@ -177,7 +184,7 @@ Cloud-specific service: GCS (GCP) / S3 (AWS) / Blob Storage (Azure).
 ### 7.1 Personnel Continuity
 
 - All critical procedures documented in Git (infrastructure, deployment, recovery)
-- No single-person dependency — at least 2 team members have access to production
+- Infrastructure fully codified in Git — any authorized team member can rebuild from IaC. Automation workforce handles deployment independently.
 - Emergency contact list maintained and reviewed quarterly
 - Remote work capability — all operations performable from any internet-connected location
 
@@ -185,7 +192,7 @@ Cloud-specific service: GCS (GCP) / S3 (AWS) / Blob Storage (Azure).
 
 | Vendor | Risk | Mitigation |
 |--------|------|-----------|
-| **GCP / AWS / Azure** | Regional outage | Multi-zone HA (current), cross-region DR (planned) |
+| **GCP** | Regional outage | Multi-zone HA (current), cross-region DR (planned) |
 | **GitHub** | Service outage | Local git clones, GitHub archive export |
 | **Drata** | Service outage | Compliance docs stored locally in Git |
 
@@ -205,7 +212,7 @@ Cloud-specific service: GCS (GCP) / S3 (AWS) / Blob Storage (Azure).
 | **Backup restore test** | Quarterly | Database + storage restore to staging | Engineering |
 | **Infrastructure rebuild** | Annual | Full Terragrunt apply to test environment | Engineering |
 | **Failover test** | Annual | Database HA failover | Engineering |
-| **Communication test** | Semi-annual | Notification procedures | Security Lead |
+| **Communication test** | Semi-annual | Notification procedures | CEO / ISSO |
 
 ---
 

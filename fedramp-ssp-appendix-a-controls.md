@@ -17,7 +17,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Latent Archon maintains a formal Access Control Policy (POL-AC-001, `policies/access-control.md`) that defines account management procedures, authentication requirements, authorization model, data isolation controls, and network-level access controls. The policy is reviewed annually by the Security Lead. The policy is approved by the CEO and disseminated to all personnel via the compliance document repository. Changes to the policy follow the Change Management Policy (POL-CM-001) requiring PR-based review and approval.
+**Implementation**: Latent Archon maintains a formal Access Control Policy (POL-AC-001, `policies/access-control.md`) that defines account management procedures, authentication requirements, authorization model, data isolation controls, and network-level access controls. The policy is reviewed annually by the CEO / ISSO. The policy is approved by the CEO and disseminated to all personnel via the compliance document repository. Changes to the policy follow the Change Management Policy (POL-CM-001) requiring PR-based review and approval.
 
 **Customer Responsibility**: Customer agencies are responsible for establishing complementary access control policies for their end users that align with agency-specific requirements.
 
@@ -1042,14 +1042,14 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The Latent Archon information security program is governed by the Information Security Policy (POL-IS-001). The program plan encompasses: (1) security governance structure with defined roles (CEO as executive sponsor, Security Lead as program manager); (2) hierarchy of 13 subordinate security policies; (3) compliance framework alignment (NIST 800-53 Moderate, FedRAMP); (4) risk management integration; (5) continuous improvement through Drata automated monitoring.
+**Implementation**: The Latent Archon information security program is governed by the Information Security Policy (POL-IS-001). The program plan encompasses: (1) security governance structure with defined roles (CEO as executive sponsor and ISSO); (2) hierarchy of 13 subordinate security policies; (3) compliance framework alignment (NIST 800-53 Moderate, FedRAMP); (4) risk management integration; (5) continuous improvement through Drata automated monitoring.
 
 ### PM-2: Information Security Program Leadership Role
 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The CEO (Andrew Hendel) serves as the executive sponsor of the information security program. The Security Lead serves as the Information System Security Officer (ISSO) responsible for day-to-day security program management, control implementation oversight, and compliance coordination. _Formal ISSO appointment letter to be issued upon agency sponsor engagement._
+**Implementation**: The CEO (Andrew Hendel) serves as both executive sponsor and Information System Security Officer (ISSO) for the information security program, responsible for security program management, control implementation oversight, and compliance coordination. Formal ISSO self-appointment letter issued (ISSO-APPT-001). As the organization scales, a dedicated Security Lead will assume day-to-day ISSO duties (POA-15).
 
 ### PM-3: Information Security and Privacy Resources
 
@@ -1151,7 +1151,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Personnel positions are categorized by risk level: (1) **High Risk**: CEO, Security Lead, and anyone with production infrastructure access — requires comprehensive background check; (2) **Moderate Risk**: Engineers with code commit access — requires standard background check; (3) **Low Risk**: Non-technical roles without system access — requires basic identity verification. Risk designations are reviewed annually.
+**Implementation**: Personnel positions are categorized by risk level: (1) **High Risk**: CEO/ISSO and anyone with production infrastructure access — requires comprehensive background check; (2) **Moderate Risk**: Personnel with code commit access — requires standard background check; (3) **Low Risk**: Non-technical roles without system access — requires basic identity verification. Risk designations are reviewed annually.
 
 ### PS-3: Personnel Screening
 
@@ -1193,7 +1193,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Personnel who violate security policies are subject to tiered sanctions as defined in the Acceptable Use Policy: (1) First offense/minor violation — written warning with mandatory remedial training; (2) Repeat offense/moderate violation — temporary access suspension with investigation; (3) Severe violation/willful misconduct — immediate access revocation and termination. Sanctions are documented and reviewed by the Security Lead.
+**Implementation**: Personnel who violate security policies are subject to tiered sanctions as defined in the Acceptable Use Policy: (1) First offense/minor violation — written warning with mandatory remedial training; (2) Repeat offense/moderate violation — temporary access suspension with investigation; (3) Severe violation/willful misconduct — immediate access revocation and termination. Sanctions are documented and reviewed by the CEO / ISSO.
 
 ---
 

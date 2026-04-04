@@ -2,7 +2,7 @@
 
 > **Document ID**: CMP-LA-001
 > **Parent Document**: SSP-LA-001 (fedramp-ssp.md, Appendix E)
-> **Version**: 1.0 — DRAFT
+> **Version**: 1.1 — DRAFT
 > **Date**: March 2026
 > **System Name**: Latent Archon Document Intelligence Platform
 > **Plan Owner**: Andrew Hendel, CEO
@@ -17,18 +17,20 @@ This Configuration Management Plan (CMP) establishes the policies, procedures, a
 
 ### 1.2 Scope
 
-This plan covers all components within the authorization boundary: application code (Go backend, React SPAs), infrastructure-as-code (Terraform/Terragrunt), database schema, container images, cloud resource configurations (GCP / AWS / Azure), and compliance documentation.
+This plan covers all components within the authorization boundary: application code (Go backend, React SPAs), infrastructure-as-code (Terraform/Terragrunt), database schema, container images, cloud resource configurations (GCP), and compliance documentation.
+<!-- MULTI-CLOUD: Original also listed AWS and Azure. -->
 
 ---
 
 ## 2. Configuration Management Roles
 
-| Role | Responsibilities |
-|------|-----------------|
-| **Configuration Manager** | CEO — oversees CM process, approves significant changes |
-| **Change Advisory Board (CAB)** | Engineering Lead + Security Lead — reviews and approves changes |
-| **Developers** | Submit changes via PRs, write tests, update documentation |
-| **CI/CD System** | Automates testing, scanning, building, and deployment |
+| Role | Personnel | Responsibilities |
+|------|-----------|------------------|
+| **Configuration Manager** | Andrew Hendel (CEO / ISSO) | Oversees CM process, authors changes, approves significant changes |
+| **Automation Workforce** | GitHub Actions / Cloud Build | Independent automated testing, scanning, building, and deployment — acts as independent second actor (see SOD-LA-001) |
+| **Customer Admin** | Per-customer agency | Manages users and settings within their organization |
+
+> **Note**: Latent Archon is a founder-led, automation-first organization. The traditional Change Advisory Board (CAB) function is performed by the automation workforce’s independent security evaluation of every change — 6 scanners that cannot be bypassed or overridden. As the team scales (POA-15, POA-16), a formal multi-person CAB will be established.
 
 ---
 
@@ -64,10 +66,10 @@ The production baseline is defined by:
 
 | Category | Examples | Approval | Testing Required |
 |----------|----------|----------|-----------------|
-| **Standard** | Bug fixes, dependency updates, documentation | 1 PR reviewer | CI pipeline |
-| **Significant** | New features, architecture changes, new services | CAB + Security review | CI + staging deploy |
-| **Emergency** | Critical vulnerability patches, incident response | CEO verbal + post-hoc PR | Minimal — deploy then review |
-| **Infrastructure** | Terraform changes, cloud resource modifications | CAB + Terragrunt plan review | Plan review + staging apply |
+| **Standard** | Bug fixes, dependency updates, documentation | CI security gates (independent) | CI pipeline (6 scanners) |
+| **Significant** | New features, architecture changes, new services | CI security gates + SCN classifier flags as SIGNIFICANT + CEO documents rationale | CI + staging deploy + SCN acknowledgment |
+| **Emergency** | Critical vulnerability patches, incident response | CEO authorizes + post-hoc PR within 24 hours | Minimal — deploy then review |
+| **Infrastructure** | Terraform changes, cloud resource modifications | CI plan review + SSP-IaC drift checker | Plan review + staging apply first |
 
 ### 4.2 Change Request Process
 
@@ -81,15 +83,16 @@ The production baseline is defined by:
    - Gitleaks secret detection
    - Trivy container image scan (on Dockerfile changes)
    - SBOM generation
-3. **Human Review**: At least one CAB member reviews for correctness, security implications, RLS/data isolation impact, and documentation updates
-4. **Approval**: Reviewer approves PR. For Significant changes, Security Lead must also approve.
-5. **Merge**: PR merged to main branch
-6. **Deployment**: CI/CD deploys to staging automatically. Production deployment requires manual promotion.
+3. **Automated Review**: SCN classifier categorizes change as ROUTINE or SIGNIFICANT. SIGNIFICANT changes require `scn-acknowledged` label before merge.
+4. **Merge**: PR merged to protected branch (only after all CI checks pass — CEO cannot bypass)
+
+   > **Automation-first note**: The automation workforce’s 6 independent security scanners serve as the independent review function. As the team grows (POA-16), mandatory human review will be added alongside the automated gates.
+5. **Deployment**: CI/CD deploys to staging automatically. Production deployment requires manual promotion.
 
 ### 4.3 Infrastructure Change Process
 
 1. **Submit**: Engineer creates PR modifying Terragrunt/Terraform configuration
-2. **Plan Review**: `terragrunt plan` output reviewed by CAB for resources being created/modified/destroyed, IAM changes, encryption and network changes
+2. **Plan Review**: `terragrunt plan` output reviewed by CEO for resources being created/modified/destroyed, IAM changes, encryption and network changes. SSP-IaC drift checker validates claims.
 3. **Staging Apply**: Changes applied to staging environment first
 4. **Validation**: Functional testing in staging
 5. **Production Apply**: Changes applied to production after staging validation
@@ -101,7 +104,7 @@ The production baseline is defined by:
 2. Fix is developed and deployed to production (bypass staging if necessary)
 3. Post-deployment PR is created within 24 hours
 4. Post-hoc security review within 48 hours
-5. CAB reviews and documents the emergency change
+5. CEO documents the emergency change with rationale and security impact assessment
 
 ---
 

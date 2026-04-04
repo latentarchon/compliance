@@ -3,11 +3,13 @@
 > **Policy ID**: POL-AT-001  
 > **Version**: 1.0  
 > **Effective Date**: March 2026  
-> **Owner**: Chief Executive / Security Lead  
+> **Owner**: CEO / ISSO  
 > **Review Cycle**: Annual  
 > **NIST 800-53 Controls**: AT-1, AT-2, AT-3, AT-4
 
 ---
+
+> **Organizational context**: Latent Archon is a founder-led, automation-first security organization. Security competence is continuously validated through automated adversarial testing (44-attack red team suite, monthly). Personnel-targeted training programs will expand as the team scales (POA-17). See SOD-LA-001.
 
 ## 1. Purpose
 
@@ -38,7 +40,8 @@ This policy applies to all employees, contractors, and temporary personnel with 
 | Role | Additional Training Topics |
 |------|---------------------------|
 | **Engineers** | OWASP Top 10, secure coding in Go, SQL injection prevention, secrets management, container security, supply chain security |
-| **DevOps / Infrastructure** | Cloud security best practices (GCP / AWS / Azure), Terraform security, least-privilege IAM, network security, incident response procedures |
+| **DevOps / Infrastructure** | Cloud security best practices (GCP), Terraform security, least-privilege IAM, network security, incident response procedures |
+<!-- MULTI-CLOUD: Original also listed AWS and Azure in training topics. -->
 | **Management** | Risk management, regulatory compliance (NIST 800-53, FedRAMP), vendor risk assessment, security governance |
 | **All Personnel** | Data classification, acceptable use, password/MFA hygiene, social engineering defense, reporting procedures |
 

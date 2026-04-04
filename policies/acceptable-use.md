@@ -3,11 +3,13 @@
 > **Policy ID**: POL-AU-001  
 > **Version**: 1.0  
 > **Effective Date**: March 2026  
-> **Owner**: Chief Executive / Security Lead  
+> **Owner**: CEO / ISSO  
 > **Review Cycle**: Annual  
 > **NIST 800-53 Controls**: PL-4, AC-8, AT-2
 
 ---
+
+> **Organizational context**: Latent Archon is a founder-led, automation-first security organization. The CEO/ISSO directs all policy. As the team scales, all personnel will acknowledge this policy via Drata. See SOD-LA-001.
 
 ## 1. Purpose
 
@@ -21,7 +23,8 @@ This policy applies to all employees, contractors, and temporary personnel who a
 
 - Latent Archon production and staging environments
 - Source code repositories (GitHub)
-- Cloud console and infrastructure (GCP / AWS / Azure)
+- Cloud console and infrastructure (GCP)
+<!-- MULTI-CLOUD: Original also listed AWS and Azure. -->
 - Customer data in any form
 - Internal communication systems
 - Company-provided or company-connected devices
@@ -138,7 +141,7 @@ All personnel **must** report suspected security incidents immediately, includin
 - Suspected data breaches or data exposure
 - Vulnerabilities discovered in Latent Archon systems
 
-Report to: Security Lead and CTO via direct message (per Incident Response Policy)
+Report to: CEO / ISSO via direct message (per Incident Response Policy)
 
 ### 7.2 Whistleblower Protection
 
@@ -158,7 +161,7 @@ Personnel who report security concerns in good faith are protected from retaliat
 
 ### 8.2 Device Loss or Theft
 
-- Report immediately to Security Lead
+- Report immediately to CEO / ISSO
 - Remote session revocation initiated for all active sessions
 - GitHub personal access tokens revoked
 - Cloud access reviewed and revoked if needed

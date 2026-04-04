@@ -48,12 +48,14 @@
 | **System Owner Title** | Chief Executive Officer |
 | **System Owner Email** | ajhendel@latentarchon.com |
 | **Authorizing Official** | _[Agency AO — TBD upon sponsor engagement]_ |
-| **Information System Security Officer (ISSO)** | _[TBD — to be appointed]_ |
+| **Information System Security Officer (ISSO)** | Andrew Hendel, CEO (self-appointed per ISSO-APPT-001; see Appendix C) |
 | **Cloud Service Model** | Software as a Service (SaaS) |
 | **Cloud Deployment Model** | Public Cloud |
-| **Underlying CSPs** | Google Cloud Platform (GCP), Amazon Web Services (AWS), Microsoft Azure — all FedRAMP High Authorized |
+| **Underlying CSP** | Google Cloud Platform (GCP) — FedRAMP High Authorized |
 | **GCP Authorization ID** | FR1805181233 |
-| **Deployment Model** | Single-cloud per customer deployment (GCP, AWS, or Azure) |
+| **Deployment Model** | GCP deployment |
+
+<!-- MULTI-CLOUD: Original listed AWS (FR1603057795) and Azure (FR1601018498) as additional underlying CSPs with single-cloud per customer deployment model. -->
 | **FIPS 199 Categorization** | Moderate |
 | **Authorization Type** | FedRAMP Agency Authorization |
 | **Authorization Status** | Pre-Authorization (DRAFT) |
@@ -72,7 +74,8 @@ Latent Archon is a multi-tenant document intelligence platform purpose-built for
 
 - **Document Management**: Secure upload, storage, and lifecycle management of government documents with malware scanning (ClamAV, fail-closed in production), magic-byte validation, and file type allowlisting.
 - **AI-Powered Search**: Retrieval-Augmented Generation (RAG) using vector embeddings for semantic document search across workspace-scoped document collections.
-- **Interactive Conversation**: Conversational interface over uploaded documents using cloud-native large language models (Gemini / Claude / GPT-4o), with citations and source attribution.
+- **Interactive Conversation**: Conversational interface over uploaded documents using Vertex AI (Gemini), with citations and source attribution.
+<!-- MULTI-CLOUD: Original also listed Claude (AWS Bedrock) and GPT-4o (Azure OpenAI). -->
 - **Workspace Isolation**: Logical data isolation at the workspace level enforced through PostgreSQL Row-Level Security (RLS), vector store token restrictions, and application-layer access controls.
 - **Enterprise SSO/SCIM**: SAML 2.0 federation with customer Identity Providers and SCIM 2.0 automated user lifecycle management.
 
@@ -80,9 +83,9 @@ Latent Archon is a multi-tenant document intelligence platform purpose-built for
 
 The authorization boundary encompasses all components required to deliver the Latent Archon SaaS offering, including:
 
-- Application code (Go backend, React SPAs) — identical binary across all clouds
-- Cloud infrastructure (GCP / AWS / Azure — see [Cloud Environment Supplements](cloud/) for per-cloud service details)
-- CI/CD pipelines (GitHub Actions with Workload Identity Federation / OIDC)
+- Application code (Go backend, React SPAs)
+- Cloud infrastructure (GCP — see [Cloud Environment Supplements](cloud/) for service details)
+- CI/CD pipelines (GitHub Actions with Workload Identity Federation)
 - Administrative interfaces (admin SPA, ops service)
 - Supporting services (ClamAV malware scanning, document extraction/OCR)
 
@@ -98,9 +101,11 @@ Each customer deployment runs on a **single cloud provider** selected at onboard
 | CSP/Service | Authorization | Impact Level | Authorization ID |
 |-------------|---------------|--------------|------------------|
 | Google Cloud Platform | FedRAMP High P-ATO | High | FR1805181233 |
-| Amazon Web Services | FedRAMP High P-ATO | High | FR1603057795 |
-| Microsoft Azure | FedRAMP High P-ATO | High | FR1601018498 |
 | Cloudflare DNS | FedRAMP Moderate | Moderate | — |
+
+<!-- MULTI-CLOUD: Original also included:
+| Amazon Web Services | FedRAMP High P-ATO | High | FR1603057795 |
+| Microsoft Azure | FedRAMP High P-ATO | High | FR1601018498 | -->
 
 ### 2.4 Service Layers
 
@@ -108,20 +113,20 @@ Each customer deployment runs on a **single cloud provider** selected at onboard
 ┌─────────────────────────────────────────────────────────┐
 │                   Latent Archon SaaS                     │
 │  (Application Logic, RBAC, RLS, Audit, MFA, SSO/SCIM)  │
-│  Identical Go binary + React SPAs across all clouds      │
+│  Go binary + React SPAs                                  │
 ├─────────────────────────────────────────────────────────┤
-│         Cloud Provider (GCP / AWS / Azure)                │
-│  GCP:   Cloud Run, Cloud SQL, GCS, Vertex AI, Cloud     │
-│         Armor, Identity Platform, Cloud KMS, Cloud Tasks │
-│  AWS:   ECS Fargate, RDS, S3, Bedrock, WAFv2,           │
-│         IAM (SAML), KMS, SQS                             │
-│  Azure: Container Apps, PostgreSQL Flex, Blob, Azure     │
-│         OpenAI, Front Door WAF, Azure AD, Key Vault      │
+│              Google Cloud Platform (GCP)                  │
+│  Cloud Run, Cloud SQL, GCS, Vertex AI, Cloud Armor,      │
+│  Identity Platform, Cloud KMS, Cloud Tasks               │
 ├─────────────────────────────────────────────────────────┤
 │          CSP Physical Infrastructure (Inherited)          │
 │  Data Centers, Network, Power, HVAC, Physical Security   │
 └─────────────────────────────────────────────────────────┘
 ```
+
+<!-- MULTI-CLOUD: Original service layers diagram also included:
+  AWS:   ECS Fargate, RDS, S3, Bedrock, WAFv2, IAM (SAML), KMS, SQS
+  Azure: Container Apps, PostgreSQL Flex, Blob, Azure OpenAI, Front Door WAF, Azure AD, Key Vault -->
 
 ---
 
@@ -129,34 +134,38 @@ Each customer deployment runs on a **single cloud provider** selected at onboard
 
 ### 3.1 Authorization Boundary Components
 
-| Component | GCP Service | AWS Service | Azure Service | Description |
-|-----------|-------------|-------------|---------------|-------------|
-| App API | Cloud Run (`archon-app`) | ECS Fargate (`archon-app`) | Container Apps (`archon-app`) | User-facing API: conversation, search, auth, streaming |
-| Admin API | Cloud Run (`archon-admin`) | ECS Fargate (`archon-admin`) | Container Apps (`archon-admin`) | Admin API: org management, document ingestion, settings |
-| Ops Service | Cloud Run (`archon-ops`) | ECS Fargate (`archon-ops`) | Container Apps (`archon-ops`) | Background processing: embeddings, cron, document processing |
-| App SPA | Cloud Run (nginx) | ECS Fargate (nginx) | Container Apps (nginx) | React single-page application for end users |
-| Admin SPA | Cloud Run (nginx) | ECS Fargate (nginx) | Container Apps (nginx) | React single-page application for administrators |
-| Database | Cloud SQL PostgreSQL 15 | RDS PostgreSQL 15 | PostgreSQL Flexible Server 15 | Primary data store with RLS, encrypted at rest (CMEK) |
-| Object Storage | Cloud Storage | S3 | Blob Storage | Document file storage, versioning (365-day retention) |
-| Vector Search | Vertex AI Vector Search | OpenSearch Serverless | Azure AI Search | Semantic search index (private endpoint) |
-| Text Generation | Vertex AI (Gemini) | Bedrock (Claude) | Azure OpenAI (GPT-4o) | LLM for RAG conversation responses |
-| Document Processing | Document AI | Textract | Document Intelligence | OCR and document parsing |
-| Identity | Identity Platform | SAML IdP federation | Azure AD federation | Auth pools for multi-tenant isolation |
-| WAF | Cloud Armor | WAFv2 | Front Door WAF | DDoS protection, OWASP CRS, bot blocking, IP allowlisting |
-| Load Balancing | Global HTTPS LB | ALB | Front Door | TLS termination, routing, health checks |
-| Key Management | Cloud KMS | AWS KMS | Key Vault | CMEK for database and storage encryption |
-| Task Queue | Cloud Tasks | SQS | Service Bus | Async document processing and embedding queues |
-| Malware Scanner | Cloud Run (ClamAV) | ECS Fargate (ClamAV) | Container Apps (ClamAV) | Internal-only ClamAV REST service for upload scanning |
-| Logging | Cloud Logging + Monitoring | CloudWatch | Azure Monitor | Centralized logging, metrics, alerting |
-| Container Registry | Artifact Registry | ECR | Container Registry | Docker image storage for all services |
-| DNS/TLS | Certificate Manager | ACM | Front Door managed | TLS certificates with DNS authorization |
-| DNS | Cloudflare | Cloudflare | Cloudflare | Authoritative DNS with DNSSEC enabled |
+| Component | GCP Service | Description |
+|-----------|-------------|-------------|
+| App API | Cloud Run (`archon-app`) | User-facing API: conversation, search, auth, streaming |
+| Admin API | Cloud Run (`archon-admin`) | Admin API: org management, document ingestion, settings |
+| Ops Service | Cloud Run (`archon-ops`) | Background processing: embeddings, cron, document processing |
+| App SPA | Cloud Run (nginx) | React single-page application for end users |
+| Admin SPA | Cloud Run (nginx) | React single-page application for administrators |
+| Database | Cloud SQL PostgreSQL 15 | Primary data store with RLS, encrypted at rest (CMEK) |
+| Object Storage | Cloud Storage | Document file storage, versioning (365-day retention) |
+| Vector Search | Vertex AI Vector Search | Semantic search index (private endpoint) |
+| Text Generation | Vertex AI (Gemini) | LLM for RAG conversation responses |
+| Document Processing | Document AI | OCR and document parsing |
+| Identity | Identity Platform | Auth pools for multi-tenant isolation |
+| WAF | Cloud Armor | DDoS protection, OWASP CRS, bot blocking, IP allowlisting |
+| Load Balancing | Global HTTPS LB | TLS termination, routing, health checks |
+| Key Management | Cloud KMS | CMEK for database and storage encryption |
+| Task Queue | Cloud Tasks | Async document processing and embedding queues |
+| Malware Scanner | Cloud Run (ClamAV) | Internal-only ClamAV REST service for upload scanning |
+| Logging | Cloud Logging + Monitoring | Centralized logging, metrics, alerting |
+| Container Registry | Artifact Registry | Docker image storage for all services |
+| DNS/TLS | Certificate Manager | TLS certificates with DNS authorization |
+| DNS | Cloudflare | Authoritative DNS with DNSSEC enabled |
 
-Each customer deployment uses services from a **single cloud provider**. For detailed per-cloud service configurations and project/account/subscription structure, see the [Cloud Environment Supplements](cloud/).
+<!-- MULTI-CLOUD: Original table included AWS Service (ECS Fargate, RDS, S3, OpenSearch Serverless, Bedrock Claude, Textract, SAML IdP, WAFv2, ALB, AWS KMS, SQS, CloudWatch, ECR, ACM) and Azure Service (Container Apps, PostgreSQL Flexible Server, Blob Storage, Azure AI Search, Azure OpenAI GPT-4o, Document Intelligence, Azure AD, Front Door WAF, Front Door, Key Vault, Service Bus, Azure Monitor, Container Registry, Front Door managed) columns. -->
+
+For detailed GCP service configurations and project structure, see the [Cloud Environment Supplements](cloud/).
 
 ### 3.2 Three-Environment Architecture
 
-Latent Archon uses a **three-environment architecture** (GCP: projects, AWS: accounts, Azure: subscriptions) for blast-radius isolation and data-plane compartmentalization:
+Latent Archon uses a **three-environment architecture** (GCP projects) for blast-radius isolation and data-plane compartmentalization:
+
+<!-- MULTI-CLOUD: Original also referenced AWS accounts and Azure subscriptions. -->
 
 - **App Environment** (`archon-fed-app-*`): Contains the user-facing app API and SPA. Has its own identity pool, WAF policy, and load balancer. The app service identity has **read-only** database access (`app_ro` PostgreSQL role) via cross-environment database IAM grants to the ops environment.
 
@@ -193,15 +202,17 @@ All environments are managed via Terraform/Terragrunt. No manual cloud console c
 
 ### 4.1 Egress Firewall Policy
 
-All outbound traffic from VPC/VNet is **denied by default**. Egress controls explicitly allow only:
+All outbound traffic from VPC is **denied by default**. Egress controls explicitly allow only:
 
-- Cloud provider APIs (GCP: `*.googleapis.com`; AWS: VPC Endpoints; Azure: Private Endpoints)
-- Container registry (GCP: `*.gcr.io`, `*.pkg.dev`; AWS: ECR endpoints; Azure: ACR endpoints)
+- Cloud provider APIs (`*.googleapis.com`)
+- Container registry (`*.gcr.io`, `*.pkg.dev`)
+
+<!-- MULTI-CLOUD: Original also included AWS VPC Endpoints, ECR endpoints; Azure Private Endpoints, ACR endpoints. -->
 - `graph.microsoft.com` — Microsoft Graph API (SharePoint/OneDrive document sync)
 - `login.microsoftonline.com` — Microsoft Entra ID (OAuth2 token exchange)
 - Cloudflare DNS endpoints
 
-All other egress is blocked. Microsoft Graph API egress is only active when the integration is configured (`MSGRAPH_CLIENT_ID` present). This is enforced via Terraform-managed firewall/security group/NSG rules.
+All other egress is blocked. Microsoft Graph API egress is only active when the integration is configured (`MSGRAPH_CLIENT_ID` present). This is enforced via Terraform-managed firewall rules.
 
 ---
 
@@ -264,10 +275,9 @@ All other egress is blocked. Microsoft Graph API egress is only active when the 
 
 | User Type | Description | Auth Method | Privileges | Count |
 |-----------|-------------|-------------|------------|-------|
-| **Customer End User** | Agency staff using app search/conversation | GCP: magic link + MFA; AWS/Azure: SSO/SAML (IdP MFA) | viewer, editor roles within assigned workspaces | Variable per customer |
-| **Customer Org Admin** | Agency administrator | GCP: SSO preferred + MFA; AWS/Azure: SSO/SAML only | master_admin or admin role; org management, user lifecycle, settings | 1-5 per customer org |
-| **Latent Archon Engineer** | Platform developer | GitHub SSO + cloud IAM (WIF/OIDC) | CI/CD deployment; no direct production data access | < 10 |
-| **Latent Archon Operations** | Platform operations | Cloud IAM (break-glass only) | Emergency access via IAM Conditions; time-limited | 1-2 |
+| **Customer End User** | Agency staff using app search/conversation | Magic link + MFA | viewer, editor roles within assigned workspaces | Variable per customer |
+| **Customer Org Admin** | Agency administrator | SSO preferred + MFA | master_admin or admin role; org management, user lifecycle, settings | 1-5 per customer org |
+| **Latent Archon Founder / ISSO** | CEO — directs engineering, operations, and security; automation workforce handles execution (see SOD-LA-001) | GitHub SSO + cloud IAM (WIF/OIDC) | CI/CD deployment via automation; break-glass DB access (emergency only) | 1 |
 | **Automated CI/CD** | GitHub Actions runners | Workload Identity Federation / OIDC (keyless) | Deploy containers, run migrations; no static keys | N/A |
 | **Ops Service (Machine)** | Background processing | Cloud IAM (service-to-service) | Document processing, embeddings, cron; OIDC-authenticated task dispatch | N/A |
 
@@ -275,9 +285,9 @@ All other egress is blocked. Microsoft Graph API egress is only active when the 
 
 | Requirement | Implementation |
 |-------------|----------------|
-| **Multi-Factor Authentication** | GCP: TOTP-based MFA enforced on all data endpoints via auth interceptor; step-up MFA for sensitive operations. AWS/Azure: MFA delegated to customer IdP (SAML-only deployments). |
+| **Multi-Factor Authentication** | TOTP-based MFA enforced on all data endpoints via auth interceptor; step-up MFA for sensitive operations. |
 | **Session Management** | Global idle timeout: 25 min (default). Global absolute timeout: 12 hr (default). Per-org configurable: idle 5-480 min, absolute 60-1440 min. Enforced server-side via JWT `auth_time` and `iat` claims. |
-| **Password Policy** | GCP: Managed by Identity Platform; magic link (passwordless) preferred. AWS/Azure: SSO/SAML only — password policy delegated to customer IdP. |
+| **Password Policy** | Managed by Identity Platform; magic link (passwordless) preferred. SSO/SAML available with password policy delegated to customer IdP. |
 | **Account Lockout** | Identity provider built-in brute-force protection. Application-level rate limiting at IP + per-user levels. |
 
 ### 7.3 Role-Based Access Control (RBAC)
@@ -301,7 +311,9 @@ Default `PUBLIC` privileges are revoked on all tables and sequences. Only the th
 | `archon_admin_rw` | archon-admin | IAM-based (keyless) | ALL on all tables and sequences (full CRUD) |
 | `archon_ops_rw` | archon-ops | IAM-based (keyless) | SELECT + INSERT + UPDATE on documents, document_versions, DLQ; SELECT + INSERT + UPDATE + DELETE on chunks; INSERT on audit_events and generations; SELECT on reference tables |
 
-**Migration user** (`archon_migrator` role via IAM): The Atlas migration job authenticates using IAM-based auth (Cloud SQL IAM / RDS IAM / Azure AD auth) via the admin service identity, then assumes the `archon_migrator` PostgreSQL role using `SET ROLE`. This role owns all tables in the public schema and has DDL privileges (CREATE/ALTER/DROP). No static credentials are used in the normal migration path. A `postgres` superuser password exists in secrets management as a break-glass mechanism, accessible only to human security administrators — it is not mounted on any container service or job by default.
+**Migration user** (`archon_migrator` role via IAM): The Atlas migration job authenticates using Cloud SQL IAM auth via the admin service identity, then assumes the `archon_migrator` PostgreSQL role using `SET ROLE`.
+
+<!-- MULTI-CLOUD: Original also referenced RDS IAM (AWS) and Azure AD auth (Azure). --> This role owns all tables in the public schema and has DDL privileges (CREATE/ALTER/DROP). No static credentials are used in the normal migration path. A `postgres` superuser password exists in secrets management as a break-glass mechanism, accessible only to human security administrators — it is not mounted on any container service or job by default.
 
 All database roles operate under PostgreSQL Row-Level Security (RLS). RLS policies scope queries to the authenticated user's organization and workspace. RLS is **fail-closed**: if `app.organization_id` or `app.workspace_id` session variables are not set, queries return zero rows (not all rows). Roles are granted to IAM service accounts dynamically by naming convention (`archon-app@*`, `archon-admin@*`, `archon-ops@*`), ensuring environment-agnostic enforcement across staging and production.
 
@@ -351,7 +363,7 @@ External (outside boundary):
   • Microsoft Entra ID — OAuth2 token exchange (outbound HTTPS)
   • Cloudflare DNS — DNSSEC-signed authoritative DNS
   • Customer browsers — HTTPS only
-  • CSP FedRAMP High infrastructure — inherited controls (GCP / AWS / Azure)
+  • CSP FedRAMP High infrastructure — inherited controls (GCP)
 ```
 
 ### 8.2 Data Flow Diagram — Document Upload
@@ -360,7 +372,7 @@ External (outside boundary):
 Customer Browser (HTTPS/TLS 1.2+)
     │
     ▼
-WAF (Cloud Armor / WAFv2 / Front Door WAF — OWASP CRS, rate limiting, bot blocking)
+WAF (Cloud Armor — OWASP CRS, rate limiting, bot blocking)
     │
     ▼
 Load Balancer (managed TLS cert, HSTS 2yr)
@@ -453,7 +465,7 @@ Vector Search Query (private endpoint):
     ├─► Top-K semantic similarity search
     │
     ▼
-Context Assembly + LLM Request (Gemini / Claude / GPT-4o):
+Context Assembly + LLM Request (Vertex AI Gemini):
     ├─► Retrieved document chunks as context
     ├─► System prompt with safety guardrails
     ├─► Streaming response to client
@@ -486,7 +498,7 @@ Load Balancer:
     ├─► HSTS (max-age=63072000, includeSubDomains, preload)
     │
     ▼
-Private Network (VPC/VNet — no public IPs on any service):
+Private Network (VPC — no public IPs on any service):
     ├─► Container services
     ├─► PostgreSQL (private IP only)
     ├─► AI services (private endpoint)
@@ -525,12 +537,14 @@ Logging (structured JSON → cloud-native logging → optional SIEM export)
 
 | Module | Standard | Usage | Key Size | Notes |
 |--------|----------|-------|----------|-------|
-| Go BoringCrypto | FIPS 140-2 Level 1 (Cert #4407) | All Go application cryptography | AES-256, SHA-256/384/512 | Enabled via `GOEXPERIMENT=boringcrypto` build flag; identical binary across all clouds |
-| Cloud KMS (GCP) / AWS KMS / Key Vault (Azure) | FIPS 140-2 Level 3 | CMEK for database and object storage | AES-256 | HSM-backed, automatic key rotation |
-| Cloud KMS / AWS KMS / Key Vault (`app_secrets`) | FIPS 140-2 Level 3 | Encryption of Microsoft Graph OAuth refresh tokens | AES-256-GCM | HSM-backed, 90-day rotation |
+| Go BoringCrypto | FIPS 140-2 Level 1 (Cert #4407) | All Go application cryptography | AES-256, SHA-256/384/512 | Enabled via `GOEXPERIMENT=boringcrypto` build flag |
+| Cloud KMS | FIPS 140-2 Level 3 | CMEK for database and object storage | AES-256 | HSM-backed, automatic key rotation |
+| Cloud KMS (`app_secrets`) | FIPS 140-2 Level 3 | Encryption of Microsoft Graph OAuth refresh tokens | AES-256-GCM | HSM-backed, 90-day rotation |
+
+<!-- MULTI-CLOUD: Original also listed AWS KMS and Azure Key Vault as equivalent cryptographic modules. -->
 | Load Balancer TLS | FIPS 140-2 Level 1 | TLS termination at load balancer | TLS 1.2+, ECDHE, AES-256-GCM | Cloud-managed certificates |
-| Database Encryption | FIPS 140-2 Level 1 | Data at rest encryption | AES-256 | CMEK enforced on all clouds |
-| Object Storage Encryption | FIPS 140-2 Level 1 | Object encryption at rest | AES-256-GCM | CMEK enforced on all clouds |
+| Database Encryption | FIPS 140-2 Level 1 | Data at rest encryption | AES-256 | CMEK enforced |
+| Object Storage Encryption | FIPS 140-2 Level 1 | Object encryption at rest | AES-256-GCM | CMEK enforced |
 
 ### 10.1 Prohibited Algorithms
 
@@ -629,10 +643,10 @@ The following algorithms are explicitly prohibited per NIST SP 800-131A:
 | ID | Finding | Severity | Control | Owner | Target Date | Status |
 |----|---------|----------|---------|-------|-------------|--------|
 | POA-1 | Complete 3PAO readiness assessment | High | CA-2 | CEO | Q3 2026 | Open |
-| POA-2 | Conduct first contingency plan tabletop exercise | Medium | CP-4 | Security Lead | Q2 2026 | Remediated — Automated monthly CP-4 test via `contingency-test` CLI + GitHub Actions cron (1st of month). Checks: Cloud SQL backup/PITR, GCS versioning, Cloud Run health, KMS keys, Artifact Registry. Reports uploaded to Drata. |
+| POA-2 | Conduct first contingency plan tabletop exercise | Medium | CP-4 | CEO / ISSO | Q2 2026 | Remediated — Automated monthly CP-4 test via `contingency-test` CLI + GitHub Actions cron (1st of month). Checks: Cloud SQL backup/PITR, GCS versioning, Cloud Run health, KMS keys, Artifact Registry. Reports uploaded to Drata. |
 | POA-3 | Implement automated session concurrency limiting | Low | AC-10 | Engineering | Q2 2026 | Remediated — DB-backed session tracking (`user_sessions` table), interceptor enforcement with `MAX_CONCURRENT_SESSIONS` (default 3), configurable per env. Migration 20260403190000. |
 | POA-4 | Identify and engage FedRAMP agency sponsor | High | PM-10 | CEO | Q3 2026 | Open |
-| POA-5 | Complete first annual incident response exercise | Medium | IR-3 | Security Lead | Q2 2026 | Remediated — Monthly IR-3 red team exercise via GitHub Actions cron (1st of month). 44 automated attacks across 3 suites (auth bypass, escalation, exfiltration). MITRE ATT&CK mapped. Reports uploaded to Drata. |
+| POA-5 | Complete first annual incident response exercise | Medium | IR-3 | CEO / ISSO | Q2 2026 | Remediated — Monthly IR-3 red team exercise via GitHub Actions cron (1st of month). 44 automated attacks across 3 suites (auth bypass, escalation, exfiltration). MITRE ATT&CK mapped. Reports uploaded to Drata. |
 | POA-6 | Establish formal ISSO appointment letter | Low | PM-2 | CEO | Q2 2026 | Remediated — Formal ISSO appointment letter created (`isso-appointment-letter.md`, ISSO-APPT-001). CEO self-appointed as ISSO per startup exception. |
 | POA-7 | Finalize PIA with 3PAO input | Medium | PT-5 | CEO | Q3 2026 | Open |
 | POA-8 | Cross-project Cloud Armor IAM for IP allowlisting | Medium | SC-7 | Engineering | Q2 2026 | Open |
@@ -642,6 +656,9 @@ The following algorithms are explicitly prohibited per NIST SP 800-131A:
 | POA-12 | Promote SCN classifier from advisory to required CI check | Low | CM-3 | Engineering | Q2 2026 | Remediated — All 7 repo SCN workflows now include "Enforce SCN acknowledgment" step. PRs with SIGNIFICANT classification are blocked unless `scn-acknowledged` label is present. |
 | POA-13 | Enable App Check enforcement in Firebase (currently unenforced) | Medium | IA-9 | Engineering | Q2 2026 | Open |
 | POA-14 | Implement session concurrency limiting (AC-10 max sessions per user) | Low | AC-10 | Engineering | Q2 2026 | Remediated — See POA-3. Session concurrency enforced in auth interceptor via `user_sessions` table + `CountActiveUserSessions` query. |
+| POA-15 | Hire dedicated Security Lead for independent incident investigation and two-person integrity | Medium | AC-5, SA-11, IR-4 | CEO | Post-first-customer | Open — Currently addressed by automation-first architecture (see SOD-LA-001 §5). Hire planned as organization scales. |
+| POA-16 | Hire dedicated Engineering Lead for independent PR review and expanded development capacity | Medium | AC-5, CM-3 | CEO | Post-revenue | Open — Currently addressed by 6 independent automated security scanners that review every change (see SOD-LA-001 §5). |
+| POA-17 | Implement phishing simulation program (AT-2(1)) | Low | AT-2(1) | CEO | Post-first-hire | Open — Adversarial personnel testing will be added as team grows. Currently, continuous automated adversarial testing (44-attack red team suite) validates security posture monthly. |
 
 ---
 

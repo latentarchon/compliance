@@ -3,7 +3,7 @@
 > **Document ID**: CJIS-TR-001  
 > **Version**: 1.0  
 > **Date**: March 2026  
-> **Owner**: Chief Executive / Security Lead  
+> **Owner**: CEO / ISSO  
 > **Delivery**: Self-paced module + acknowledgment  
 > **Duration**: ~45 minutes  
 > **Frequency**: Within 6 months of CJI access (CJIS minimum); annually thereafter (Latent Archon standard)  

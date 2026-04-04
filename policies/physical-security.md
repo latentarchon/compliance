@@ -3,15 +3,19 @@
 > **Policy ID**: POL-PE-001  
 > **Version**: 1.0  
 > **Effective Date**: March 2026  
-> **Owner**: Chief Executive / Security Lead  
+> **Owner**: CEO / ISSO  
 > **Review Cycle**: Annual  
 > **NIST 800-53 Controls**: PE-1, PE-2, PE-3, PE-6, MA-1, MA-5
 
 ---
 
+> **Organizational context**: Latent Archon is a founder-led, automation-first security organization. Physical security controls are fully inherited from the FedRAMP-authorized cloud service provider (GCP). See SOD-LA-001 for the automation-first security architecture.
+<!-- MULTI-CLOUD: Original also listed AWS and Azure. -->
+
 ## 1. Purpose
 
-This policy defines physical and environmental security requirements for Latent Archon. As a cloud-native organization with all infrastructure hosted on FedRAMP High authorized cloud providers (GCP, AWS, or Azure), physical security is primarily an inherited control from the CSP's data centers. This policy documents the inheritance model, supplementary controls for personnel devices, and administrative requirements.
+This policy defines physical and environmental security requirements for Latent Archon. As a cloud-native organization with all infrastructure hosted on a FedRAMP High authorized cloud provider (GCP), physical security is primarily an inherited control from the CSP's data centers.
+<!-- MULTI-CLOUD: Original stated GCP, AWS, or Azure. --> This policy documents the inheritance model, supplementary controls for personnel devices, and administrative requirements.
 
 ---
 
@@ -30,7 +34,8 @@ This policy applies to:
 
 ### 3.1 CSP FedRAMP High Authorization
 
-All Latent Archon infrastructure is hosted in US regions on FedRAMP High authorized cloud providers (GCP, AWS, or Azure). Each customer deployment uses a single cloud provider. The CSP's FedRAMP High authorization means the following physical security controls are fully inherited:
+All Latent Archon infrastructure is hosted in US regions on GCP (FedRAMP High authorized).
+<!-- MULTI-CLOUD: Original stated GCP, AWS, or Azure with single cloud per customer. --> The CSP's FedRAMP High authorization means the following physical security controls are fully inherited:
 
 | NIST Control | Control Name | CSP Implementation |
 |-------------|-------------|-------------------|
@@ -96,7 +101,7 @@ Since Latent Archon personnel work remotely, the following requirements apply to
 
 If a device with access to Latent Archon systems is lost or stolen:
 
-1. **Report immediately** to Security Lead
+1. **Report immediately** to CEO / ISSO
 2. **Revoke sessions**: All active sessions terminated via identity provider
 3. **Revoke tokens**: GitHub PATs, any API keys revoked
 4. **Assess exposure**: Determine what data/systems were accessible
@@ -113,7 +118,7 @@ If a device with access to Latent Archon systems is lost or stolen:
 |-------------|---------|
 | Encryption | All removable media containing company data must be encrypted |
 | Prohibited transfers | Customer data must **never** be copied to USB drives or removable media |
-| Cloud-only | All company data stored in approved cloud services (GCP / AWS / Azure, GitHub) |
+| Cloud-only | All company data stored in approved cloud services (GCP, GitHub) |
 
 ### 5.2 Media Disposal
 
@@ -142,7 +147,7 @@ All infrastructure maintenance is performed by the cloud provider and inherited 
 - Personnel are responsible for maintaining their own devices per Section 4.2
 - Company may provide IT support for security configuration
 - Third-party repair of devices requires removal of company data/accounts first
-- Security Lead may audit device compliance at any time
+- CEO / ISSO may audit device compliance at any time
 
 ---
 
@@ -150,11 +155,11 @@ All infrastructure maintenance is performed by the cloud provider and inherited 
 
 | Activity | Frequency | Owner |
 |----------|-----------|-------|
-| CSP FedRAMP status check | Quarterly | Security Lead |
-| CSP SOC 2 report review | Annual (on availability) | Security Lead |
-| Device compliance audit | Semi-annual | Security Lead |
+| CSP FedRAMP status check | Quarterly | CEO / ISSO |
+| CSP SOC 2 report review | Annual (on availability) | CEO / ISSO |
+| Device compliance audit | Semi-annual | CEO / ISSO |
 | Policy acknowledgment | Annual | All personnel (via Drata) |
-| Incident review (device loss) | On occurrence | Security Lead |
+| Incident review (device loss) | On occurrence | CEO / ISSO |
 
 ---
 

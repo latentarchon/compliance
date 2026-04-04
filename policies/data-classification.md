@@ -3,11 +3,13 @@
 > **Policy ID**: POL-DC-001  
 > **Version**: 1.0  
 > **Effective Date**: March 2026  
-> **Owner**: Chief Executive / Security Lead  
+> **Owner**: CEO / ISSO  
 > **Review Cycle**: Annual  
 > **NIST 800-53 Controls**: RA-2, MP-1, MP-6, SI-12, AU-11
 
 ---
+
+> **Organizational context**: Latent Archon is a founder-led, automation-first security organization. Data classification enforcement is automated via DLP scanning, encryption-at-rest (CMEK), and tenant isolation (RLS). The CEO/ISSO directs classification policy. See SOD-LA-001.
 
 ## 1. Purpose
 
@@ -176,11 +178,11 @@ For CMEK-encrypted data, key destruction renders all encrypted data unrecoverabl
 
 | Activity | Frequency | Owner |
 |----------|-----------|-------|
-| Data inventory review | Annual | Security Lead |
-| Retention compliance audit | Semi-annual | Security Lead |
+| Data inventory review | Annual | CEO / ISSO |
+| Retention compliance audit | Semi-annual | CEO / ISSO |
 | Storage lifecycle policy review | Quarterly | Engineering |
 | Database backup verification | Monthly | Engineering |
-| Data classification review | Annual | Security Lead |
+| Data classification review | Annual | CEO / ISSO |
 | Disposal verification | On occurrence | Engineering |
 
 ---
