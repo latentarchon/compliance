@@ -127,12 +127,12 @@ Implementation follows FedRAMP's recommended order:
 - ✅ Container images scanned on every build (Trivy in CI)
 - ✅ Dependencies monitored continuously (Dependabot on all repos)
 - ✅ SBOM generated per build (CycloneDX format)
-- ✅ Red team exercises run monthly (44 attacks, 3 suites)
+- ✅ Red team exercises run monthly (99 attacks, 6 suites)
 - ✅ Scan results uploaded to Drata evidence library
 
 **Information Resources**:
 - `backend/.github/workflows/deploy.yaml` — Trivy scan + SBOM generation
-- `redteam/` — 44 automated attacks (auth bypass, privilege escalation, data exfiltration)
+- `redteam/` — 99 automated attacks across 6 suites (auth bypass, escalation, exfiltration, leftfield, webapp, manual tools)
 - `.github/dependabot.yml` — all 9 repos
 - `compliance/drata/` — evidence sync CLI
 - `policies/vulnerability-scanning.md` — POL-VS-001
@@ -140,7 +140,7 @@ Implementation follows FedRAMP's recommended order:
 **Machine-Based Validation** (continuous):
 - Trivy scan: every Docker build (blocks deploy on CRITICAL/HIGH)
 - Dependabot: continuous dependency monitoring (auto-PRs)
-- Red team: monthly cron (1st of month), all 3 suites in dry-run
+- Red team: monthly cron (1st of month), all 6 suites in dry-run
 - SBOM: generated and uploaded to Drata on every backend deploy
 
 **Non-Machine-Based Validation** (quarterly):
@@ -494,13 +494,13 @@ Implementation follows FedRAMP's recommended order:
 
 **Pass/Fail Criteria**:
 - ✅ Incident response plan (POL-IR-001)
-- ✅ Monthly red team exercises (44 attacks, 3 suites)
+- ✅ Monthly red team exercises (99 attacks, 6 suites)
 - ✅ MITRE ATT&CK technique mapping on all attacks
 - ✅ Reports auto-uploaded to Drata evidence library
 
 **Information Resources**:
 - `policies/incident-response.md`
-- `redteam/` — 44 attacks across auth bypass, escalation, exfiltration
+- `redteam/` — 99 attacks across auth bypass, escalation, exfiltration, leftfield, webapp, manual tools
 - `red-infra/` — monitoring dashboard (attack requests, IAM denials, WAF blocks)
 
 **Machine-Based Validation** (monthly):

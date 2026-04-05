@@ -488,7 +488,7 @@ At the infrastructure level, GCP Data Access audit logging is enabled for all cr
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Latent Archon maintains an internal red team program (`redteam/` repository) with 44 automated attacks across 3 suites, mapped to MITRE ATT&CK tactics. The red team CLI is executed monthly against staging and can target production. Attacks cover: authentication bypass, privilege escalation, data exfiltration, and injection attacks. Results are uploaded to Drata as evidence.
+**Implementation**: Latent Archon maintains an internal red team program (`redteam/` repository) with 99 automated attacks across 6 suites, mapped to MITRE ATT&CK tactics. The red team CLI is executed monthly against staging and can target production. Attacks cover: authentication bypass, privilege escalation, data exfiltration, left-field/cloud-native attacks, OWASP Top 10 web application testing (SQLi, XSS, XXE, SSRF, file handling, business logic), and external tool-based assessment (nuclei, nikto, sqlmap, ffuf, nmap). Results are uploaded to Drata as evidence.
 
 ### CA-9: Internal System Connections
 
@@ -1298,7 +1298,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 
 - **Continuous**: Dependabot dependency vulnerability alerts, govulncheck Go vulnerability database
 - **Per-build**: Trivy container image scanning, GoSec SAST, Semgrep pattern matching, Gitleaks secret detection, SBOM generation
-- **Monthly**: Red team attack suite execution (44 attacks, 3 suites)
+- **Monthly**: Red team attack suite execution (99 attacks, 6 suites)
 - **Remediation SLAs**: Critical/High — 30 days, Medium — 90 days, Low — 180 days (per FedRAMP ConMon requirements)
 
 Cloud Run serverless deployment means OS-level patching is inherited from GCP.
@@ -1417,7 +1417,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Developer security testing includes: (1) Unit tests for authentication, authorization, and data isolation logic; (2) GoSec static analysis for Go security vulnerabilities; (3) Semgrep pattern matching for common vulnerability patterns; (4) govulncheck for known Go dependency vulnerabilities; (5) Trivy container image scanning; (6) Gitleaks secret detection in commit history; (7) Red team attack suite (44 attacks) for integration-level security validation.
+**Implementation**: Developer security testing includes: (1) Unit tests for authentication, authorization, and data isolation logic; (2) GoSec static analysis for Go security vulnerabilities; (3) Semgrep pattern matching for common vulnerability patterns; (4) govulncheck for known Go dependency vulnerabilities; (5) Trivy container image scanning; (6) Gitleaks secret detection in commit history; (7) Red team attack suite (99 attacks, 6 suites) for integration-level security validation including OWASP Top 10 and external tool-based assessment.
 
 ### SA-11(1): Static Code Analysis
 
@@ -1714,7 +1714,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Security function verification through: (1) Unit tests validating RBAC enforcement for each role level; (2) Integration tests validating RLS data isolation; (3) Red team suite (44 attacks) validating authentication bypass resistance, privilege escalation prevention, and data exfiltration prevention; (4) CI/CD pipeline verifying all security gates pass on every build.
+**Implementation**: Security function verification through: (1) Unit tests validating RBAC enforcement for each role level; (2) Integration tests validating RLS data isolation; (3) Red team suite (99 attacks, 6 suites) validating authentication bypass resistance, privilege escalation prevention, data exfiltration prevention, OWASP Top 10 web application defenses, and external tool-based vulnerability assessment; (4) CI/CD pipeline verifying all security gates pass on every build.
 
 ### SI-7: Software, Firmware, and Information Integrity
 

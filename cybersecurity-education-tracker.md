@@ -68,7 +68,7 @@ The following automated tests run on a recurring schedule and serve as persisten
 
 | Test | Frequency | Evidence | NIST Control |
 |------|-----------|----------|--------------|
-| **Red team attack suite** (44 attacks, 3 suites) | Monthly (1st) | MITRE ATT&CK mapped report → Drata | IR-3, CA-8 |
+| **Red team attack suite** (99 attacks, 6 suites) | Monthly (1st) | MITRE ATT&CK mapped report → Drata | IR-3, CA-8 |
 | **Contingency plan test** (CP-4) | Monthly (1st) | Backup/PITR/health report → Drata | CP-4 |
 | **IaC drift detection** | Weekly | Terraform plan diff | CM-3 |
 | **Vulnerability scanning** (Trivy) | Every build | Scan results in CI logs | RA-5 |

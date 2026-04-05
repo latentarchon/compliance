@@ -62,7 +62,7 @@ This document maps Latent Archon's security controls to the 13 policy areas of t
 | Incident response plan | Comprehensive IRP covering detection through recovery | `policies/incident-response.md` |
 | Incident response roles defined | IC, Technical Lead, Communications Lead, Forensics | `policies/incident-response.md` §4 |
 | Reporting procedures to FBI CJIS Division | Process documented with contact information and timelines | See §5.3 addendum below |
-| Annual testing of IR plan | Monthly red team (44 attacks) + semi-annual tabletop | `policies/incident-response.md` §9.2 |
+| Annual testing of IR plan | Monthly red team (99 attacks, 6 suites) + semi-annual tabletop | `policies/incident-response.md` §9.2 |
 | Evidence preservation | Forensic preservation holds on SEV-1/SEV-2 incidents | `policies/incident-response.md` §7.3 |
 
 ### CJIS-Specific Incident Reporting

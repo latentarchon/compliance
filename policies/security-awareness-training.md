@@ -9,7 +9,7 @@
 
 ---
 
-> **Organizational context**: Latent Archon is a founder-led, automation-first security organization. Security competence is continuously validated through automated adversarial testing (44-attack red team suite, monthly). Personnel-targeted training programs will expand as the team scales (POA-17). See SOD-LA-001.
+> **Organizational context**: Latent Archon is a founder-led, automation-first security organization. Security competence is continuously validated through automated adversarial testing (99-attack red team suite, 6 suites, monthly). Personnel-targeted training programs will expand as the team scales (POA-17). See SOD-LA-001.
 
 ## 1. Purpose
 

@@ -1060,19 +1060,22 @@ By deploying on FedRAMP-authorized infrastructure, Latent Archon inherits a subs
 
 ## Appendix C: Red Team Validation
 
-Latent Archon maintains an internal red team program with automated attack suites:
+Latent Archon maintains an internal red team program with 99 automated attacks across 6 suites:
 
 | Suite | Attacks | Coverage |
 |-------|---------|----------|
-| Auth Bypass | 17 attacks | No auth, forged JWT, wrong audience, MFA bypass, TOTP replay, alg:none, session fixation |
+| Auth Bypass | 17 attacks | No auth, forged JWT, wrong audience, MFA bypass, TOTP replay, alg:none, session fixation, CORS bypass, HTTP method override |
 | Privilege Escalation | 12 attacks | Database, object storage, task queue, KMS, admin API, IAM escalation, identity impersonation |
 | Data Exfiltration | 15 attacks | SQL injection, IDOR, prompt injection, vector store access, path traversal, UUID enumeration |
+| Left-Field & Cloud-Native | 15 attacks | SSRF, timing side-channel, embedding inversion, prompt cache poisoning, DNS rebinding, Cloud Tasks queue poisoning, TOCTOU race, JWT key confusion (JKU), streaming resource exhaustion, GCS compose, KMS key version confusion, Firebase email enumeration, org invite typosquatting, WAF bypass |
+| OWASP Web Application | 28 attacks | SQLi (workspace/search/document/chat), XSS (stored + reflected), XXE (document upload, billion laughs), SSRF (document import, Graph sync, profile image → GCE metadata), command injection, IDOR, role escalation, debug endpoint probes, default credentials, malformed protobuf, file upload bypass (size/type/path traversal), business logic abuse (negative quantity, mass assignment) |
+| External Tool Assessment | 12 attacks | nmap service scan, nikto web scan, nuclei vulnerability + CVE scan, ffuf directory/API/parameter fuzzing, sqlmap SQL injection probes, SSL cipher audit, security header audit |
 
 Red team attack suites are organized under `attacks/gcp/` with a shared cloud-agnostic framework.
 
 <!-- MULTI-CLOUD: Original also referenced attacks/aws/ and attacks/azure/ directories. -->
 
-All attacks include MITRE ATT&CK technique mapping and NIST 800-53 control correlation. Results are published as structured Markdown reports with executive summaries and remediation recommendations.
+All attacks include MITRE ATT&CK technique mapping and NIST 800-53 control correlation. The external tool assessment suite shells out to industry-standard penetration testing tools (nuclei, nikto, sqlmap, ffuf, nmap) and captures their output as structured log entries. Results are published as structured Markdown reports with executive summaries and remediation recommendations.
 
 ---
 

@@ -143,7 +143,7 @@ Latent Archon’s security architecture is built on the principle that **machine
 | Separate database administrator | Zero direct database access in normal operations; all schema changes via Atlas migrations with checksum verification; IAM-only auth | pgAudit logs, Cloud SQL audit logs |
 | Separate network administrator | All network/firewall config via Terraform; console changes blocked by org policy; weekly drift detection | Terraform state, drift detection logs |
 | Change Advisory Board (multi-person) | Automated security checks act as independent review; significant changes flagged by SCN classifier; 3PAO provides external review at assessment | SCN classifier PR comments, CI logs |
-| Independent security assessments | Monthly automated red team (44 attacks), weekly KSI evidence collection, weekly drift detection | Red team reports, KSI artifacts |
+| Independent security assessments | Monthly automated red team (99 attacks, 6 suites), weekly KSI evidence collection, weekly drift detection | Red team reports, KSI artifacts |
 | Segregated audit log review | Audit logs written to WORM storage; operator cannot modify or delete; automated KSI evidence collector independently verifies log sink configuration | Cloud Audit Logs, WORM bucket |
 
 ### 5.2 Growth-Dependent Controls
@@ -155,7 +155,7 @@ The following controls will be enhanced as the team scales:
 | Code review | SA-11, CM-3 | 6 independent automated security scanners review every change | Add dedicated human reviewer |
 | Incident investigation | IR-4, IR-5 | Immutable audit logs provide complete forensic record; 3PAO provides annual independent review | Add dedicated Security Lead |
 | Two-person integrity | CM-5(1) | Cloud platform enforces 24-hr KMS destroy hold; break-glass access triggers CRITICAL alerts | Add second authorized signatory |
-| Adversarial personnel testing | AT-2(1) | Continuous automated adversarial testing (44-attack red team suite, monthly) | Add phishing simulation program |
+| Adversarial personnel testing | AT-2(1) | Continuous automated adversarial testing (99-attack red team suite, 6 suites, monthly) | Add phishing simulation program |
 | Multi-participant exercises | IR-3, CP-4 | Automated contingency testing (monthly CLI) + documented scenario walkthroughs | Add facilitated multi-person tabletop |
 
 ---

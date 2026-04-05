@@ -309,7 +309,7 @@ In addition to US-CERT, the **FedRAMP PMO** must be notified:
 
 | Exercise | Description | Frequency |
 |----------|-------------|-----------|
-| Red team attack suite | Automated execution of 44 attack scenarios | Monthly |
+| Red team attack suite | Automated execution of 99 attack scenarios (6 suites) | Monthly |
 | Tabletop exercise | Walk-through of incident scenario with full team | Semi-annual |
 | Full simulation | End-to-end incident response drill (detection → recovery) | Annual |
 

@@ -38,7 +38,7 @@ This plan covers monitoring of all security controls within the authorization bo
 | Access review (IAM/RBAC) | Monthly | CEO review assisted by automated drift checker |
 | Security control assessment | Annual | 3PAO assessment (POA-1) |
 | Penetration testing | Annual | 3PAO or qualified assessor (POA-1) |
-| Red team exercises | Monthly | Automated red team suite (44 attacks) — no human initiation required |
+| Red team exercises | Monthly | Automated red team suite (99 attacks, 6 suites) — no human initiation required |
 | POA&M review | Monthly | CEO review and Drata sync |
 | SSP update | Annual + on significant change | CEO review |
 | Contingency plan test | Monthly | Automated contingency-test CLI (backup/PITR/health checks) |
@@ -77,7 +77,7 @@ This plan covers monitoring of all security controls within the authorization bo
 | **govulncheck** | Go dependencies | Every build | Go vulnerability database |
 | **Gitleaks** | Git history | Every commit | Credential/secret patterns |
 | **Dependabot** | All dependencies | Daily | GitHub Advisory Database |
-| **Red Team Suite** | Deployed system | Monthly | 44 attacks across 3 suites (authbypass, escalation, exfiltration) |
+| **Red Team Suite** | Deployed system | Monthly | 99 attacks across 6 suites (auth bypass, escalation, exfiltration, leftfield, webapp, manual tools) |
 
 ### 3.2 Remediation SLAs
 
