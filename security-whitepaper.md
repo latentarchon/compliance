@@ -589,6 +589,8 @@ Automated alert policies are deployed via Terraform across all cloud environment
 | KMS Key Lifecycle | Key disable, destroy, or version state changes | CRITICAL | Unauthorized key operations detection |
 | Secret Access | Secret read operations on managed secrets | CRITICAL | Unexpected secret access detection |
 | Break-Glass Secret Access | Access to database superuser password secret | CRITICAL | Emergency credential usage tracking |
+| BinAuthz Admission Denial | Binary Authorization rejects a Cloud Run deploy (missing/invalid attestation) | CRITICAL | Unauthorized or untrusted image deployment detection |
+| BinAuthz Break-Glass Override | Deploy bypasses Binary Authorization via break-glass annotation | CRITICAL | Emergency attestation bypass tracking |
 
 All alerts route to configured notification channels with rate limiting to prevent alert fatigue. Staging and production environments share identical alert configurations to ensure security parity.
 
@@ -684,6 +686,7 @@ Critical findings on the main branch trigger a notification job. SARIF results a
 - **FIPS 140-2 Go binary**: `CGO_ENABLED=1` with BoringCrypto (`GOEXPERIMENT=boringcrypto`) for FIPS 140-2 validated cryptography (BoringSSL cert #4407)
 - **nginx-unprivileged**: SPA containers run as non-root with read-only filesystem
 - **Pinned dependencies**: `go.sum`, `pnpm-lock.yaml`, `.terraform.lock.hcl` for reproducible builds
+- **Pinned CI/CD builder images**: All Cloud Build builder images (cloud-sdk, kaniko, trivy, syft, gitleaks, atlas) pinned by version substitution variable — no `:latest` tags
 - **Immutable tags**: Container registry repositories have immutable tags enabled (`immutable_tags = true` on Artifact Registry), preventing tag overwrites (tag-squatting attacks)
 
 ### Image Signing & Verification (Cosign)
@@ -702,6 +705,19 @@ This ensures:
 - **Tamper detection**: Any image modification after signing invalidates the signature
 - **No tag mutability risk**: Digest pinning + immutable tags prevent tag-squatting attacks
 - **Supply chain attestation**: Sigstore transparency log provides a public, append-only record of all signing events
+
+### Binary Authorization Enforcement
+
+Cloud Run enforces a Binary Authorization policy that **rejects images without a valid attestation**:
+
+| Control | Detail |
+|---------|--------|
+| Attestor | Cloud Build attestor with KMS-backed signing key |
+| Policy | `ALWAYS_DENY` default; only images signed by the Cloud Build attestor are admitted |
+| Break-Glass | Annotation-based override for emergency deploys — triggers CRITICAL monitoring alert |
+| Monitoring | Admission denials and break-glass overrides both fire alert policies routed to notification channels |
+
+This provides a second layer of supply chain enforcement beyond Cosign — even if a malicious image is pushed to Artifact Registry, it cannot be deployed without a valid attestation from the authorized Cloud Build pipeline.
 
 ### CI/CD Security
 

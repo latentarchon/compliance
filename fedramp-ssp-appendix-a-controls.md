@@ -199,9 +199,9 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 ### AC-10: Concurrent Session Control
 
 - **Responsibility**: CSP
-- **Status**: Planned
+- **Status**: Implemented
 
-**Implementation**: Currently, concurrent sessions are permitted. The per-org configurable session timeouts (idle + absolute) limit session duration. JWT-based auth means each session is independently validated on every request. _Future enhancement: configurable concurrent session limits per organization._
+**Implementation**: Concurrent session limiting is enforced server-side per NIST AC-10. The auth interceptor (`connect_interceptors.go`) derives a session ID from `SHA-256(user_id + auth_time)` and upserts it into the `user_sessions` table on every authenticated request. After upserting, it counts active sessions (those with `last_seen_at` within the idle timeout window) via `CountActiveUserSessions`. If the count exceeds `MAX_CONCURRENT_SESSIONS` (default: 3, configurable via environment variable), the request is rejected with `ResourceExhausted: "too many active sessions"`. Stale sessions are cleaned by `CleanExpiredSessions` (run via Cloud Scheduler). Session records include: user_id, session_id, auth_time, client_ip, user_agent, and last_seen_at — enabling audit trail of all active sessions per user. In development mode, session concurrency checks are skipped for testing ergonomics.
 
 ### AC-11: Device Lock
 
@@ -446,7 +446,7 @@ At the infrastructure level, GCP Data Access audit logging is enabled for all cr
 - **Responsibility**: CSP
 - **Status**: Partially Implemented
 
-**Implementation**: Internal security assessments are conducted through: (1) Red team program with 44 automated attacks mapped to MITRE ATT&CK across three suites (auth bypass, privilege escalation, data exfiltration); (2) Code review via PR-based workflow; (3) SAST pipeline (GoSec, Semgrep, Trivy, govulncheck). _Independent 3PAO assessment is pending engagement (see POA-4)._
+**Implementation**: Internal security assessments are conducted through: (1) Red team program with 99 automated attacks mapped to MITRE ATT&CK across six suites (auth bypass, privilege escalation, data exfiltration, left-field/cloud-native, OWASP Top 10 web application testing, external tool-based assessment); (2) Code review via PR-based workflow; (3) SAST pipeline (GoSec, Semgrep, Trivy, govulncheck). _Independent 3PAO assessment is pending engagement (see POA-4)._
 
 ### CA-2(1): Independent Assessors
 
@@ -666,7 +666,7 @@ At the infrastructure level, GCP Data Access audit logging is enabled for all cr
 
 **Implementation**: Backup strategy by component:
 
-- **Cloud SQL**: Automated daily backups (14 retained, count-based) + point-in-time recovery (PITR) with 7-day transaction log retention. Backups start at 03:00 UTC, stored in the same region. Backups encrypted with CMEK (Cloud KMS). Maintenance window: Sunday 04:00 UTC, stable update track.
+- **Cloud SQL**: Automated daily backups (14 retained, count-based) + point-in-time recovery (PITR) with 7-day transaction log retention. Backups start at 03:00 UTC. Backup location is configurable via `backup_location` variable — defaults to the instance region but can be set to a different US region for cross-region disaster recovery (e.g., `us-west1` when the primary is `us-east1`). Backups encrypted with CMEK (Cloud KMS). Maintenance window: Sunday 04:00 UTC, stable update track.
 - **Cloud Storage**: Object versioning enabled (all versions preserved indefinitely via lifecycle rules — current objects transition to nearline after 90 days, archived versions transition to coldline after 90 days, no deletion). Soft delete with 90-day recovery window. CMEK encryption via Cloud KMS.
 - **Terraform State**: Stored in GCS with versioning. State backup is inherent.
 - **Vertex AI Indexes**: Rebuilt from source documents via ops service. RPO = time to re-embed (hours for large collections).
@@ -834,7 +834,7 @@ Password complexity and rotation policies are enforced by Identity Platform for 
 - **Responsibility**: CSP
 - **Status**: Partially Implemented
 
-**Implementation**: Incident response capabilities are tested through: (1) Red team program (44 automated attacks executed monthly) validates detection and response procedures; (2) Tabletop exercises are planned annually. _First full tabletop exercise planned for Q3 2026. See POA-6._
+**Implementation**: Incident response capabilities are tested through: (1) Red team program (99 automated attacks across 6 suites executed monthly) validates detection and response procedures; (2) Tabletop exercises are planned annually. _First full tabletop exercise planned for Q3 2026. See POA-6._
 
 ### IR-4: Incident Handling
 
@@ -919,7 +919,7 @@ Password complexity and rotation policies are enforced by Identity Platform for 
 - **Responsibility**: Inherited (GCP) + CSP
 - **Status**: Implemented
 
-**Implementation**: GCP provides spare parts and maintenance support per their SLA. Application-level patches follow remediation timelines defined in the Vulnerability Scanning Strategy: Critical/High — 30 days, Medium — 90 days, Low — 180 days.
+**Implementation**: GCP provides spare parts and maintenance support per their SLA. Application-level patches follow remediation timelines defined in the Vulnerability Scanning Strategy: Critical — 15 days, High — 30 days, Medium — 90 days, Low — 180 days.
 
 ---
 
@@ -1299,7 +1299,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Continuous**: Dependabot dependency vulnerability alerts, govulncheck Go vulnerability database
 - **Per-build**: Trivy container image scanning, GoSec SAST, Semgrep pattern matching, Gitleaks secret detection, SBOM generation
 - **Monthly**: Red team attack suite execution (99 attacks, 6 suites)
-- **Remediation SLAs**: Critical/High — 30 days, Medium — 90 days, Low — 180 days (per FedRAMP ConMon requirements)
+- **Remediation SLAs**: Critical — 15 days, High — 30 days, Medium — 90 days, Low — 180 days (tightened to FedRAMP High-baseline timelines)
 
 Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 
@@ -1410,7 +1410,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Developer configuration management includes: (1) Git version control with full commit history; (2) Branch protection rules requiring PR review and passing CI; (3) Signed commits encouraged; (4) Dependency pinning via `go.mod` + `go.sum`, `package-lock.json`; (5) Infrastructure changes tracked via Terraform state with drift detection.
+**Implementation**: Developer configuration management includes: (1) Git version control with full commit history; (2) Branch protection rules requiring PR review and passing CI; (3) Signed commits encouraged; (4) Dependency pinning via `go.mod` + `go.sum`, `package-lock.json`; (5) Infrastructure changes tracked via Terraform state with drift detection; (6) CI/CD builder images pinned by version substitution variable (cloud-sdk, kaniko, trivy, syft, gitleaks, atlas) — centrally managed in `cloudbuild.yaml` substitutions.
 
 ### SA-11: Developer Testing and Evaluation
 
@@ -1633,7 +1633,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Flaw remediation follows defined SLAs: Critical/High CVSSv3 — 30 days, Medium — 90 days, Low — 180 days. Remediation sources include: Dependabot PRs (automatic), govulncheck findings, Trivy scan results, GoSec findings, red team discoveries, and customer/3PAO reports. Remediation is tracked in POA&M and Drata. Emergency patches for actively exploited vulnerabilities follow the expedited change process (deploy within 24 hours, post-hoc review).
+**Implementation**: Flaw remediation follows defined SLAs: Critical CVSSv3 — 15 days, High — 30 days, Medium — 90 days, Low — 180 days. Remediation sources include: Dependabot PRs (automatic), govulncheck findings, Trivy scan results, GoSec findings, red team discoveries, and customer/3PAO reports. Remediation is tracked in POA&M and Drata. Emergency patches for actively exploited vulnerabilities follow the expedited change process (deploy within 24 hours, post-hoc review).
 
 ### SI-2(2): Automated Flaw Remediation Status
 
@@ -1700,7 +1700,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Automated alerts are generated for: (1) Cloud Armor WAF rule matches; (2) Cloud Monitoring metric thresholds (error rate > 5%, latency > 2s, CPU > 80%); (3) Audit events at WARN level (role escalation, cross-org attempts, auth failures); (4) Dependabot vulnerability discoveries; (5) CI/CD security scan failures. Alerts route to operations team via Cloud Monitoring notification channels.
+**Implementation**: Automated alerts are generated for: (1) Cloud Armor WAF rule matches; (2) Cloud Monitoring metric thresholds (error rate > 5%, latency > 2s, CPU > 80%); (3) Audit events at WARN level (role escalation, cross-org attempts, auth failures); (4) Dependabot vulnerability discoveries; (5) CI/CD security scan failures; (6) Binary Authorization admission denials (image rejected due to missing/invalid attestation); (7) Binary Authorization break-glass overrides (emergency deploy bypassing attestation). Alerts route to operations team via Cloud Monitoring notification channels.
 
 ### SI-5: Security Alerts, Advisories, and Directives
 
@@ -1788,7 +1788,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Supply chain controls include: (1) `go.mod` + `go.sum` cryptographic pinning of all Go dependencies; (2) `package-lock.json` integrity verification for JavaScript dependencies; (3) Docker base images pinned by digest (distroless); (4) Terraform provider versions locked via `.terraform.lock.hcl`; (5) Dependabot automated dependency update PRs with CI validation before merge; (6) Gitleaks scanning for unauthorized credential exposure in supply chain.
+**Implementation**: Supply chain controls include: (1) `go.mod` + `go.sum` cryptographic pinning of all Go dependencies; (2) `package-lock.json` integrity verification for JavaScript dependencies; (3) Docker base images pinned by digest (distroless); (4) Terraform provider versions locked via `.terraform.lock.hcl`; (5) Dependabot automated dependency update PRs with CI validation before merge; (6) Gitleaks scanning for unauthorized credential exposure in supply chain; (7) CI/CD builder images (cloud-sdk, kaniko, trivy, syft, gitleaks, atlas) pinned by version substitution variable — no `:latest` tags; (8) Binary Authorization enforcement on Cloud Run — images without valid attestation are rejected at deploy time.
 
 ### SR-5: Acquisition Strategies, Tools, and Methods
 
@@ -1839,7 +1839,84 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 **Total Controls Documented**: ~230+ controls across 20 families (AC, AT, AU, CA, CM, CP, IA, IR, MA, MP, PE, PL, PM, PS, PT, RA, SA, SC, SI, SR)
 
 **Control Status Summary**:
-- **Implemented**: ~215
-- **Partially Implemented**: ~8 (CA-2(1), CP-4, IR-3, PM-10, PT-5, AC-10 + pending POA&M items)
+- **Implemented**: ~216 (includes AC-10 concurrent session control)
+- **Partially Implemented**: ~7 (CA-2(1), CP-4, IR-3, PM-10, PT-5 + pending POA&M items)
 - **Inherited (GCP)**: ~20+ (PE family, portions of MA, MP, CP, SC)
 - **Customer Responsibility**: ~10 (AC-8, AC-11, AC-20, PT-6, PT-8, IA-2(12), IA-8(1))
+
+---
+
+## Appendix A-2: FedRAMP High Enhancement Controls
+
+> The following controls are FedRAMP High enhancements beyond the Moderate baseline.
+> These are documented here to demonstrate High-readiness.
+
+### AU-10: Non-Repudiation
+
+- **Responsibility**: CSP
+- **Status**: Implemented
+
+**Implementation**: Non-repudiation is enforced through: (1) Every audit event records `user_id`, `ip_address`, `user_agent`, `session_id`, and `trace_id` — uniquely attributing each action to an authenticated identity; (2) Audit events are persisted to three independent stores (Cloud SQL `audit_events`, BigQuery, GCS WORM buckets) providing tamper-evident redundancy; (3) GCS WORM audit buckets use locked retention policies (7 years in production) — objects cannot be modified or deleted, even by project owners; (4) JWT-based authentication with cryptographic signature verification prevents identity spoofing; (5) Step-up MFA for sensitive operations provides additional non-repudiation for high-risk actions.
+
+### AU-12(1): System-Wide / Time-Correlated Audit Trail
+
+- **Responsibility**: CSP
+- **Status**: Implemented
+
+**Implementation**: A system-wide, time-correlated audit trail is maintained through: (1) `trace_id` (OpenTelemetry) and `correlation_id` fields in every audit event enable cross-service correlation across the three Cloud Run services (app, admin, ops); (2) All services use `time.Now().UTC()` with Google NTP synchronization for consistent timestamps; (3) Cloud Logging ingestion adds an independent timestamp on each event; (4) `request_id` in audit metadata enables per-request correlation; (5) Pub/Sub SIEM export pipeline preserves all correlation fields for customer agency analysis.
+
+### CP-6(1): Separation from Primary Site
+
+- **Responsibility**: Inherited (GCP) + CSP
+- **Status**: Implemented
+
+**Implementation**: Alternate storage is geographically separated from the primary site: (1) Cloud SQL automated backups are stored in `us-central1` while the primary instance runs in `us-east4` — providing ~1,000 km geographic separation via the `backup_location` Terragrunt variable (FedRAMP High CP-6(1)); (2) GCS buckets use regional storage with multi-zone redundancy (data replicated across ≥2 zones within the region); (3) Terraform state is stored in GCS with versioning in a separate bucket; (4) Container images in Artifact Registry are regionally redundant; (5) All backup/alternate storage is within US borders per data sovereignty requirements.
+
+### CP-7(1): Coordination with Related Plans
+
+- **Responsibility**: CSP
+- **Status**: Implemented
+
+**Implementation**: The Contingency Plan (ISCP-LA-001) is coordinated with: (1) Incident Response Plan — IR activation may trigger contingency activation and vice versa; (2) Configuration Management Plan — recovery uses IaC baseline configurations; (3) Continuous Monitoring Plan — monitoring provides detection that triggers contingency activation; (4) Communication plan includes notification to FedRAMP PMO, customer agencies, and GCP Support.
+
+### CP-7(2): Accessibility
+
+- **Responsibility**: Inherited (GCP) + CSP
+- **Status**: Implemented
+
+**Implementation**: Alternate processing capability is accessible during disruption: (1) Terragrunt IaC enables deployment to any US GCP region — no manual console access required; (2) CI/CD pipeline (Cloud Build + GitHub Actions) operates independently of the primary region; (3) DNS failover via Cloudflare is region-independent; (4) Identity Platform is multi-regional and survives single-region outages.
+
+### CP-7(3): Priority of Service
+
+- **Responsibility**: CSP
+- **Status**: Implemented
+
+**Implementation**: Recovery priority follows the service tier model in the Contingency Plan: Tier 1 (authentication, database) RTO < 1 hour; Tier 2 (API services, WAF) RTO < 4 hours; Tier 3 (AI/search) RTO < 8 hours; Tier 4 (CI/CD, monitoring) RTO < 24 hours.
+
+### SC-3: Security Function Isolation
+
+- **Responsibility**: CSP
+- **Status**: Implemented
+
+**Implementation**: Security functions are isolated from non-security functions through: (1) **Service isolation**: Three Cloud Run services with distinct PostgreSQL roles — the auth interceptor (security function) runs in the same process but enforces checks before any business logic executes; (2) **Project isolation**: Three GCP projects with separate IAM boundaries prevent lateral movement; (3) **Database role isolation**: `archon_app_ro` (read-only), `archon_admin_rw`, `archon_ops_rw` — security-critical tables (audit_events, users, org_members) have restricted grants; (4) **Audit immutability**: The `audit_events` table is INSERT-only for non-admin roles — no application code can modify or delete audit records.
+
+### SC-24: Fail in Known State
+
+- **Responsibility**: CSP
+- **Status**: Implemented
+
+**Implementation**: The system fails to a known secure state: (1) **RLS fail-closed**: If PostgreSQL session variables are not set, RLS policies return zero rows — no data leakage on auth failure; (2) **ClamAV fail-closed**: In production, document uploads are rejected if the ClamAV endpoint is unavailable — no unscanned files enter the system; (3) **Auth interceptor fail-closed**: Missing or invalid JWT → `Unauthenticated`; missing MFA → `Unauthenticated`; missing org membership → `PermissionDenied`; (4) **Distroless containers**: No shell or package manager — container compromise yields minimal attack surface; (5) **FQDN egress deny-all**: Default egress policy blocks all outbound — only explicitly allowlisted domains are reachable.
+
+### SI-7(5): Automated Response to Integrity Violations
+
+- **Responsibility**: CSP
+- **Status**: Implemented
+
+**Implementation**: Integrity violations trigger automated responses: (1) CI/CD pipeline fails and blocks deployment when `go.sum` checksum verification fails; (2) Trivy container scan findings above threshold block image push to Artifact Registry; (3) Gitleaks findings block PR merge; (4) Dependabot automatically creates remediation PRs for vulnerable dependencies; (5) Cloud Monitoring alerts fire on unexpected infrastructure drift (detected by weekly `terragrunt plan`).
+
+### RA-5(4): Discoverable Information
+
+- **Responsibility**: CSP
+- **Status**: Implemented
+
+**Implementation**: Discoverable information is assessed through: (1) Red team manual suite (MT-001 through MT-012) includes nmap service scanning, nikto web scanning, ffuf directory brute-forcing, and nuclei vulnerability scanning against deployed endpoints; (2) Cloud Armor blocks common information disclosure paths (`.env`, `pprof`, `metrics`, `swagger`, `graphql`); (3) Error responses return generic messages without system internals; (4) HTTP security headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy) prevent information leakage.

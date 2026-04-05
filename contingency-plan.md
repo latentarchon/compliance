@@ -229,9 +229,10 @@ After recovery, the following reconstitution steps ensure full operational capab
 | Test Type | Frequency | Description |
 |-----------|-----------|-------------|
 | **Tabletop Exercise** | Annual | Walk-through of all 5 scenarios with contingency team |
-| **Component Recovery Test** | Semi-annual | Test database PITR, container rollback, storage restore |
+| **Component Recovery Test** | Quarterly | Test database PITR, container rollback, storage restore |
 | **IaC Rebuild Validation** | Quarterly | Verify Terragrunt can deploy full stack from scratch |
-| **Backup Verification** | Monthly | Verify database backup integrity and storage versioning |
+| **Backup Verification** | Monthly | Verify database backup integrity and storage versioning (automated via `contingency-test` CLI) |
+| **Automated Contingency Test** | Monthly | `contingency-test` CLI validates backup existence, PITR window, health endpoints, GCS versioning |
 
 ### 7.2 Test Documentation
 

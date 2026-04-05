@@ -69,23 +69,27 @@ This plan covers monitoring of all security controls within the authorization bo
 
 ### 3.1 Scanning Schedule
 
-| Scanner | Target | Frequency | Coverage |
-|---------|--------|-----------|----------|
-| **Trivy** | Container images | Every build | CVE database (NVD, vendor advisories) |
-| **GoSec** | Go source code | Every build | Go-specific security patterns |
-| **Semgrep** | All source code | Every build | Multi-language vulnerability patterns |
-| **govulncheck** | Go dependencies | Every build | Go vulnerability database |
-| **Gitleaks** | Git history | Every commit | Credential/secret patterns |
-| **Dependabot** | All dependencies | Daily | GitHub Advisory Database |
-| **Red Team Suite** | Deployed system | Monthly | 99 attacks across 6 suites (auth bypass, escalation, exfiltration, leftfield, webapp, manual tools) |
+All vulnerability scanning runs on **Google Cloud Build** (not GitHub Actions). Scheduled scans are triggered by Cloud Scheduler.
+
+| Scanner | Target | Frequency | Platform | Coverage |
+|---------|--------|-----------|----------|----------|
+| **Trivy** | Container images | Every build + daily | Cloud Build | CVE database (NVD, vendor advisories) |
+| **GoSec** | Go source code | Every build + daily | Cloud Build | Go-specific security patterns |
+| **Semgrep** | All source code | Daily | Cloud Build | Multi-language vulnerability patterns |
+| **govulncheck** | Go dependencies | Every build + daily | Cloud Build | Go vulnerability database |
+| **Gitleaks** | Git history | Every build + daily | Cloud Build | Credential/secret patterns |
+| **Dependabot** | All dependencies | Daily | GitHub | GitHub Advisory Database |
+| **Red Team Suite** | Deployed system | Monthly | Cloud Build (Cloud Run Job) | 99 attacks across 6 suites (auth bypass, escalation, exfiltration, leftfield, webapp, manual tools) |
+
+**Daily scan pipeline** (`cloudbuild-security.yaml`): GoSec + Semgrep + Trivy FS + govulncheck + Gitleaks run in parallel at 6am ET via Cloud Scheduler. SARIF results are uploaded to the build artifacts GCS bucket with date-partitioned paths.
 
 ### 3.2 Remediation SLAs
 
-Per FedRAMP ConMon requirements:
+Per FedRAMP ConMon requirements (tightened to High-baseline timelines):
 
 | Severity | CVSS Score | Remediation Deadline | Escalation |
 |----------|-----------|---------------------|------------|
-| **Critical** | 9.0 - 10.0 | 30 days | CEO notified immediately |
+| **Critical** | 9.0 - 10.0 | 15 days | CEO notified immediately; expedited patch within 72 hours if actively exploited |
 | **High** | 7.0 - 8.9 | 30 days | CEO / ISSO notified within 24 hours |
 | **Medium** | 4.0 - 6.9 | 90 days | Tracked in POA&M |
 | **Low** | 0.1 - 3.9 | 180 days | Tracked in POA&M |
@@ -138,6 +142,8 @@ Refer to the Incident Response Policy (POL-IR-001) for detailed procedures.
 | Break-glass secret access (db-postgres-password) | Cloud Monitoring log-based metric + CRITICAL alert | Immediate investigation; verify authorized break-glass operation; rotate password if unauthorized |
 | Database DDL/role changes | pgAudit (`ddl,role,write`) via Cloud SQL flags | Review for unauthorized schema modifications |
 | Slow queries (>1s) | `log_min_duration_statement=1000` Cloud SQL flag | Performance investigation; potential abuse detection |
+| BinAuthz admission denial | Cloud Monitoring alert (Binary Authorization deny event) | Unauthorized image deployment investigation; verify attestation pipeline |
+| BinAuthz break-glass override | Cloud Monitoring alert (break-glass annotation on deploy) | Verify authorized emergency operation; audit break-glass justification |
 
 ### 5.2 Incident Reporting
 

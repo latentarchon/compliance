@@ -60,6 +60,19 @@ Each customer deployment uses a **single cloud provider**. The vendor risk for t
 | `gcr.io/distroless/static-debian12` | Google Container Registry | Digest (SHA-256) |
 | `node:20-alpine` (build stage only) | Docker Hub | Tag + digest |
 
+### 2.4 CI/CD Builder Images
+
+All Cloud Build builder images are pinned by version via substitution variables (`_*_VERSION`) at the top of each `cloudbuild.yaml`. This prevents supply-chain drift from mutable `:latest` tags.
+
+| Image | Source | Current Version | Pinning Method |
+|-------|--------|----------------|---------------|
+| `gcr.io/google.com/cloudsdktool/cloud-sdk` | Google | `502.0.0` | Version substitution variable |
+| `gcr.io/kaniko-project/executor` | Google (Kaniko) | `v1.23.2` | Version substitution variable |
+| `aquasec/trivy` | Aqua Security | `0.58.2` | Version substitution variable |
+| `anchore/syft` | Anchore | `v1.19.0` | Version substitution variable |
+| `zricethezav/gitleaks` | Zricethezav | `v8.22.1` | Version substitution variable |
+| `arigaio/atlas` | Ariga | `0.31.0` | Version substitution variable |
+
 ---
 
 ## 3. Risk Assessment
@@ -97,6 +110,8 @@ Each customer deployment uses a **single cloud provider**. The vendor risk for t
   - Cosign keyless image signing (Sigstore OIDC) — every image cryptographically tied to its build workflow
   - Cosign signature verification required before every deploy — prevents deploying unsigned or tampered images
   - Digest-pinned deploys (`image@sha256:...`) — eliminates tag mutability risk
+  - CI/CD builder images pinned by version (not `:latest`) — prevents supply-chain drift via compromised builder tags
+  - Binary Authorization enforcement — Cloud Run rejects images without valid attestation
 - **Residual Risk**: Low
 
 ### 3.4 Risk: Compromised Container Base Image
@@ -148,11 +163,13 @@ Per the Vendor Risk Management Policy (POL-VR-001):
 
 1. **Workload Identity Federation**: No static service account keys; short-lived tokens via OIDC
 2. **Immutable Artifacts**: Container images stored in Artifact Registry with immutable tags enabled and CMEK encryption (HSM-backed)
-3. **Security Gates**: Build fails if Trivy detects Critical/High vulnerabilities (`exit-code: 1`)
+3. **Security Gates**: Build fails if Trivy detects Critical/High vulnerabilities (`exit-code: 1`, `--vuln-type=os,library`)
 4. **Image Signing**: All images signed with Cosign keyless signing (Sigstore OIDC identity from GitHub Actions)
 5. **Signature Verification**: `cosign verify` required before every container deploy — checks certificate identity (`github.com/latentarchon/*`) and OIDC issuer (`token.actions.githubusercontent.com`)
-6. **Digest-Pinned Deploys**: Container services deployed by `image@sha256:digest`, not by mutable tag
-7. **Audit Trail**: All CI/CD runs logged in GitHub Actions with full output retention
+6. **Binary Authorization**: Cloud Run enforces attestation policy — images without a valid Cloud Build attestor signature are rejected at deploy time. Admission denials and break-glass overrides trigger monitoring alerts.
+7. **Digest-Pinned Deploys**: Container services deployed by `image@sha256:digest`, not by mutable tag
+8. **Builder Image Pinning**: All CI/CD builder images (cloud-sdk, kaniko, trivy, syft, gitleaks, atlas) pinned by version substitution variable — eliminates `:latest` tag mutability risk
+9. **Audit Trail**: All CI/CD runs logged in GitHub Actions with full output retention
 
 ### 4.4 Infrastructure Supply Chain
 
