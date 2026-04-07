@@ -643,7 +643,7 @@ At the infrastructure level, GCP Data Access audit logging is enabled for all cr
 - **Responsibility**: Inherited (GCP)
 - **Status**: Implemented
 
-**Implementation**: GCP provides automatic geographic redundancy for all storage services: Cloud SQL automated backups (cross-region), GCS multi-region storage option, and regional failover capabilities. All data resides within US regions per data sovereignty requirements.
+**Implementation**: GCP provides automatic geographic redundancy for all storage services: Cloud SQL automated backups (cross-region), GCS multi-region storage option, and regional failover capabilities. All data resides within US regions per data sovereignty requirements, enforced by `gcp.resourceLocations` org policy (restricts all projects to `us-east4`, `us-east1`, `us-central1`, and `us` multi-region).
 
 ### CP-7: Alternate Processing Site
 
@@ -951,7 +951,7 @@ Password complexity and rotation policies are enforced by Identity Platform for 
 - **Responsibility**: Inherited (GCP) + CSP
 - **Status**: Implemented
 
-**Implementation**: All data is stored encrypted at rest using AES-256-GCM with Cloud KMS-managed keys (CMEK). Cloud Storage uses object versioning (all versions preserved indefinitely) with 90-day soft-delete recovery and CMEK encryption. Cloud SQL uses automated encrypted backups with CMEK. Audit data is stored in immutable WORM buckets with 7-year locked retention in production. All storage is within US regions per data sovereignty requirements.
+**Implementation**: All data is stored encrypted at rest using AES-256-GCM with Cloud KMS-managed keys (CMEK). Cloud Storage uses object versioning (all versions preserved indefinitely) with 90-day soft-delete recovery and CMEK encryption. Cloud SQL uses automated encrypted backups with CMEK. Audit data is stored in immutable WORM buckets with 7-year locked retention in production. All storage is within US regions per data sovereignty requirements, enforced by `gcp.resourceLocations` org policy.
 
 ### MP-5: Media Transport
 
@@ -1707,7 +1707,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Security intelligence sources monitored: (1) CISA KEV (Known Exploited Vulnerabilities) catalog; (2) Go vulnerability database (govulncheck); (3) GitHub Advisory Database (Dependabot); (4) GCP security bulletins; (5) FedRAMP PMO directives. Critical advisories trigger immediate assessment and expedited remediation per the flaw remediation process.
+**Implementation**: Security intelligence sources monitored: (1) CISA KEV (Known Exploited Vulnerabilities) catalog; (2) Go vulnerability database (govulncheck); (3) GitHub Advisory Database (Dependabot); (4) GCP security bulletins; (5) FedRAMP PMO directives. Critical advisories trigger immediate assessment and expedited remediation per the flaw remediation process. GCP Essential Contacts are configured at the organization level to route security notifications and suspension warnings to `gcp-security-admins@`, technical advisories to `gcp-organization-admins@`, and billing alerts to `gcp-billing-admins@`. GCP Access Approval is enabled org-wide, requiring explicit approval from security admins before Google support can access customer data.
 
 ### SI-6: Security and Privacy Function Verification
 
