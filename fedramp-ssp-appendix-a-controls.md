@@ -28,7 +28,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 
 **Implementation**:
 
-**(a)** Latent Archon defines four organization-level account types: `master_admin`, `admin`, `editor`, and `viewer`. Each account type has specific privileges documented in the RBAC matrix (see Section 7.3 of the SSP). Account types are enforced per-RPC in the Connect-RPC interceptor chain.
+**(a)** Latent Archon defines four organization-level account types: `master_admin`, `admin`, `editor`, and `viewer`. Each account type has specific privileges documented in the RBAC matrix (see Section 7.3 of the SSP). Account types are enforced per-RPC in the Connect-RPC interceptor chain. Additionally, **service accounts** (e.g., `noreply@latentarchon.com` for transactional email) are a distinct, non-interactive account type — they are blocked from authentication at the application layer and cannot be provisioned into any organization or workspace.
 
 **(b)** Account managers are designated per customer organization. The `master_admin` role serves as the organization account manager with authority to create, modify, disable, and remove accounts. Latent Archon platform operations serve as the system-level account manager.
 
@@ -140,7 +140,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 
 - **GCP IAM**: The Terraform service account has 20 IAM roles including `roles/editor` for broad infrastructure management (no `roles/owner`). Each Cloud Run service account has scoped permissions: `archon-ops` has 12 roles for document processing, `archon-admin` and `archon-app` receive cross-project grants for Cloud SQL, Cloud Tasks, GCS, and Vertex AI access only. Workload Identity Federation eliminates static service account keys.
 - **Database**: Four distinct PostgreSQL roles with minimum necessary grants, enforced via Atlas migration. Default `PUBLIC` privileges are revoked on all tables and sequences. `archon_app_ro` is read-only on reference data (SELECT + INSERT only for app persistence). `archon_ops_rw` is scoped to document processing tables (cannot touch org/member/invite data). Audit table is INSERT-only for non-admin roles. Schema migrations run under an `archon_migrator` role assumed via IAM auth (`SET ROLE`) — no static credentials are used in the normal migration path. A `postgres` superuser password exists in Secret Manager as a break-glass mechanism, accessible only to human security administrators and not mounted on any service or job by default.
-- **Application**: RBAC enforces per-RPC authorization. Viewers cannot modify data. Editors cannot manage members. Only admins can manage workspaces.
+- **Application**: RBAC enforces per-RPC authorization. Viewers cannot modify data. Editors cannot manage members. Only admins can manage workspaces. Service accounts used for system functions (e.g., transactional email sending) are explicitly blocked from interactive authentication and auto-provisioning via a configurable blocklist (`SERVICE_ACCOUNT_EMAILS`) enforced in the auth interceptor and magic link handler.
 - **Microsoft Graph**: Connection management (create, list, revoke) restricted to org admins. Sync source configuration requires workspace admin permission. Source-level sync history queries require workspace document-edit permission. OAuth refresh tokens encrypted via Cloud KMS before storage.
 
 ### AC-6(1): Authorize Access to Security Functions
