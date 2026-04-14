@@ -30,6 +30,7 @@ sales/                             # Sales and procurement collateral
 security-whitepaper.md             # Customer-facing security architecture whitepaper
 fedramp-ssp.md                     # FedRAMP System Security Plan
 fedramp-20x-ksi-summaries.md       # FedRAMP 20x Key Security Indicator summaries
+fedramp-ssp-appendix-a-controls.md  # Appendix A: Moderate + Appendix A-2: High enhancement controls
 ssp-lite-nist-800-53.md            # SSP-Lite NIST 800-53 Moderate control mapping
 configuration-management-plan.md   # Configuration management plan
 continuous-monitoring-plan.md      # Continuous monitoring plan
@@ -64,6 +65,7 @@ vulnerability-scanning-strategy.md # Vulnerability scanning strategy (DOC-VS-001
 | `cloud/*` | Internal / ATO package | Cloud-specific implementation details (GCP active; AWS/Azure commented out) |
 | `security-whitepaper.md` | Customers / procurement | Technical security architecture overview |
 | `fedramp-ssp.md` | ATO / compliance officers | FedRAMP System Security Plan |
+| `fedramp-ssp-appendix-a-controls.md` | ATO / compliance officers / 3PAO | NIST 800-53 control implementations (Moderate baseline + High enhancement controls in Appendix A-2) |
 | `ssp-lite-nist-800-53.md` | ATO / compliance officers | Control-by-control NIST 800-53 mapping |
 | `sales/capability-statement.md` | Contracting officers | Company capability one-pager |
 | `drata/` | Engineering | Automated Drata compliance sync tool |
