@@ -91,17 +91,21 @@ Workspaces provide data isolation boundaries. Documents and conversation history
 
 ### 3.3 IP Allowlisting
 
-Restrict access to your organization's network ranges.
+Restrict access to your organization's network ranges. Admin and app areas have **separate IP allowlists**, allowing you to apply tighter restrictions on the admin area (e.g., HQ-only) while keeping the app area accessible from broader agency networks. Only the master admin role can configure IP allowlists.
 
 | Setting | Default | Recommended |
 |---------|---------|-------------|
-| IP Allowlist Enabled | Off | Enable for all agencies |
-| Allowed CIDRs | None | Your agency's egress IP ranges |
+| Admin IP Allowlist | Off (no restriction) | Enable — restrict to admin/HQ egress IPs |
+| App IP Allowlist | Off (no restriction) | Enable — restrict to agency-wide egress IPs |
 
 **Customer Action**:
 1. Navigate to Admin Dashboard → Settings → IP Allowlist
-2. Add your agency's public IP ranges (CIDR notation, e.g., `203.0.113.0/24`)
-3. Enable the allowlist — all requests from outside these ranges will be blocked
+2. Under **Admin IP Allowlist**, add CIDR ranges for networks that should access the admin area (e.g., `203.0.113.0/24`)
+3. Under **App IP Allowlist**, add CIDR ranges for networks that should access the app area
+4. Each allowlist is enforced independently — enabling one does not affect the other
+5. When an allowlist is enabled, all requests from outside the configured ranges are blocked (HTTP 403)
+
+**Note**: IP allowlist changes take effect within seconds. If you lock yourself out, contact Latent Archon support for emergency access restoration.
 
 ---
 
