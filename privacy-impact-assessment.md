@@ -39,7 +39,7 @@ This PIA identifies and evaluates privacy risks associated with the collection, 
 
 ### 2.2 PII in Customer Documents
 
-Customer agencies upload documents that may contain any category of PII depending on agency mission. Latent Archon does not parse or extract PII from documents — documents are processed for text extraction (native Go parsing) and semantic embedding only.
+Customer agencies upload documents that may contain any category of PII depending on agency mission. Latent Archon does not parse or extract PII from documents — documents are processed for text extraction (cloud-agnostic: AWS Textract, Azure AI Document Intelligence) and semantic embedding only.
 <!-- MULTI-CLOUD: Original also listed Textract (AWS) and Document Intelligence (Azure). --> The system treats all document content as CUI.
 
 | PII Category | System Awareness | Protection |

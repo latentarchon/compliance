@@ -199,7 +199,7 @@ The pipeline uses the following GCP services:
 | Object storage | GCS |
 | Task queue | Cloud Tasks |
 | DLP/PII | Cloud DLP |
-| Text extraction | Native Go parsing (in-process) |
+| Text extraction | Cloud-agnostic (AWS Textract, Azure AI Document Intelligence) |
 | Embedding | Vertex AI (Gemini Embedding) |
 | Vector search | Vertex AI Vector Search |
 

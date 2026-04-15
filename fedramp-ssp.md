@@ -9,7 +9,7 @@
 > **Contact**: ajhendel@latentarchon.com  
 > **FIPS 199 Category**: High (Confidentiality: High, Integrity: High, Availability: Moderate)
 
-> **IL5 Assured Workloads**: The GCP deployment runs within IL5 Assured Workloads folders, which enforce data residency (US-only regions), service restrictions (only IL5-approved GCP services), US-person personnel controls, and CMEK encryption requirements. Services not yet IL5-approved (Identity Platform, Cloud Scheduler, Certificate Manager) operate in dedicated FedRAMP High Assured Workloads projects outside the IL5 boundary, communicating with the data plane via JWT validation and Pub/Sub push. The system satisfies DFARS 252.204-7012 and NIST SP 800-171 requirements for CUI protection at DoD Impact Level 5.
+> **Assured Workloads**: The GCP staging deployment runs within IL5 Assured Workloads folders, which enforce data residency (US-only regions), service restrictions (only IL5-approved GCP services), US-person personnel controls, and CMEK encryption requirements. Production currently runs under FedRAMP High Assured Workloads; IL5 migration is planned. Services not yet IL5-approved (Identity Platform, Cloud Scheduler, Certificate Manager) operate in dedicated FedRAMP High Assured Workloads projects outside the IL5 boundary, communicating with the data plane via JWT validation and Pub/Sub push. The system satisfies DFARS 252.204-7012 and NIST SP 800-171 requirements for CUI protection.
 
 ---
 
@@ -212,7 +212,7 @@ Latent Archon uses a **multi-project architecture** with IL5 Assured Workloads f
 
 | Environment | Purpose | IL5 Projects | FedRAMP High Projects | Access |
 |-------------|---------|--------------|----------------------|--------|
-| Production | Live customer data | `archon-fed-admin-prod`, `archon-fed-ops-prod`, `archon-fed-app-prod`, `archon-fed-kms-prod` | `archon-fed-auth-admin-prod`, `archon-fed-auth-app-prod`, `archon-mgmt-scheduler-prod` | Restricted to CI/CD + emergency break-glass |
+| Production | Live customer data | *(FedRAMP High AW; IL5 migration pending)* `archon-fed-admin-prod`, `archon-fed-ops-prod`, `archon-fed-app-prod`, `archon-fed-kms-prod` | `archon-fed-auth-admin-prod`, `archon-fed-auth-app-prod`, `archon-mgmt-scheduler-prod` | Restricted to CI/CD + emergency break-glass |
 | Staging | Pre-production validation | `archon-fed-admin-staging`, `archon-fed-ops-staging`, `archon-fed-app-staging`, `archon-fed-kms-staging` | `archon-fed-auth-admin-stg`, `archon-fed-auth-app-stg`, `archon-mgmt-scheduler-stg` | Engineering team |
 | Development | Local development | N/A (local Docker Compose) | N/A | Individual developers |
 
@@ -449,7 +449,7 @@ Object Storage (AES-256-GCM + CMEK, workspace-scoped path)
     │
     ▼
 Task Queue → Ops Service (container):
-    ├─► Document text extraction (native Go parsing)
+    ├─► Document text extraction (cloud-agnostic: AWS Textract, Azure AI Doc Intelligence)
     ├─► Text chunking
     ├─► Embedding generation
     ├─► Vector index upsert (workspace-scoped)

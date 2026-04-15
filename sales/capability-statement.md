@@ -42,7 +42,7 @@ Latent Archon is a multi-tenant document intelligence platform that enables gove
 **AI Document Intelligence**
 - Retrieval-Augmented Generation (RAG) conversation over uploaded document collections
 - Workspace-scoped vector search with Vertex AI
-- Native text extraction for PDF, DOCX, and office formats
+- Cloud-agnostic text extraction for PDF, DOCX, and office formats (AWS Textract, Azure AI Document Intelligence)
 - Gemini-powered streaming responses with source citations
 - Inline image generation within conversations via Gemini 2.0 Flash
 - Semantic near-duplicate detection (0.97 cosine similarity threshold) and immutable document versioning
@@ -118,7 +118,7 @@ Latent Archon is a multi-tenant document intelligence platform that enables gove
 | **CJIS Security Policy v5.9.5** | All 13 policy areas mapped and implemented; MCA template ready; awaiting first customer engagement for state CSA audit |
 | NIST 800-53 High | Full SSP complete; ~40% controls GCP-inherited |
 | NIST 800-171 / DFARS 252.204-7012 | Controls mapped and implemented; IL5 Assured Workloads enforced |
-| DoD IL5 | GCP IL5 Assured Workloads deployed (staging + production) |
+| DoD IL5 | GCP IL5 Assured Workloads deployed (staging); production IL5 migration planned |
 | FedRAMP High | Infrastructure ready; 3PAO engagement planned Q3 2026 |
 | StateRAMP | Planned Q4 2026 (post-FedRAMP) |
 
