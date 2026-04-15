@@ -835,14 +835,24 @@ Preventive guardrails are enforced at the GCP organization level:
 
 | Security Objective | GCP Org Policy |
 |---|---|
-| Block public storage | `storage.publicAccessPrevention` |
-| Block static credentials | `iam.disableServiceAccountKeyCreation` |
-| Enforce encryption | `gcp.restrictNonCmekServices` |
-| Restrict public endpoints | `sql.restrictPublicIp`, `run.allowedIngress` |
-| Enforce network isolation | `compute.skipDefaultNetworkCreation` |
-| Restrict egress | FQDN-based firewall policy |
+| Block public storage | `storage.publicAccessPrevention`, `storage.uniformBucketLevelAccess` |
+| Block static credentials | `iam.disableServiceAccountKeyCreation`, `iam.disableServiceAccountKeyUpload` |
+| Restrict IAM to org domain | `iam.allowedPolicyMemberDomains` (Workspace customer ID) |
+| Harden default service accounts | `iam.automaticIamGrantsForDefaultServiceAccounts` (no auto-Editor) |
+| Enforce encryption | `gcp.restrictNonCmekServices` (AW-level) |
+| Restrict public endpoints | `sql.restrictPublicIp`, `sql.restrictAuthorizedNetworks`, `run.allowedIngress` |
+| Enforce VPC egress | `run.allowedVPCEgress` (ALL_TRAFFIC — forces Cloud Run through VPC-SC) |
+| Enforce network isolation | `compute.skipDefaultNetworkCreation`, `compute.disableVpcExternalIpv6` |
+| Block internet NEGs | `compute.disableInternetNetworkEndpointGroup` |
+| Restrict protocol forwarding | `compute.restrictProtocolForwardingCreationForTypes` (INTERNAL only) |
+| Harden compute | `compute.requireOsLogin`, `compute.requireShieldedVm`, `compute.disableSerialPortAccess`, `compute.disableNestedVirtualization`, `compute.disableGuestAttributesAccess` |
+| Block external IPs | `compute.vmExternalIpAccess` (deny all) |
+| Restrict resource locations | `gcp.resourceLocations` (US-only: us-east4, us-central1, us) |
+| Restrict notification contacts | `essentialcontacts.allowedContactDomains` (@latentarchon.com only) |
+| Enforce zonal DNS | `compute.setNewProjectDefaultToZonalDNSOnly` |
+| Protect shared VPC | `compute.restrictXpnProjectLienRemoval` |
 
-GCP enforces 15+ org policies. All are defined in Terraform.
+GCP enforces 24 org policies at the organization level. All are defined in Terraform (`org/org-policy.tf`) and reconciled against live GCP state to prevent drift.
 
 <!-- MULTI-CLOUD: Original table included AWS SCP (s3:PutBucketPolicy deny, iam:CreateAccessKey deny, etc.) and Azure Policy (Deny public blob access, Deny password-based auth, etc.) columns. AWS uses SCPs and Azure uses Azure Policy assignments. -->
 

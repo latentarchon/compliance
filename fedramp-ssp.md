@@ -120,6 +120,8 @@ The GCP resource hierarchy is organized by compliance tier under the `Fed/` fold
 
 Data-plane projects (admin, ops, app, kms) operate within **IL5 Assured Workloads** folders (one per environment under `Fed/IL5/`). The IL5 folders enforce org policies automatically: data residency (US-only regions), service restrictions (only IL5-approved services), US-person personnel controls for support, and CMEK encryption requirements. CMEK org policies (`gcp.restrictCmekCryptoKeyProjects`, `gcp.restrictNonCmekServices`) are enforced at the AW folder level, restricting key hosting to dedicated KMS and ops projects and requiring CMEK on all data-bearing services.
 
+In addition to AW-level policies, 24 organization-level org policies are enforced across the entire GCP org via Terraform (`org/org-policy.tf`). These include: IAM domain restriction (`iam.allowedPolicyMemberDomains` — only `latentarchon.com` identities), default SA hardening (`iam.automaticIamGrantsForDefaultServiceAccounts`), SA key prohibition (`iam.disableServiceAccountKeyCreation`, `iam.disableServiceAccountKeyUpload`), Cloud Run ingress/egress lockdown (`run.allowedIngress`, `run.allowedVPCEgress`), internet NEG prohibition (`compute.disableInternetNetworkEndpointGroup`), public storage prevention, VM hardening (OS Login, Shielded VM, serial port and guest attributes disabled), external IP deny-all, resource location restriction (US-only), and essential contacts domain restriction (`essentialcontacts.allowedContactDomains`).
+
 Services not yet approved for IL5 (Identity Platform, Cloud Scheduler) are isolated into dedicated **FedRAMP High Assured Workloads** folders:
 
 | Boundary | Projects | Compliance Regime | Services |

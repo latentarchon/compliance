@@ -51,6 +51,9 @@ This policy applies to:
 - **Every organization must have a unique, DNS-safe slug** — validated against RFC 1123 regex (`^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$`) and a reserved-slug blocklist at creation time
 - Service accounts use Workload Identity Federation (WIF) — no static keys
 - Cloud-native org policies enforce keyless auth at the organization/account level
+- IAM policy members restricted to `latentarchon.com` domain (`iam.allowedPolicyMemberDomains`)
+- Default service accounts denied automatic Editor role (`iam.automaticIamGrantsForDefaultServiceAccounts`)
+- Essential contacts restricted to `@latentarchon.com` (`essentialcontacts.allowedContactDomains`)
 
 ### 3.3 Account Closure & Deprovisioning
 
