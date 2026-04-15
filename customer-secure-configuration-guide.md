@@ -10,7 +10,7 @@
 
 ## 1. Purpose
 
-This guide provides customer agencies with security configuration recommendations for the Latent Archon Document Intelligence Platform. Following these settings ensures your organization meets FedRAMP Moderate baseline requirements when using the platform.
+This guide provides customer agencies with security configuration recommendations for the Latent Archon Document Intelligence Platform. Following these settings ensures your organization meets FedRAMP High and DoD IL5 baseline requirements when using the platform. The system operates within GCP IL5 Assured Workloads.
 
 ---
 
@@ -134,7 +134,7 @@ All data is encrypted automatically. No customer configuration is required.
 | Setting | Value | Notes |
 |---------|-------|-------|
 | Max File Size | 50 MB | Per document |
-| Supported Formats | PDF, DOCX, TXT, MD, CSV | Processed via Document AI OCR |
+| Supported Formats | PDF, DOCX, TXT, MD, CSV | Processed via native text extraction |
 | Malware Scanning | Enabled (fail-closed) | ClamAV scans all uploads before storage |
 
 ---

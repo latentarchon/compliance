@@ -53,7 +53,7 @@ This policy applies to:
 | Level | Document | Purpose |
 |-------|----------|---------|
 | **1 — Program** | Information Security Policy (this document) | Overarching security program governance |
-| **2 — System** | FedRAMP System Security Plan (SSP-LA-001) | NIST 800-53 Moderate baseline control mapping + implementation narratives |
+| **2 — System** | FedRAMP System Security Plan (SSP-LA-001) | NIST 800-53 High baseline (IL5) control mapping + implementation narratives |
 | **3 — Technical** | Security Architecture Whitepaper | Detailed technical security implementation |
 | **4 — Operational** | Subordinate Policies | Domain-specific requirements (see Section 5) |
 
@@ -83,12 +83,13 @@ The following policies implement specific domains of the information security pr
 
 ### 6.1 Primary Framework
 
-Latent Archon's security program is based on **NIST SP 800-53 Rev. 5 Moderate** baseline, selected because:
+Latent Archon's security program is based on **NIST SP 800-53 Rev. 5 High** baseline with DoD IL5 requirements, selected because:
 
-- Aligns with FedRAMP Moderate requirements for government SaaS
+- Aligns with FedRAMP High and DoD IL5 requirements for government SaaS handling CUI and DoD mission data
 - Provides comprehensive coverage across 17 control families
-- Supports CUI protection requirements (NIST SP 800-171)
+- Satisfies DFARS 252.204-7012 and CUI protection requirements (NIST SP 800-171)
 - Maps cleanly to SOC 2 Trust Services Criteria
+- Enforced at the infrastructure layer by GCP IL5 Assured Workloads
 
 ### 6.2 Continuous Compliance
 

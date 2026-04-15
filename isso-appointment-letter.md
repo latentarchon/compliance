@@ -17,7 +17,7 @@ As ISSO, I am responsible for:
 
 1. **Security Posture Management** — Maintaining the overall security posture of the LA-DIP system, including monitoring, assessment, and continuous improvement of security controls.
 
-2. **Compliance Oversight** — Ensuring the system operates in accordance with NIST SP 800-53 Rev. 5 (Moderate baseline), FedRAMP requirements, and all applicable federal security standards.
+2. **Compliance Oversight** — Ensuring the system operates in accordance with NIST SP 800-53 Rev. 5 (High baseline), FedRAMP High, DoD IL5, DFARS 252.204-7012, and all applicable federal security standards.
 
 3. **Plan of Action & Milestones** — Managing the POA&M, tracking remediation of identified findings, and reporting progress to the Authorizing Official.
 

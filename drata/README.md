@@ -109,7 +109,7 @@ Two workflows are included:
 - Change Management Policy (POL-CM-001)
 - Incident Response Policy (POL-IR-001)
 - Vendor Risk Management Policy (POL-VR-001)
-- System Security Plan (SSP-Lite) — NIST 800-53 Moderate
+- System Security Plan (SSP-Lite) — NIST 800-53 High (IL5)
 - Security Architecture Whitepaper
 
 ### Vendors (2 entries)

@@ -13,7 +13,7 @@
 
 ### 1.1 System Description
 
-Latent Archon is a multi-tenant SaaS document intelligence platform that enables government agencies to securely upload, process, search, and interact with documents using AI-powered retrieval-augmented generation (RAG). The system is deployed on Google Cloud Platform (FedRAMP High authorized).
+Latent Archon is a multi-tenant SaaS document intelligence platform that enables government agencies to securely upload, process, search, and interact with documents using AI-powered retrieval-augmented generation (RAG). The system is deployed on Google Cloud Platform within **IL5 Assured Workloads** (FedRAMP High authorized, DoD IL5 compliant).
 
 <!-- MULTI-CLOUD: Original stated deployable on GCP, AWS, or Azure with single cloud per customer. -->
 
@@ -39,7 +39,7 @@ This PIA identifies and evaluates privacy risks associated with the collection, 
 
 ### 2.2 PII in Customer Documents
 
-Customer agencies upload documents that may contain any category of PII depending on agency mission. Latent Archon does not parse or extract PII from documents — documents are processed for text extraction (Document AI) and semantic embedding only.
+Customer agencies upload documents that may contain any category of PII depending on agency mission. Latent Archon does not parse or extract PII from documents — documents are processed for text extraction (native Go parsing) and semantic embedding only.
 <!-- MULTI-CLOUD: Original also listed Textract (AWS) and Document Intelligence (Azure). --> The system treats all document content as CUI.
 
 | PII Category | System Awareness | Protection |

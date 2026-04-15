@@ -42,7 +42,7 @@ Latent Archon is a multi-tenant document intelligence platform that enables gove
 **AI Document Intelligence**
 - Retrieval-Augmented Generation (RAG) conversation over uploaded document collections
 - Workspace-scoped vector search with Vertex AI
-- Document AI OCR processing for PDF, image, and office formats
+- Native text extraction for PDF, DOCX, and office formats
 - Gemini-powered streaming responses with source citations
 - Inline image generation within conversations via Gemini 2.0 Flash
 - Semantic near-duplicate detection (0.97 cosine similarity threshold) and immutable document versioning
@@ -84,7 +84,7 @@ Latent Archon is a multi-tenant document intelligence platform that enables gove
 |---------------|--------|
 | **Security-First Architecture** | Built from day one for CUI handling — not a commercial product retrofitted for government |
 | **Complete Data Isolation** | PostgreSQL RLS + vector store token restrictions + three-project isolation (auth + data tier) = zero cross-tenant leakage |
-| **FedRAMP-Ready Infrastructure** | 100% GCP FedRAMP High services; ~40% of NIST 800-53 Moderate controls inherited |
+| **IL5 Assured Workloads** | GCP IL5 Assured Workloads for data-plane; ~40% of NIST 800-53 High controls inherited |
 | **Internal Red Team** | 44 automated attack scenarios across auth bypass, privilege escalation, and data exfiltration |
 | **FIPS 140-2 Cryptography** | All server-side TLS, hashing, and encryption use FIPS-validated BoringSSL (NIST cert #4407) via GOEXPERIMENT=boringcrypto |
 | **FOIA-Ready Data Export** | Bulk export with chain-of-custody manifests for FOIA compliance and federal record-keeping |
@@ -101,7 +101,7 @@ Latent Archon is a multi-tenant document intelligence platform that enables gove
 | Compute | Google Cloud Run (serverless containers) |
 | Database | Cloud SQL (PostgreSQL 15) with IAM auth |
 | Storage | Cloud Storage (AES-256, CMEK available) |
-| AI/ML | Vertex AI (Gemini, Vector Search, Document AI) |
+| AI/ML | Vertex AI (Gemini, Vector Search) |
 | Identity | Identity Platform (Firebase Auth) with SAML/SCIM |
 | Security | Cloud Armor (WAF), Cloud KMS, VPC (private networking) |
 | Backend | Go (FIPS 140-2 BoringCrypto, distroless container) |
@@ -116,9 +116,10 @@ Latent Archon is a multi-tenant document intelligence platform that enables gove
 | Framework | Status |
 |-----------|--------|
 | **CJIS Security Policy v5.9.5** | All 13 policy areas mapped and implemented; MCA template ready; awaiting first customer engagement for state CSA audit |
-| NIST 800-53 Moderate | Full SSP complete; ~40% controls GCP-inherited |
-| NIST 800-171 | Controls mapped and implemented |
-| FedRAMP Moderate | Infrastructure ready; 3PAO engagement planned Q3 2026 |
+| NIST 800-53 High | Full SSP complete; ~40% controls GCP-inherited |
+| NIST 800-171 / DFARS 252.204-7012 | Controls mapped and implemented; IL5 Assured Workloads enforced |
+| DoD IL5 | GCP IL5 Assured Workloads deployed (staging + production) |
+| FedRAMP High | Infrastructure ready; 3PAO engagement planned Q3 2026 |
 | StateRAMP | Planned Q4 2026 (post-FedRAMP) |
 
 ---

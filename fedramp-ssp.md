@@ -1,15 +1,15 @@
 # Latent Archon — FedRAMP System Security Plan (SSP)
 
 > **Document ID**: SSP-LA-001  
-> **Version**: 1.1 — DRAFT  
+> **Version**: 2.0 — DRAFT  
 > **Date**: April 2026  
-> **Baseline**: NIST SP 800-53 Rev. 5 — Moderate Impact  
+> **Baseline**: NIST SP 800-53 Rev. 5 — High Impact  
 > **System Name**: Latent Archon Document Intelligence Platform  
 > **System Owner**: Latent Archon, LLC  
 > **Contact**: ajhendel@latentarchon.com  
-> **FIPS 199 Category**: Moderate (Confidentiality: Moderate, Integrity: Moderate, Availability: Moderate)
+> **FIPS 199 Category**: High (Confidentiality: High, Integrity: High, Availability: Moderate)
 
-> **High Readiness**: The technical architecture satisfies the majority of FedRAMP High enhancement controls. Appendix A-2 of this SSP documents 85+ High-delta controls with full implementation narratives. The system is positioned for FedRAMP High assessment in a single 3PAO engagement if required by the sponsoring agency.
+> **IL5 Assured Workloads**: The GCP deployment runs within IL5 Assured Workloads folders, which enforce data residency (US-only regions), service restrictions (only IL5-approved GCP services), US-person personnel controls, and CMEK encryption requirements. Services not yet IL5-approved (Identity Platform, Cloud Scheduler, Certificate Manager) operate in dedicated FedRAMP High Assured Workloads projects outside the IL5 boundary, communicating with the data plane via JWT validation and Pub/Sub push. The system satisfies DFARS 252.204-7012 and NIST SP 800-171 requirements for CUI protection at DoD Impact Level 5.
 
 ---
 
@@ -44,7 +44,7 @@
 | **System Name** | Latent Archon Document Intelligence Platform |
 | **System Abbreviation** | LA-DIP |
 | **Version/Release** | 1.0 |
-| **Unique Identifier** | LA-DIP-MODERATE-2026 |
+| **Unique Identifier** | LA-DIP-HIGH-IL5-2026 |
 | **System Owner Organization** | Latent Archon, LLC |
 | **System Owner Name** | Andrew Hendel |
 | **System Owner Title** | Chief Executive Officer |
@@ -55,11 +55,12 @@
 | **Cloud Deployment Model** | Public Cloud |
 | **Underlying CSP** | Google Cloud Platform (GCP) — FedRAMP High Authorized |
 | **GCP Authorization ID** | FR1805181233 |
-| **Deployment Model** | GCP deployment |
+| **Deployment Model** | GCP deployment — IL5 Assured Workloads |
 
 <!-- MULTI-CLOUD: Original listed AWS (FR1603057795) and Azure (FR1601018498) as additional underlying CSPs with single-cloud per customer deployment model. -->
-| **FIPS 199 Categorization** | Moderate |
-| **Authorization Type** | FedRAMP Agency Authorization |
+| **FIPS 199 Categorization** | High |
+| **DoD Impact Level** | IL5 |
+| **Authorization Type** | FedRAMP High + DoD IL5 Agency Authorization |
 | **Authorization Status** | Pre-Authorization (DRAFT) |
 
 ### 1.1 System Status
@@ -102,12 +103,26 @@ Each customer deployment runs on a **single cloud provider** selected at onboard
 
 | CSP/Service | Authorization | Impact Level | Authorization ID |
 |-------------|---------------|--------------|------------------|
-| Google Cloud Platform | FedRAMP High P-ATO | High | FR1805181233 |
+| Google Cloud Platform | FedRAMP High P-ATO | High (IL5 Assured Workloads) | FR1805181233 |
 | Cloudflare DNS | FedRAMP Moderate | Moderate | — |
 
 <!-- MULTI-CLOUD: Original also included:
 | Amazon Web Services | FedRAMP High P-ATO | High | FR1603057795 |
 | Microsoft Azure | FedRAMP High P-ATO | High | FR1601018498 | -->
+
+#### 2.3.1 IL5 Assured Workloads Architecture
+
+Data-plane projects (admin, ops, app, kms) operate within an **IL5 Assured Workloads** folder. The IL5 folder enforces org policies automatically: data residency (US-only regions), service restrictions (only IL5-approved services), US-person personnel controls for support, and CMEK encryption requirements.
+
+Services not yet approved for IL5 (Identity Platform, Cloud Scheduler, Certificate Manager) are isolated into dedicated **FedRAMP High Assured Workloads** projects:
+
+| Boundary | Projects | Compliance Regime | Services |
+|----------|----------|-------------------|----------|
+| IL5 data plane | `archon-fed-admin-*`, `archon-fed-ops-*`, `archon-fed-app-*`, `archon-fed-kms-*` | IL5 | Cloud Run, Cloud SQL, GCS, Vertex AI, Cloud Armor, Cloud KMS, Cloud Tasks, Cloud Logging, Artifact Registry, Cloud DLP |
+| FedRAMP High auth | `archon-fed-auth-admin-*`, `archon-fed-auth-app-*` | FedRAMP High | Identity Platform (Firebase Auth), Firebase Hosting |
+| FedRAMP High management | `archon-mgmt-scheduler-*` | FedRAMP High | Cloud Scheduler, Pub/Sub |
+
+The auth projects communicate with the data plane via JWT public key validation only — no direct service-to-service calls cross the IL5 boundary. The backend validates JWTs offline using JWKS public keys fetched from the auth projects. Cloud Scheduler delivers cron events via cross-project Pub/Sub push subscriptions into the IL5 boundary.
 
 ### 2.4 Service Layers
 
@@ -117,9 +132,13 @@ Each customer deployment runs on a **single cloud provider** selected at onboard
 │  (Application Logic, RBAC, RLS, Audit, MFA, SSO/SCIM)  │
 │  Go binary + React SPAs                                  │
 ├─────────────────────────────────────────────────────────┤
-│              Google Cloud Platform (GCP)                  │
+│         Google Cloud Platform (GCP) — IL5 AW             │
 │  Cloud Run, Cloud SQL, GCS, Vertex AI, Cloud Armor,      │
-│  Identity Platform, Cloud KMS, Cloud Tasks               │
+│  Cloud KMS, Cloud Tasks, Cloud DLP, Artifact Registry    │
+├─────────────────────────────────────────────────────────┤
+│       GCP — FedRAMP High AW (non-IL5 services)           │
+│  Identity Platform (auth projects), Cloud Scheduler      │
+│  (mgmt project), Pub/Sub (cross-project bridge)          │
 ├─────────────────────────────────────────────────────────┤
 │          CSP Physical Infrastructure (Inherited)          │
 │  Data Centers, Network, Power, HVAC, Physical Security   │
@@ -136,54 +155,66 @@ Each customer deployment runs on a **single cloud provider** selected at onboard
 
 ### 3.1 Authorization Boundary Components
 
-| Component | GCP Service | Description |
-|-----------|-------------|-------------|
-| App API | Cloud Run (`archon-app`) | User-facing API: conversation, search, auth, streaming |
-| Admin API | Cloud Run (`archon-admin`) | Admin API: org management, document ingestion, settings |
-| Ops Service | Cloud Run (`archon-ops`) | Background processing: embeddings, cron, document processing |
-| App SPA | Cloud Run (nginx) | React single-page application for end users |
-| Admin SPA | Cloud Run (nginx) | React single-page application for administrators |
-| Database | Cloud SQL PostgreSQL 15 | Primary data store with RLS, encrypted at rest (CMEK) |
-| Object Storage | Cloud Storage | Document file storage, versioning (365-day retention) |
-| Vector Search | Vertex AI Vector Search | Semantic search index (private endpoint) |
-| Text Generation | Vertex AI (Gemini) | LLM for RAG conversation responses |
-| Document Processing | Document AI | OCR and document parsing |
-| Identity | Identity Platform | Auth pools for multi-tenant isolation |
-| WAF | Cloud Armor | DDoS protection, OWASP CRS, bot blocking, IP allowlisting |
-| Load Balancing | Global HTTPS LB | TLS termination, routing, health checks |
-| Key Management | Cloud KMS | CMEK for database and storage encryption |
-| Task Queue | Cloud Tasks | Async document processing and embedding queues |
-| Malware Scanner | Cloud Run (ClamAV) | Internal-only ClamAV REST service for upload scanning |
-| Logging | Cloud Logging + Monitoring | Centralized logging, metrics, alerting |
-| Container Registry | Artifact Registry | Docker image storage for all services |
-| DNS/TLS | Certificate Manager | TLS certificates with DNS authorization |
-| DNS | Cloudflare | Authoritative DNS with DNSSEC enabled |
+| Component | GCP Service | IL5 Boundary | Description |
+|-----------|-------------|---------------|-------------|
+| App API | Cloud Run (`archon-app`) | IL5 | User-facing API: conversation, search, auth, streaming |
+| Admin API | Cloud Run (`archon-admin`) | IL5 | Admin API: org management, document ingestion, settings |
+| Ops Service | Cloud Run (`archon-ops`) | IL5 | Background processing: embeddings, cron, document processing |
+| App SPA | Cloud Run (nginx) | IL5 | React single-page application for end users |
+| Admin SPA | Cloud Run (nginx) | IL5 | React single-page application for administrators |
+| Database | Cloud SQL PostgreSQL 15 | IL5 | Primary data store with RLS, encrypted at rest (CMEK) |
+| Object Storage | Cloud Storage | IL5 | Document file storage, versioning (365-day retention) |
+| Vector Search | Vertex AI Vector Search | IL5 | Semantic search index (private endpoint) |
+| Text Generation | Vertex AI (Gemini) | IL5 | LLM for RAG conversation responses |
+| Identity | Identity Platform | FedRAMP High (auth projects) | Auth pools for multi-tenant isolation; JWTs validated offline in IL5 boundary |
+| WAF | Cloud Armor | IL5 | DDoS protection, OWASP CRS, bot blocking, IP allowlisting |
+| Load Balancing | Global HTTPS LB | IL5 | TLS termination, routing, health checks |
+| Key Management | Cloud KMS | IL5 | CMEK for database and storage encryption |
+| Task Queue | Cloud Tasks | IL5 | Async document processing and embedding queues |
+| Cron Scheduling | Cloud Scheduler + Pub/Sub | FedRAMP High (mgmt project) | Cron triggers via cross-project Pub/Sub push into IL5 boundary |
+| Malware Scanner | Cloud Run (ClamAV) | IL5 | Internal-only ClamAV REST service for upload scanning |
+| Logging | Cloud Logging + Monitoring | IL5 | Centralized logging, metrics, alerting |
+| Container Registry | Artifact Registry | IL5 | Docker image storage for all services |
+| DNS/TLS | Certificate Manager | FedRAMP High | TLS certificates with DNS authorization |
+| DNS | Cloudflare | FedRAMP Moderate | Authoritative DNS with DNSSEC enabled |
 
 <!-- MULTI-CLOUD: Original table included AWS Service (ECS Fargate, RDS, S3, OpenSearch Serverless, Bedrock Claude, Textract, SAML IdP, WAFv2, ALB, AWS KMS, SQS, CloudWatch, ECR, ACM) and Azure Service (Container Apps, PostgreSQL Flexible Server, Blob Storage, Azure AI Search, Azure OpenAI GPT-4o, Document Intelligence, Azure AD, Front Door WAF, Front Door, Key Vault, Service Bus, Azure Monitor, Container Registry, Front Door managed) columns. -->
 
 For detailed GCP service configurations and project structure, see the [Cloud Environment Supplements](cloud/).
 
-### 3.2 Three-Environment Architecture
+### 3.2 Multi-Project Architecture (IL5 + FedRAMP High)
 
-Latent Archon uses a **three-environment architecture** (GCP projects) for blast-radius isolation and data-plane compartmentalization:
+Latent Archon uses a **multi-project architecture** with IL5 Assured Workloads for data-plane isolation and dedicated FedRAMP High projects for services not yet IL5-approved:
 
 <!-- MULTI-CLOUD: Original also referenced AWS accounts and Azure subscriptions. -->
 
-- **App Environment** (`archon-fed-app-*`): Contains the user-facing app API and SPA. Has its own identity pool, WAF policy, and load balancer. The app service identity has **read-only** database access (`app_ro` PostgreSQL role) via cross-environment database IAM grants to the ops environment.
+#### IL5 Data-Plane Projects
 
-- **Ops Environment** (`archon-fed-ops-*`): Contains the entire data tier — database (PostgreSQL), object storage, key management, vector search, LLM inference, document extraction, DLP/PII scanning, task queue, malware scanning (ClamAV), and the ops background-processing service. Has no identity pool and no public ingress — all access is cross-environment via IAM grants. The ops service identity has `ops_rw` database access.
+- **App Environment** (`archon-fed-app-*`): Contains the user-facing app API and SPA, WAF policy, and load balancer. The app service identity has **read-only** database access (`app_ro` PostgreSQL role) via cross-environment database IAM grants to the ops environment.
 
-- **Admin Environment** (`archon-fed-admin-*`): Contains the admin API and SPA. Has its own identity pool, WAF policy, and load balancer. The admin service identity has `admin_rw` database access via cross-environment database IAM grants to the ops environment.
+- **Ops Environment** (`archon-fed-ops-*`): Contains the entire data tier — database (PostgreSQL), object storage, key management, vector search, LLM inference, DLP/PII scanning, task queue, malware scanning (ClamAV), and the ops background-processing service. Has no public ingress — all access is cross-environment via IAM grants. The ops service identity has `ops_rw` database access. Receives cron events via Pub/Sub push subscriptions from the management project.
+
+- **Admin Environment** (`archon-fed-admin-*`): Contains the admin API and SPA, WAF policy, and load balancer. The admin service identity has `admin_rw` database access via cross-environment database IAM grants to the ops environment.
+
+- **KMS Environment** (`archon-fed-kms-*`): Dedicated project for Cloud KMS CMEK keys, isolating key management from data-plane services.
+
+#### FedRAMP High Projects (outside IL5 boundary)
+
+- **Auth Admin** (`archon-fed-auth-admin-*`): Identity Platform (Firebase Auth) for the admin tenant pool. Runs under a FedRAMP High Assured Workloads folder because Identity Platform is not IL5-supported. The IL5 data-plane validates admin JWTs offline via JWKS public keys — no direct service calls cross the boundary.
+
+- **Auth App** (`archon-fed-auth-app-*`): Identity Platform (Firebase Auth) for the app tenant pool. Same FedRAMP High AW isolation as auth-admin. JWT validation is offline via JWKS.
+
+- **Management Scheduler** (`archon-mgmt-scheduler-*`): Cloud Scheduler for cron jobs. Cloud Scheduler is not IL5-supported, so cron triggers are published to a Pub/Sub topic in this project. Push subscriptions in the ops project (within the IL5 boundary) deliver messages to the ops Cloud Run service, satisfying Cloud Run's `ingress = "internal"` policy.
 
 **Cross-pool identity bridging is explicitly prohibited.** Users who exist in both pools (admin and app) are treated as separate identities. Workspace access across pools uses an explicit invite flow only (see `docs/POOL_ISOLATION.md`).
 
 ### 3.3 Environments
 
-| Environment | Purpose | Cloud Environments | Access |
-|-------------|---------|-------------------|--------|
-| Production | Live customer data | `archon-fed-app-prod`, `archon-fed-ops-prod`, `archon-fed-admin-prod` (per cloud) | Restricted to CI/CD + emergency break-glass |
-| Staging | Pre-production validation | `archon-fed-app-staging`, `archon-fed-ops-staging`, `archon-fed-admin-staging` (per cloud) | Engineering team |
-| Development | Local development | N/A (local Docker Compose) | Individual developers |
+| Environment | Purpose | IL5 Projects | FedRAMP High Projects | Access |
+|-------------|---------|--------------|----------------------|--------|
+| Production | Live customer data | `archon-fed-admin-prod`, `archon-fed-ops-prod`, `archon-fed-app-prod`, `archon-fed-kms-prod` | `archon-fed-auth-admin-prod`, `archon-fed-auth-app-prod`, `archon-mgmt-scheduler-prod` | Restricted to CI/CD + emergency break-glass |
+| Staging | Pre-production validation | `archon-fed-admin-staging`, `archon-fed-ops-staging`, `archon-fed-app-staging`, `archon-fed-kms-staging` | `archon-fed-auth-admin-stg`, `archon-fed-auth-app-stg`, `archon-mgmt-scheduler-stg` | Engineering team |
+| Development | Local development | N/A (local Docker Compose) | N/A | Individual developers |
 
 All environments are managed via Terraform/Terragrunt. No manual cloud console changes are permitted in staging or production.
 
@@ -223,9 +254,11 @@ All other egress is blocked. Microsoft Graph API egress is only active when the 
 | Law/Regulation/Standard | Applicability |
 |------------------------|---------------|
 | FISMA (Federal Information Security Modernization Act) | Governs federal information systems security |
-| NIST SP 800-53 Rev. 5 | FedRAMP Moderate baseline control catalog |
+| NIST SP 800-53 Rev. 5 | FedRAMP High baseline control catalog |
 | NIST SP 800-37 Rev. 2 | Risk Management Framework |
-| NIST SP 800-171 Rev. 2 | CUI protection requirements |
+| NIST SP 800-171 Rev. 2 | CUI protection requirements (DoD IL5) |
+| DFARS 252.204-7012 | Safeguarding Covered Defense Information — requires NIST 800-171 compliance for DoD CUI |
+| DoD CC SRG (Cloud Computing Security Requirements Guide) | IL5 requirements for DoD mission data in commercial cloud |
 | NIST FIPS 199 | Security categorization |
 | NIST FIPS 200 | Minimum security requirements |
 | NIST FIPS 140-2 | Cryptographic module validation (BoringCrypto) |
@@ -243,13 +276,13 @@ All other egress is blocked. Microsoft Graph API egress is only active when the 
 
 | Security Objective | Impact Level | Justification |
 |-------------------|--------------|---------------|
-| **Confidentiality** | Moderate | System processes CUI documents; unauthorized disclosure could cause serious adverse effect |
-| **Integrity** | Moderate | Unauthorized modification of documents or AI responses could cause serious adverse effect |
+| **Confidentiality** | High | System processes CUI and DoD mission data; unauthorized disclosure could cause severe or catastrophic adverse effect to national defense operations |
+| **Integrity** | High | Unauthorized modification of documents or AI responses supporting DoD mission decisions could cause severe adverse effect |
 | **Availability** | Moderate | Extended unavailability could cause serious adverse effect to agency mission operations |
 
-**Overall Categorization: MODERATE**
+**Overall Categorization: HIGH**
 
-> **Note**: While the FIPS 199 categorization is Moderate, the system's technical controls (CMEK with HSM-backed KMS, WORM audit logs, three-environment blast-radius isolation, non-repudiation controls, and enhanced monitoring) satisfy the majority of FedRAMP High enhancement requirements. See Appendix A-2 for the full High-delta control inventory.
+> **DoD IL5**: The system operates within GCP IL5 Assured Workloads, satisfying DoD Cloud Computing SRG requirements for Impact Level 5 workloads. IL5 covers CUI and National Security Systems (unclassified) data. The IL5 Assured Workloads folder enforces data residency, service restrictions, US-person personnel controls, and CMEK encryption requirements at the organizational policy layer.
 
 ### 6.2 Information Types
 
@@ -330,33 +363,47 @@ All database roles operate under PostgreSQL Row-Level Security (RLS). RLS polici
 ```
 ┌─ Authorization Boundary ─────────────────────────────────────────────────┐
 │                                                                          │
-│  ┌─ App Environment (archon-fed-app-*) ─────────────────────────┐   │
-│  │  WAF → Load Balancer → App SPA (container)                      │   │
-│  │                       → App API (container)                      │   │
-│  │  Identity Pool (App Users)                                       │   │
-│  │  Logging + Monitoring │ Container Registry                        │   │
+│  ┌─ IL5 Assured Workloads ─────────────────────────────────────────┐   │
+│  │                                                                   │   │
+│  │  ┌─ App Project (archon-fed-app-*) ──────────────────────┐   │   │
+│  │  │  WAF → Load Balancer → App SPA (container)               │   │   │
+│  │  │                       → App API (container)               │   │   │
+│  │  │  Logging + Monitoring │ Container Registry                 │   │   │
+│  │  └───────────────────────────────────────────────────────────┘   │   │
+│  │          │ Cross-project: database IAM grant (read-only)          │   │
+│  │  ┌─ Ops Project (archon-fed-ops-*) ──────────────────────┐   │   │
+│  │  │  Ops Service (container) ←── no public ingress              │   │   │
+│  │  │  ClamAV (container) ←── internal only                       │   │   │
+│  │  │  PostgreSQL 15 ←── RLS enforced                            │   │   │
+│  │  │  Object Storage (Documents) ←── AES-256 + CMEK             │   │   │
+│  │  │  Vector Search + LLM ←── private endpoint                   │   │   │
+│  │  │  Task Queue │ DLP │ Pub/Sub push subs (from scheduler)     │   │   │
+│  │  │  Logging + Monitoring │ Container Registry                   │   │   │
+│  │  └───────────────────────────────────────────────────────────┘   │   │
+│  │          │ Cross-project: database IAM grant (read-write)         │   │
+│  │  ┌─ Admin Project (archon-fed-admin-*) ───────────────────┐   │   │
+│  │  │  WAF → Load Balancer → Admin SPA (container)              │   │   │
+│  │  │                       → Admin API (container)              │   │   │
+│  │  │  Logging + Monitoring │ Container Registry                  │   │   │
+│  │  └───────────────────────────────────────────────────────────┘   │   │
+│  │                                                                   │   │
+│  │  ┌─ KMS Project (archon-fed-kms-*) ──────────────────────┐   │   │
+│  │  │  Cloud KMS CMEK keys (HSM-backed)                         │   │   │
+│  │  └───────────────────────────────────────────────────────────┘   │   │
 │  └──────────────────────────────────────────────────────────────────┘   │
-│           │ Cross-environment: database IAM grant (read-only)           │
-│  ┌─ Ops Environment (archon-fed-ops-*) ─────────────────────────┐   │
-│  │  Ops Service (container) ←── no public ingress                    │   │
-│  │  ClamAV (container) ←── internal only                             │   │
-│  │  PostgreSQL 15 ←── RLS enforced                                  │   │
-│  │  Object Storage (Documents) ←── AES-256 + CMEK                   │   │
-│  │  Vector Search + LLM ←── private endpoint                        │   │
-│  │  Document Extraction │ Task Queue │ KMS │ DLP                    │   │
-│  │  Logging + Monitoring │ Container Registry                        │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│           │ Cross-environment: database IAM grant (read-write)          │
-│  ┌─ Admin Environment (archon-fed-admin-*) ──────────────────────┐   │
-│  │  WAF → Load Balancer → Admin SPA (container)                     │   │
-│  │                       → Admin API (container)                     │   │
-│  │  Identity Pool (Admin Users)                                      │   │
-│  │  Logging + Monitoring │ Container Registry                        │   │
+│                                                                          │
+│  ┌─ FedRAMP High AW (non-IL5 services) ────────────────────────────┐   │
+│  │  Auth Admin (archon-fed-auth-admin-*): Identity Platform          │   │
+│  │  Auth App (archon-fed-auth-app-*): Identity Platform              │   │
+│  │  ── JWT public keys fetched by IL5 data plane (offline validation)│   │
+│  │                                                                    │   │
+│  │  Mgmt Scheduler (archon-mgmt-scheduler-*):                        │   │
+│  │    Cloud Scheduler → Pub/Sub topic → push subs in ops project     │   │
 │  └──────────────────────────────────────────────────────────────────┘   │
 │                                                                          │
 │  ┌─ CI/CD ──────────────────────────────────────────────────────────┐   │
-│  │  GitHub Actions → WIF/OIDC (keyless) →                           │   │
-│  │  Container Registry → Container Deploy                            │   │
+│  │  Cloud Build → Artifact Registry → Container Deploy               │   │
+│  │  GitHub Actions → WIF/OIDC (keyless) → PR checks                 │   │
 │  └──────────────────────────────────────────────────────────────────┘   │
 │                                                                          │
 └──────────────────────────────────────────────────────────────────────────┘
@@ -402,7 +449,7 @@ Object Storage (AES-256-GCM + CMEK, workspace-scoped path)
     │
     ▼
 Task Queue → Ops Service (container):
-    ├─► Document extraction (OCR)
+    ├─► Document text extraction (native Go parsing)
     ├─► Text chunking
     ├─► Embedding generation
     ├─► Vector index upsert (workspace-scoped)

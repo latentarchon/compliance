@@ -80,7 +80,7 @@ Implementation follows FedRAMP's recommended order:
 
 **Machine-Based Validation** (on every commit):
 - OSCAL SSP regenerated from source data
-- Validated against FedRAMP Moderate OSCAL profile via `oscal-cli`
+- Validated against FedRAMP High OSCAL profile via `oscal-cli`
 - CI blocks merge if validation fails
 
 **Non-Machine-Based Validation** (per submission):

@@ -200,7 +200,7 @@ On **SEV-1/SEV-2 security incidents**, a forensic preservation endpoint captures
 
 - **Scope**: Organization-level or workspace-level preservation
 - **Captures**: Database snapshot (documents, messages, members, audit events) + full audit trail
-- **Access Control**: Restricted to the ops service with OIDC authentication (Cloud Scheduler / admin SA only)
+- **Access Control**: Restricted to the ops service with OIDC authentication (Pub/Sub push from Cloud Scheduler mgmt project / admin SA only)
 - **Audit Trail**: Preservation operations are themselves audit-logged
 - **Purpose**: Ensures evidence is preserved before any automated purge or account lifecycle action can destroy relevant data
 - **Alignment**: Security Addendum §7.4, Privacy Policy §5 (data purge exemption)

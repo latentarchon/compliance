@@ -13,7 +13,7 @@
 
 ### 1.1 Purpose
 
-This Continuous Monitoring (ConMon) Plan defines the ongoing monitoring strategy for the Latent Archon platform to maintain security authorization and ensure continued compliance with FedRAMP Moderate requirements. It implements NIST SP 800-137 guidance and FedRAMP ConMon requirements.
+This Continuous Monitoring (ConMon) Plan defines the ongoing monitoring strategy for the Latent Archon platform to maintain security authorization and ensure continued compliance with FedRAMP High and DoD IL5 requirements. It implements NIST SP 800-137 guidance and FedRAMP ConMon requirements. The system operates within GCP IL5 Assured Workloads, with non-IL5 services (Identity Platform, Cloud Scheduler) in dedicated FedRAMP High projects.
 
 ### 1.2 Scope
 
@@ -69,7 +69,7 @@ This plan covers monitoring of all security controls within the authorization bo
 
 ### 3.1 Scanning Schedule
 
-All vulnerability scanning runs on **Google Cloud Build** (not GitHub Actions). Scheduled scans are triggered by Cloud Scheduler.
+All vulnerability scanning runs on **Google Cloud Build** (not GitHub Actions). Scheduled scans are triggered by Cloud Scheduler (FedRAMP High management project) via Pub/Sub push into the IL5 boundary.
 
 | Scanner | Target | Frequency | Platform | Coverage |
 |---------|--------|-----------|----------|----------|
@@ -81,7 +81,7 @@ All vulnerability scanning runs on **Google Cloud Build** (not GitHub Actions). 
 | **Dependabot** | All dependencies | Daily | GitHub | GitHub Advisory Database |
 | **Red Team Suite** | Deployed system | Monthly | Cloud Build (Cloud Run Job) | 99 attacks across 6 suites (auth bypass, escalation, exfiltration, leftfield, webapp, manual tools) |
 
-**Daily scan pipeline** (`cloudbuild-security.yaml`): GoSec + Semgrep + Trivy FS + govulncheck + Gitleaks run in parallel at 6am ET via Cloud Scheduler. SARIF results are uploaded to the build artifacts GCS bucket with date-partitioned paths.
+**Daily scan pipeline** (`cloudbuild-security.yaml`): GoSec + Semgrep + Trivy FS + govulncheck + Gitleaks run in parallel at 6am ET via Cloud Scheduler (FedRAMP High mgmt project). SARIF results are uploaded to the build artifacts GCS bucket with date-partitioned paths.
 
 ### 3.2 Remediation SLAs
 

@@ -1,11 +1,11 @@
 # Appendix A: FedRAMP Security Control Implementations
 
 > **Parent Document**: SSP-LA-001 (fedramp-ssp.md)  
-> **Baseline**: NIST SP 800-53 Rev. 5 — Moderate Impact  
+> **Baseline**: NIST SP 800-53 Rev. 5 — High Impact (IL5)  
 > **High Enhancement Controls**: See Appendix A-2 for 85+ FedRAMP High-delta controls  
-> **Date**: March 2026
+> **Date**: April 2026
 
-This appendix documents the implementation narrative for each NIST 800-53 Rev. 5 Moderate baseline control. Each control includes: responsibility designation, implementation status, and a detailed narrative covering who, what, how, where, and when.
+This appendix documents the implementation narrative for each NIST 800-53 Rev. 5 High baseline control. The system operates within GCP IL5 Assured Workloads, satisfying DFARS 252.204-7012 and NIST SP 800-171 requirements. Each control includes: responsibility designation, implementation status, and a detailed narrative covering who, what, how, where, and when.
 
 **Responsibility Key**: `CSP` = Latent Archon, `Inherited` = GCP FedRAMP High, `Shared` = Joint, `Customer` = Agency
 
@@ -39,7 +39,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 
 **(e)** Account creation requires approval by an org admin (explicit invite) or automated provisioning via SCIM 2.0 from an authorized customer IdP. JIT (Just-In-Time) provisioning automatically creates accounts for federated users on first SSO login when an SSO configuration exists for the organization.
 
-**(f)** Accounts are created via invite tokens (time-limited), SCIM 2.0 provisioning, or JIT provisioning. Accounts are modified via admin API RPCs. Accounts are disabled via Firebase Admin SDK `DisableUser()` or SCIM DELETE. Accounts are removed via `RemoveMember` RPC or self-service `CloseAccount` RPC (requires step-up MFA). Automated 90-day data purge runs via Cloud Scheduler for closed accounts.
+**(f)** Accounts are created via invite tokens (time-limited), SCIM 2.0 provisioning, or JIT provisioning. Accounts are modified via admin API RPCs. Accounts are disabled via Firebase Admin SDK `DisableUser()` or SCIM DELETE. Accounts are removed via `RemoveMember` RPC or self-service `CloseAccount` RPC (requires step-up MFA). Automated 90-day data purge runs via Cloud Scheduler (FedRAMP High mgmt project) → Pub/Sub push → ops Cloud Run for closed accounts.
 
 **(g)** System access is monitored through comprehensive audit logging (`internal/audit/logger.go`). All authentication events, role changes, member additions/removals, and SCIM provisioning actions are recorded with user ID, IP address, user agent, timestamp, and correlation ID.
 
@@ -74,7 +74,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: Accounts are disabled via: (1) Firebase Admin SDK `DisableUser()` called by org admins or platform operations, (2) SCIM DELETE from customer IdP, (3) self-service `CloseAccount` RPC requiring step-up MFA. Disabled accounts cannot authenticate — the Firebase Auth SDK rejects tokens from disabled accounts before they reach the application. Automated 90-day data purge via Cloud Scheduler removes personal data from closed accounts.
+**Implementation**: Accounts are disabled via: (1) Firebase Admin SDK `DisableUser()` called by org admins or platform operations, (2) SCIM DELETE from customer IdP, (3) self-service `CloseAccount` RPC requiring step-up MFA. Disabled accounts cannot authenticate — the Firebase Auth SDK rejects tokens from disabled accounts before they reach the application. Automated 90-day data purge via Cloud Scheduler (FedRAMP High mgmt project) → Pub/Sub push removes personal data from closed accounts.
 
 ### AC-2(4): Automated Audit Actions
 
@@ -454,7 +454,7 @@ At the infrastructure level, GCP Data Access audit logging is enabled for all cr
 - **Responsibility**: CSP
 - **Status**: Planned
 
-**Implementation**: _An independent Third-Party Assessment Organization (3PAO) will be engaged for the formal FedRAMP Moderate assessment. Target: Q3 2026._
+**Implementation**: _An independent Third-Party Assessment Organization (3PAO) will be engaged for the formal FedRAMP High + IL5 assessment. Target: Q3 2026._
 
 ### CA-3: Information Exchange
 
@@ -966,7 +966,7 @@ Password complexity and rotation policies are enforced by Identity Platform for 
 - **Responsibility**: Inherited (GCP) + CSP
 - **Status**: Implemented
 
-**Implementation**: Physical media sanitization is inherited from GCP's FedRAMP High authorization (NIST 800-88 compliant). Application-level data sanitization includes: (1) Account closure triggers 90-day automated data purge via Cloud Scheduler; (2) Document deletion is permanent after soft-delete retention period; (3) Cryptographic erasure is supported by rotating CMEK keys to render encrypted data irrecoverable.
+**Implementation**: Physical media sanitization is inherited from GCP's FedRAMP High authorization (NIST 800-88 compliant). Application-level data sanitization includes: (1) Account closure triggers 90-day automated data purge via Cloud Scheduler (FedRAMP High mgmt project) → Pub/Sub push → ops Cloud Run; (2) Document deletion is permanent after soft-delete retention period; (3) Cryptographic erasure is supported by rotating CMEK keys to render encrypted data irrecoverable.
 
 ### MP-7: Media Use
 
@@ -997,7 +997,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Security planning is governed by the Information Security Policy (POL-IS-001, `policies/information-security.md`) which defines the overarching information security program, objectives, governance structure, and subordinate policy hierarchy. The policy references NIST SP 800-53 Moderate as the primary compliance framework.
+**Implementation**: Security planning is governed by the Information Security Policy (POL-IS-001, `policies/information-security.md`) which defines the overarching information security program, objectives, governance structure, and subordinate policy hierarchy. The policy references NIST SP 800-53 High and DFARS 252.204-7012 as the primary compliance frameworks.
 
 ### PL-2: System Security and Privacy Plans
 
@@ -1025,7 +1025,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The NIST SP 800-53 Rev. 5 Moderate baseline has been selected based on the FIPS 199 categorization (Moderate confidentiality, integrity, and availability). This baseline is appropriate for a system processing Controlled Unclassified Information (CUI) for government agencies. The system architecture additionally satisfies the majority of FedRAMP High enhancement controls, documented in Appendix A-2, enabling High-baseline assessment in a single 3PAO engagement.
+**Implementation**: The NIST SP 800-53 Rev. 5 High baseline has been selected based on the FIPS 199 categorization (High confidentiality, High integrity, Moderate availability) and DoD IL5 requirements. This baseline is appropriate for a system processing Controlled Unclassified Information (CUI) and DoD mission data within IL5 Assured Workloads. The system satisfies DFARS 252.204-7012 and NIST SP 800-171 requirements. FedRAMP High enhancement controls are documented in Appendix A-2.
 
 ### PL-11: Baseline Tailoring
 
@@ -1043,7 +1043,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The Latent Archon information security program is governed by the Information Security Policy (POL-IS-001). The program plan encompasses: (1) security governance structure with defined roles (CEO as executive sponsor and ISSO); (2) hierarchy of 13 subordinate security policies; (3) compliance framework alignment (NIST 800-53 Moderate, FedRAMP); (4) risk management integration; (5) continuous improvement through Drata automated monitoring.
+**Implementation**: The Latent Archon information security program is governed by the Information Security Policy (POL-IS-001). The program plan encompasses: (1) security governance structure with defined roles (CEO as executive sponsor and ISSO); (2) hierarchy of 13 subordinate security policies; (3) compliance framework alignment (NIST 800-53 High, FedRAMP High, DoD IL5, DFARS 252.204-7012); (4) risk management integration; (5) continuous improvement through Drata automated monitoring.
 
 ### PM-2: Information Security Program Leadership Role
 
@@ -1274,7 +1274,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The system is categorized as FIPS 199 Moderate (Confidentiality: Moderate, Integrity: Moderate, Availability: Moderate). Categorization is based on the information types processed (see Section 6 of the SSP) and reviewed annually or upon significant system changes.
+**Implementation**: The system is categorized as FIPS 199 High (Confidentiality: High, Integrity: High, Availability: Moderate). The system processes CUI and DoD mission data within IL5 Assured Workloads. Categorization is based on the information types processed (see Section 6 of the SSP) and reviewed annually or upon significant system changes.
 
 ### RA-3: Risk Assessment
 

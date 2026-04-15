@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-Latent Archon is a multi-tenant document intelligence platform purpose-built for government agencies handling Controlled Unclassified Information (CUI). The platform enables Retrieval-Augmented Generation (RAG) conversation over uploaded documents with workspace-level data isolation, deployable on **Google Cloud Platform (GCP)** — FedRAMP High authorized infrastructure.
+Latent Archon is a multi-tenant document intelligence platform purpose-built for government agencies handling Controlled Unclassified Information (CUI) and DoD mission data. The platform enables Retrieval-Augmented Generation (RAG) conversation over uploaded documents with workspace-level data isolation, deployable on **Google Cloud Platform (GCP)** within **IL5 Assured Workloads** — satisfying FedRAMP High and DoD Impact Level 5 requirements.
 
 <!-- MULTI-CLOUD: AWS/Azure deployment options removed to focus on GCP-only strategy. Restore when multi-cloud support is reactivated.
 Original: deployable on **Google Cloud Platform (GCP)**, **Amazon Web Services (AWS)**, or **Microsoft Azure** — all FedRAMP High authorized infrastructure.
@@ -23,19 +23,19 @@ This whitepaper describes the platform's security architecture across authentica
 
 ### Multi-Pool Auth Isolation
 
-Authentication is split across two of the three isolated GCP projects, each with an independent identity pool. The third environment (ops) has no identity pool — it hosts the data tier and is accessed only via cross-environment IAM grants:
+Authentication is handled by dedicated **FedRAMP High Assured Workloads** projects (Identity Platform is not IL5-supported). Each auth project hosts an independent identity pool. The IL5 data-plane projects validate JWTs offline via JWKS public keys — no direct service calls cross the IL5 boundary:
 
-| Pool | GCP | Users | Domain |
-|------|-----|-------|--------|
-| App (End Users) | Identity Platform (Firebase Auth) | Agency analysts, viewers | `app.latentarchon.com` |
-| Admin (Org Admins) | Identity Platform (Firebase Auth) | Org administrators, workspace managers | `admin.latentarchon.com` |
+| Pool | GCP Project | Users | Domain |
+|------|-------------|-------|--------|
+| App (End Users) | `archon-fed-auth-app-*` (FedRAMP High AW) | Agency analysts, viewers | `app.latentarchon.com` |
+| Admin (Org Admins) | `archon-fed-auth-admin-*` (FedRAMP High AW) | Org administrators, workspace managers | `admin.latentarchon.com` |
 
 <!-- MULTI-CLOUD: AWS/Azure auth columns removed. Original included:
 | Pool | AWS | Azure |
 | App | SAML IdP providers | Azure AD federation |
 | Admin | SAML IdP providers | Azure AD federation | -->
 
-This three-environment split provides **complete auth pool isolation** — a valid app-pool JWT cannot authenticate against the admin API, and vice versa. Credential compromise in one pool cannot escalate to the other. The ops environment has no auth pool at all; it is a pure data tier with no public ingress.
+This architecture provides **complete auth pool isolation** — a valid app-pool JWT cannot authenticate against the admin API, and vice versa. Credential compromise in one pool cannot escalate to the other. The IL5 data-plane projects (admin, ops, app, kms) have no identity pools — auth projects exist in a separate FedRAMP High Assured Workloads boundary. The ops project is a pure data tier with no public ingress.
 
 > **Auth model**: GCP deployments support self-service registration (magic link + TOTP MFA) and SAML 2.0 SSO with SCIM 2.0 provisioning.
 
@@ -199,7 +199,7 @@ The pipeline uses the following GCP services:
 | Object storage | GCS |
 | Task queue | Cloud Tasks |
 | DLP/PII | Cloud DLP |
-| OCR/extraction | Document AI |
+| Text extraction | Native Go parsing (in-process) |
 | Embedding | Vertex AI (Gemini Embedding) |
 | Vector search | Vertex AI Vector Search |
 
@@ -429,7 +429,7 @@ The platform includes a **real-time security notification service** that alerts 
 
 ### Data Purge (Privacy Policy §5)
 
-A **Cloud Scheduler-triggered daily job** permanently deletes all data for accounts closed more than 90 days ago. This includes user records, org memberships, workspace memberships, documents, conversation messages, and audit events. The purge is irreversible and fully logged.
+A **daily cron job** (Cloud Scheduler → Pub/Sub push → ops Cloud Run) permanently deletes all data for accounts closed more than 90 days ago. This includes user records, org memberships, workspace memberships, documents, conversation messages, and audit events. Cloud Scheduler runs in a dedicated FedRAMP High management project outside the IL5 boundary; messages are delivered via cross-project Pub/Sub push subscriptions into the IL5 ops project. The purge is irreversible and fully logged.
 
 ### Forensic Preservation (Security Addendum §7.4)
 
@@ -1047,30 +1047,32 @@ CORS is tested with unit tests and e2e tests covering allowed origins, blocked o
 
 ---
 
-## Appendix B: FedRAMP Authorization (GCP)
+## Appendix B: FedRAMP Authorization (GCP) — IL5 Assured Workloads
 
-Latent Archon is deployed on GCP, a FedRAMP High authorized cloud provider. All services within the authorization boundary hold **FedRAMP High** authorization (IL4/IL5 capable):
+Latent Archon is deployed on GCP within **IL5 Assured Workloads** folders. Data-plane services run in IL5-approved GCP services. Services not yet IL5-approved operate in dedicated FedRAMP High Assured Workloads projects outside the IL5 boundary:
 
-| Capability | GCP Service | FedRAMP Status |
-|-----------|------------|---------------|
-| Container compute | Cloud Run | FedRAMP High |
-| Database | Cloud SQL (PostgreSQL) | FedRAMP High |
-| Object storage | Cloud Storage | FedRAMP High |
-| Load balancer | Cloud Load Balancing | FedRAMP High |
-| WAF / DDoS | Cloud Armor | FedRAMP High |
-| KMS | Cloud KMS | FedRAMP High |
-| Logging / monitoring | Cloud Logging + Monitoring | FedRAMP High |
-| Identity | Identity Platform | FedRAMP High |
-| LLM | Vertex AI (Gemini) | FedRAMP High |
-| Document extraction | Document AI | FedRAMP High |
-| Container registry | Artifact Registry | FedRAMP High |
-| Task queue | Cloud Tasks | FedRAMP High |
+| Capability | GCP Service | Compliance Boundary |
+|-----------|------------|---------------------|
+| Container compute | Cloud Run | IL5 |
+| Database | Cloud SQL (PostgreSQL) | IL5 |
+| Object storage | Cloud Storage | IL5 |
+| Load balancer | Cloud Load Balancing | IL5 |
+| WAF / DDoS | Cloud Armor | IL5 |
+| KMS | Cloud KMS | IL5 |
+| Logging / monitoring | Cloud Logging + Monitoring | IL5 |
+| LLM | Vertex AI (Gemini) | IL5 |
+| Vector search | Vertex AI Vector Search | IL5 |
+| Container registry | Artifact Registry | IL5 |
+| Task queue | Cloud Tasks | IL5 |
+| DLP / PII | Cloud DLP | IL5 |
+| Pub/Sub (push subs) | Cloud Pub/Sub | IL5 (subscriptions in ops project) |
+| Identity | Identity Platform | FedRAMP High (auth projects) |
+| Cron scheduling | Cloud Scheduler | FedRAMP High (mgmt project) |
 | TLS certificates | Certificate Manager | FedRAMP High |
-| DLP / PII | Cloud DLP | FedRAMP High |
 
 <!-- MULTI-CLOUD: Original table included AWS Service (ECS Fargate, RDS PostgreSQL, S3, ALB, WAFv2, AWS KMS, CloudWatch, IAM SAML, Bedrock Claude, Textract, ECR, SQS, ACM, Comprehend) and Azure Service (Container Apps, PostgreSQL Flexible Server, Blob Storage, Front Door, Front Door WAF, Key Vault, Azure Monitor, Azure AD, Azure OpenAI GPT-4o, Document Intelligence, Container Registry, Service Bus, Front Door managed, AI Language) columns. -->
 
-By deploying on FedRAMP-authorized infrastructure, Latent Archon inherits a substantial portion of NIST 800-53 controls at the physical, environmental, and platform layers.
+The IL5 Assured Workloads folder enforces org policies at the GCP organizational layer: data residency (US-only regions), service restrictions (only IL5-approved services may be enabled), US-person personnel controls for GCP support, and CMEK encryption requirements. By deploying on IL5-authorized infrastructure, Latent Archon inherits a substantial portion of NIST 800-53 and NIST 800-171 controls at the physical, environmental, and platform layers.
 
 ---
 
