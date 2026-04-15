@@ -168,14 +168,14 @@ The auth projects communicate with the data plane via JWT public key validation 
 | Text Generation | Vertex AI (Gemini) | IL5 | LLM for RAG conversation responses |
 | Identity | Identity Platform | FedRAMP High (auth projects) | Auth pools for multi-tenant isolation; JWTs validated offline in IL5 boundary |
 | WAF | Cloud Armor | IL5 | DDoS protection, OWASP CRS, bot blocking, IP allowlisting |
-| Load Balancing | Global HTTPS LB | IL5 | TLS termination, routing, health checks |
+| Load Balancing | Regional external ALB | IL5 | TLS termination, host-based routing, health checks |
 | Key Management | Cloud KMS | IL5 | CMEK for database and storage encryption |
 | Task Queue | Cloud Tasks | IL5 | Async document processing and embedding queues |
 | Cron Scheduling | Cloud Scheduler + Pub/Sub | FedRAMP High (mgmt project) | Cron triggers via cross-project Pub/Sub push into IL5 boundary |
 | Malware Scanner | Cloud Run (ClamAV) | IL5 | Internal-only ClamAV REST service for upload scanning |
 | Logging | Cloud Logging + Monitoring | IL5 | Centralized logging, metrics, alerting |
 | Container Registry | Artifact Registry | IL5 | Docker image storage for all services |
-| DNS/TLS | Certificate Manager | FedRAMP High | TLS certificates with DNS authorization |
+| TLS Certificates | Regional SSL certificates (self-managed) | IL5 | Self-managed TLS certs on regional LB; Certificate Manager is not IL5-supported |
 | DNS | Cloudflare | FedRAMP Moderate | Authoritative DNS with DNSSEC enabled |
 
 <!-- MULTI-CLOUD: Original table included AWS Service (ECS Fargate, RDS, S3, OpenSearch Serverless, Bedrock Claude, Textract, SAML IdP, WAFv2, ALB, AWS KMS, SQS, CloudWatch, ECR, ACM) and Azure Service (Container Apps, PostgreSQL Flexible Server, Blob Storage, Azure AI Search, Azure OpenAI GPT-4o, Document Intelligence, Azure AD, Front Door WAF, Front Door, Key Vault, Service Bus, Azure Monitor, Container Registry, Front Door managed) columns. -->
