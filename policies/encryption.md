@@ -177,7 +177,7 @@ This links the BoringSSL FIPS 140-2 validated module (Certificate #4407) for all
 |----------|-----------|-------|
 | KMS key usage audit | Monthly | Engineering |
 | TLS configuration scan | Quarterly | Engineering |
-| Certificate expiration monitoring | Continuous (automated) | Cloud certificate manager |
+| Certificate expiration monitoring | Continuous (automated) | Engineering (monitoring alerts) |
 | Secret scanning (Gitleaks) | On every commit (CI) | Engineering |
 | FIPS compliance verification | On each build (BoringCrypto) | CI/CD |
 | Encryption policy review | Annual | CEO / ISSO |

@@ -284,7 +284,7 @@ All data-at-rest encryption uses Customer-Managed Encryption Keys (CMEK) backed 
 
 | Path | Protocol | GCP |
 |------|----------|-----|
-| Client → Load Balancer | TLS 1.2+ | Certificate Manager (DNS auth) |
+| Client → Load Balancer | TLS 1.2+ | Self-managed regional SSL certificates |
 | LB → Container | TLS 1.2+ | Google-managed |
 | Container → Database | TLS 1.2+ | Cloud SQL Connector (IAM, private VPC) |
 | Container → AI Services | TLS 1.2+ | PSC (no public internet) |
@@ -708,7 +708,7 @@ This ensures:
 
 ### Binary Authorization Enforcement
 
-Cloud Run enforces a Binary Authorization policy that **rejects images without a valid attestation**:
+Cloud Run enforces a Binary Authorization policy that **rejects images without a valid attestation** in production:
 
 | Control | Detail |
 |---------|--------|
@@ -716,8 +716,9 @@ Cloud Run enforces a Binary Authorization policy that **rejects images without a
 | Policy | `ALWAYS_DENY` default; only images signed by the Cloud Build attestor are admitted |
 | Break-Glass | Annotation-based override for emergency deploys — triggers CRITICAL monitoring alert |
 | Monitoring | Admission denials and break-glass overrides both fire alert policies routed to notification channels |
+| Staging | Disabled — IL5 org policy (`gcp.restrictServiceUsage`) blocks `containeranalysis.googleapis.com`, which Binary Auth requires for attestation notes |
 
-This provides a second layer of supply chain enforcement beyond Cosign — even if a malicious image is pushed to Artifact Registry, it cannot be deployed without a valid attestation from the authorized Cloud Build pipeline.
+This provides a second layer of supply chain enforcement beyond Cosign — even if a malicious image is pushed to Artifact Registry, it cannot be deployed without a valid attestation from the authorized Cloud Build pipeline. Binary Authorization is enabled in production where the Container Analysis API is permitted. In staging (IL5 Assured Workloads), the org policy restricts this API, so supply chain integrity relies on digest-pinned deploys, Cosign signature verification, and immutable Artifact Registry tags.
 
 ### CI/CD Security
 
@@ -823,7 +824,7 @@ The platform uses an isolated **three-environment architecture** on each cloud, 
 | **Ops environment** | `archon-fed-ops-*` |
 | **Admin environment** | `archon-fed-admin-*` |
 | **Network isolation** | VPC per project |
-| **KMS isolation** | KMS keyring in ops project |
+| **KMS isolation** | Dedicated KMS project (`archon-fed-kms-*`) |
 | **Centralized logging** | Org-level log sink → central project |
 
 <!-- MULTI-CLOUD: Original table included AWS (AWS Organizations, Account, VPC per account, KMS per account, CloudTrail org trail → S3) and Azure (Azure AD Tenant, Subscription, VNet per subscription, Key Vault per subscription, Activity Log → central Log Analytics) columns. -->
@@ -849,7 +850,7 @@ GCP enforces 15+ org policies. All are defined in Terraform.
 
 Customer-Managed Encryption Keys (CMEK) are enforced:
 
-- **GCP**: Autokey with dedicated KMS projects; `gcp.restrictNonCmekServices` blocks Google-managed keys
+- **GCP**: Dedicated KMS projects (`archon-fed-kms-*`, `archon-mgmt-kms`) with org policies enforced at the Assured Workloads folder level. `gcp.restrictCmekCryptoKeyProjects` restricts which projects may host CMEK keys; `gcp.restrictNonCmekServices` blocks Google-managed encryption on data-bearing services (Cloud Storage, Artifact Registry, Secret Manager, BigQuery, Cloud SQL, Vertex AI, Cloud Logging, Cloud Tasks)
 
 <!-- MULTI-CLOUD: Original also included:
 - AWS: KMS CMKs required for S3, RDS, and ECS; S3 bucket policies deny unencrypted uploads
@@ -1068,7 +1069,7 @@ Latent Archon is deployed on GCP within **IL5 Assured Workloads** folders. Data-
 | Pub/Sub (push subs) | Cloud Pub/Sub | IL5 (subscriptions in ops project) |
 | Identity | Identity Platform | FedRAMP High (auth projects) |
 | Cron scheduling | Cloud Scheduler | FedRAMP High (mgmt project) |
-| TLS certificates | Certificate Manager | FedRAMP High |
+| TLS certificates | Regional SSL certificates (self-managed) | IL5 |
 
 <!-- MULTI-CLOUD: Original table included AWS Service (ECS Fargate, RDS PostgreSQL, S3, ALB, WAFv2, AWS KMS, CloudWatch, IAM SAML, Bedrock Claude, Textract, ECR, SQS, ACM, Comprehend) and Azure Service (Container Apps, PostgreSQL Flexible Server, Blob Storage, Front Door, Front Door WAF, Key Vault, Azure Monitor, Azure AD, Azure OpenAI GPT-4o, Document Intelligence, Container Registry, Service Bus, Front Door managed, AI Language) columns. -->
 

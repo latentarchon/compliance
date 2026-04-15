@@ -221,7 +221,7 @@ Emergency changes (security incidents, critical bugs affecting availability) fol
 | Container services | Traffic split to previous revision | < 1 minute |
 | Database schema | Forward migration (new migration file) | 5–30 minutes |
 | Infrastructure | `terragrunt apply` with previous state | 5–15 minutes |
-| DNS/TLS | Certificate manager update | 5–60 minutes |
+| DNS/TLS | Self-managed certificate update on regional LB | 5–60 minutes |
 
 ---
 

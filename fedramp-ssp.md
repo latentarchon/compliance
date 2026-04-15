@@ -9,7 +9,7 @@
 > **Contact**: ajhendel@latentarchon.com  
 > **FIPS 199 Category**: High (Confidentiality: High, Integrity: High, Availability: Moderate)
 
-> **Assured Workloads**: The GCP staging deployment runs within IL5 Assured Workloads folders, which enforce data residency (US-only regions), service restrictions (only IL5-approved GCP services), US-person personnel controls, and CMEK encryption requirements. Production currently runs under FedRAMP High Assured Workloads; IL5 migration is planned. Services not yet IL5-approved (Identity Platform, Cloud Scheduler, Certificate Manager) operate in dedicated FedRAMP High Assured Workloads projects outside the IL5 boundary, communicating with the data plane via JWT validation and Pub/Sub push. The system satisfies DFARS 252.204-7012 and NIST SP 800-171 requirements for CUI protection.
+> **Assured Workloads**: Both staging and production data-plane projects run within IL5 Assured Workloads folders (under `Fed/IL5/`), which enforce data residency (US-only regions), service restrictions (only IL5-approved GCP services), US-person personnel controls, and CMEK encryption requirements. Services not yet IL5-approved (Identity Platform, Cloud Scheduler) operate in dedicated FedRAMP High Assured Workloads folders, communicating with the data plane via JWT validation and Pub/Sub push. Management-tier projects reside in dedicated AW folders under `Management/`. VPC Service Controls provide an API-level perimeter around IL5 projects (enforced in staging; dry-run in production pending cutover). The system satisfies DFARS 252.204-7012 and NIST SP 800-171 requirements for CUI protection.
 
 ---
 
@@ -112,15 +112,22 @@ Each customer deployment runs on a **single cloud provider** selected at onboard
 
 #### 2.3.1 IL5 Assured Workloads Architecture
 
-Data-plane projects (admin, ops, app, kms) operate within an **IL5 Assured Workloads** folder. The IL5 folder enforces org policies automatically: data residency (US-only regions), service restrictions (only IL5-approved services), US-person personnel controls for support, and CMEK encryption requirements.
+The GCP resource hierarchy is organized by compliance tier under the `Fed/` folder:
 
-Services not yet approved for IL5 (Identity Platform, Cloud Scheduler, Certificate Manager) are isolated into dedicated **FedRAMP High Assured Workloads** projects:
+- **Fed/IL5/** — IL5 Assured Workloads folders for staging and production data-plane projects
+- **Fed/FedRAMP High/** — FedRAMP High Assured Workloads folders for auth projects (Identity Platform not IL5-supported)
+- **Management/** — Management plane with its own AW folders (Mgmt FedRAMP High AW, Mgmt IL5 AW)
+
+Data-plane projects (admin, ops, app, kms) operate within **IL5 Assured Workloads** folders (one per environment under `Fed/IL5/`). The IL5 folders enforce org policies automatically: data residency (US-only regions), service restrictions (only IL5-approved services), US-person personnel controls for support, and CMEK encryption requirements. CMEK org policies (`gcp.restrictCmekCryptoKeyProjects`, `gcp.restrictNonCmekServices`) are enforced at the AW folder level, restricting key hosting to dedicated KMS and ops projects and requiring CMEK on all data-bearing services.
+
+Services not yet approved for IL5 (Identity Platform, Cloud Scheduler) are isolated into dedicated **FedRAMP High Assured Workloads** folders:
 
 | Boundary | Projects | Compliance Regime | Services |
 |----------|----------|-------------------|----------|
 | IL5 data plane | `archon-fed-admin-*`, `archon-fed-ops-*`, `archon-fed-app-*`, `archon-fed-kms-*` | IL5 | Cloud Run, Cloud SQL, GCS, Vertex AI, Cloud Armor, Cloud KMS, Cloud Tasks, Cloud Logging, Artifact Registry, Cloud DLP |
 | FedRAMP High auth | `archon-fed-auth-admin-*`, `archon-fed-auth-app-*` | FedRAMP High | Identity Platform (Firebase Auth), Firebase Hosting |
-| FedRAMP High management | `archon-mgmt-scheduler-*` | FedRAMP High | Cloud Scheduler, Pub/Sub |
+| FedRAMP High management | `archon-mgmt-scheduler-*` | FedRAMP High (Mgmt AW) | Cloud Scheduler, Pub/Sub |
+| IL5 management | `archon-mgmt-kms`, `latentarchon-redteam` | IL5 (Mgmt AW) | Cloud KMS (centralized mgmt CMEK), security testing |
 
 The auth projects communicate with the data plane via JWT public key validation only — no direct service-to-service calls cross the IL5 boundary. The backend validates JWTs offline using JWKS public keys fetched from the auth projects. Cloud Scheduler delivers cron events via cross-project Pub/Sub push subscriptions into the IL5 boundary.
 
@@ -204,7 +211,11 @@ Latent Archon uses a **multi-project architecture** with IL5 Assured Workloads f
 
 - **Auth App** (`archon-fed-auth-app-*`): Identity Platform (Firebase Auth) for the app tenant pool. Same FedRAMP High AW isolation as auth-admin. JWT validation is offline via JWKS.
 
-- **Management Scheduler** (`archon-mgmt-scheduler-*`): Cloud Scheduler for cron jobs. Cloud Scheduler is not IL5-supported, so cron triggers are published to a Pub/Sub topic in this project. Push subscriptions in the ops project (within the IL5 boundary) deliver messages to the ops Cloud Run service, satisfying Cloud Run's `ingress = "internal"` policy.
+- **Management Scheduler** (`archon-mgmt-scheduler-*`): Cloud Scheduler for cron jobs. Cloud Scheduler is not IL5-supported, so cron triggers are published to a Pub/Sub topic in this project. Push subscriptions in the ops project (within the IL5 boundary) deliver messages to the ops Cloud Run service, satisfying Cloud Run's `ingress = "internal"` policy. Scheduler projects reside in the **Mgmt FedRAMP High AW** folder under Management/.
+
+- **Management KMS** (`archon-mgmt-kms`): Centralized CMEK key management for the management tier. Resides in the **Mgmt IL5 AW** folder under Management/.
+
+- **Red Team** (`latentarchon-redteam`): Security testing project (CA, RA controls). Resides in the **Mgmt IL5 AW** folder under Management/.
 
 **Cross-pool identity bridging is explicitly prohibited.** Users who exist in both pools (admin and app) are treated as separate identities. Workspace access across pools uses an explicit invite flow only (see `docs/POOL_ISOLATION.md`).
 
@@ -212,7 +223,7 @@ Latent Archon uses a **multi-project architecture** with IL5 Assured Workloads f
 
 | Environment | Purpose | IL5 Projects | FedRAMP High Projects | Access |
 |-------------|---------|--------------|----------------------|--------|
-| Production | Live customer data | *(FedRAMP High AW; IL5 migration pending)* `archon-fed-admin-prod`, `archon-fed-ops-prod`, `archon-fed-app-prod`, `archon-fed-kms-prod` | `archon-fed-auth-admin-prod`, `archon-fed-auth-app-prod`, `archon-mgmt-scheduler-prod` | Restricted to CI/CD + emergency break-glass |
+| Production | Live customer data | `archon-fed-admin-prod`, `archon-fed-ops-prod`, `archon-fed-app-prod`, `archon-fed-kms-prod` | `archon-fed-auth-admin-prod`, `archon-fed-auth-app-prod`, `archon-mgmt-scheduler-prod` | Restricted to CI/CD + emergency break-glass |
 | Staging | Pre-production validation | `archon-fed-admin-staging`, `archon-fed-ops-staging`, `archon-fed-app-staging`, `archon-fed-kms-staging` | `archon-fed-auth-admin-stg`, `archon-fed-auth-app-stg`, `archon-mgmt-scheduler-stg` | Engineering team |
 | Development | Local development | N/A (local Docker Compose) | N/A | Individual developers |
 
@@ -246,6 +257,18 @@ All outbound traffic from VPC is **denied by default**. Egress controls explicit
 - Cloudflare DNS endpoints
 
 All other egress is blocked. Microsoft Graph API egress is only active when the integration is configured (`MSGRAPH_CLIENT_ID` present). This is enforced via Terraform-managed firewall rules.
+
+### 4.2 VPC Service Controls
+
+**VPC Service Controls (VPC-SC)** enforce a logical API-level perimeter around all projects in the IL5 Assured Workloads folder. VPC-SC prevents data exfiltration by blocking GCP API calls that cross the perimeter boundary — even if IAM permissions would otherwise allow the call.
+
+- **Staging**: Enforced (switched from dry-run to enforced 2026-04-15)
+- **Production**: Dry-run (audit-only; enforcement pending after dry-run log review)
+- **Perimeter scope**: All active projects auto-discovered from the IL5 AW folder. New projects added to the AW folder are automatically included.
+- **Auth project exclusion**: Auth projects (Identity Platform) use global services incompatible with VPC-SC and are excluded from the perimeter.
+- **Enforcement**: When enforced, hard 403 errors for API calls that violate the perimeter boundary. In dry-run mode, violations are logged in Cloud Audit Logs without blocking.
+
+VPC-SC complements the FQDN egress firewall — the firewall controls network-layer egress while VPC-SC controls API-layer data movement.
 
 ---
 
@@ -363,7 +386,7 @@ All database roles operate under PostgreSQL Row-Level Security (RLS). RLS polici
 ```
 ┌─ Authorization Boundary ─────────────────────────────────────────────────┐
 │                                                                          │
-│  ┌─ IL5 Assured Workloads ─────────────────────────────────────────┐   │
+│  ┌─ Fed/IL5/ — IL5 Assured Workloads ──────────────────────────────┐   │
 │  │                                                                   │   │
 │  │  ┌─ App Project (archon-fed-app-*) ──────────────────────┐   │   │
 │  │  │  WAF → Load Balancer → App SPA (container)               │   │   │
@@ -392,13 +415,22 @@ All database roles operate under PostgreSQL Row-Level Security (RLS). RLS polici
 │  │  └───────────────────────────────────────────────────────────┘   │   │
 │  └──────────────────────────────────────────────────────────────────┘   │
 │                                                                          │
-│  ┌─ FedRAMP High AW (non-IL5 services) ────────────────────────────┐   │
+│  ┌─ Fed/FedRAMP High/ — FedRAMP High AW (auth projects) ──────────┐   │
 │  │  Auth Admin (archon-fed-auth-admin-*): Identity Platform          │   │
 │  │  Auth App (archon-fed-auth-app-*): Identity Platform              │   │
 │  │  ── JWT public keys fetched by IL5 data plane (offline validation)│   │
-│  │                                                                    │   │
-│  │  Mgmt Scheduler (archon-mgmt-scheduler-*):                        │   │
-│  │    Cloud Scheduler → Pub/Sub topic → push subs in ops project     │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+│  ┌─ Management/ ───────────────────────────────────────────────────┐   │
+│  │  ┌─ Mgmt FedRAMP High AW ─────────────────────────────────┐   │   │
+│  │  │  Scheduler (archon-mgmt-scheduler-*):                       │   │   │
+│  │  │    Cloud Scheduler → Pub/Sub → push subs in ops project     │   │   │
+│  │  └─────────────────────────────────────────────────────────────┘   │   │
+│  │  ┌─ Mgmt IL5 AW ──────────────────────────────────────────┐   │   │
+│  │  │  KMS (archon-mgmt-kms): centralized mgmt CMEK keys         │   │   │
+│  │  │  Red Team (latentarchon-redteam): security testing          │   │   │
+│  │  └─────────────────────────────────────────────────────────────┘   │   │
+│  │  archon-org-admin: TF state, audit logs (no AW — needs BigQuery) │   │
 │  └──────────────────────────────────────────────────────────────────┘   │
 │                                                                          │
 │  ┌─ CI/CD ──────────────────────────────────────────────────────────┐   │

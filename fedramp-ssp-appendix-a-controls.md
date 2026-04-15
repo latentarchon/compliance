@@ -1532,7 +1532,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Key management uses Cloud KMS with HSM-backed keys (FIPS 140-2 Level 3) and automatic 90-day rotation: (1) CMEK keys encrypt data at rest for Cloud SQL, Cloud Storage, BigQuery (audit logs), Cloud Logging, Vertex AI, Artifact Registry, Cloud Tasks, and application-level secrets — all using AES-256-GCM with 90-day automatic rotation and 30-day destroy-scheduled safety windows; (2) Per-tenant CMEK anchor via `organizations.kms_key_name` column for future per-tenant encryption key isolation; (3) JWT signing keys managed by Google Identity Platform (automatic rotation); (4) SCIM tokens are random 32-byte values, SHA-256 hashed before storage; (5) No static service account keys — all service authentication uses Workload Identity Federation; (6) TLS certificate keys managed by Google Certificate Manager (automatic renewal); (7) Cloud KMS `app_secrets` key (AES-256-GCM, HSM-backed, 90-day rotation) encrypts Microsoft Graph OAuth refresh tokens before database storage; (8) KMS key lifecycle alerts monitor for key disable, destroy, and version state changes with notifications to security operations. See Security Whitepaper: "Schema future-proofing".
+**Implementation**: Key management uses Cloud KMS with HSM-backed keys (FIPS 140-2 Level 3) and automatic 90-day rotation: (1) CMEK keys encrypt data at rest for Cloud SQL, Cloud Storage, BigQuery (audit logs), Cloud Logging, Vertex AI, Artifact Registry, Cloud Tasks, and application-level secrets — all using AES-256-GCM with 90-day automatic rotation and 30-day destroy-scheduled safety windows; (2) Per-tenant CMEK anchor via `organizations.kms_key_name` column for future per-tenant encryption key isolation; (3) JWT signing keys managed by Google Identity Platform (automatic rotation); (4) SCIM tokens are random 32-byte values, SHA-256 hashed before storage; (5) No static service account keys — all service authentication uses Workload Identity Federation; (6) TLS certificate keys are self-managed regional SSL certificates uploaded to the regional LB; (7) Cloud KMS `app_secrets` key (AES-256-GCM, HSM-backed, 90-day rotation) encrypts Microsoft Graph OAuth refresh tokens before database storage; (8) KMS key lifecycle alerts monitor for key disable, destroy, and version state changes with notifications to security operations. See Security Whitepaper: "Schema future-proofing".
 
 ### SC-12(1): Availability
 
@@ -1560,7 +1560,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: TLS certificates are Google-managed via Certificate Manager with automatic renewal and DNS-based domain validation. SAML IdP certificates are managed by customer agencies. DNSSEC uses Cloudflare-managed zone signing keys with DS records registered at the domain registrar.
+**Implementation**: TLS certificates are self-managed regional SSL certificates on the regional external Application Load Balancer. Certificate Manager is not used because it is not IL5-supported. SAML IdP certificates are managed by customer agencies. DNSSEC uses Cloudflare-managed zone signing keys with DS records registered at the domain registrar.
 
 ### SC-18: Mobile Code
 
