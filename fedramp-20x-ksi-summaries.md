@@ -461,8 +461,6 @@ Implementation follows FedRAMP's recommended order:
 - ✅ PostgreSQL RLS: workspace-scoped data isolation
 - ✅ Cloud IAM: least-privilege roles for terraform/deploy identities (no Owner/Editor/Contributor)
 - ✅ WIF/OIDC: keyless CI/CD auth (no static keys — org policy enforced)
-- ✅ IAM domain restriction: `iam.allowedPolicyMemberDomains` limits IAM grants to `latentarchon.com` identities only
-- ✅ Default SA hardening: `iam.automaticIamGrantsForDefaultServiceAccounts` blocks automatic Editor grants
 - ✅ Database roles: archon_app_ro, archon_admin_rw, archon_ops_rw (enforced via migration; default PUBLIC revoked)
 - ✅ Migration-user isolation: Atlas job uses IAM-based DB auth with `SET ROLE archon_migrator` (no static credentials). `postgres` superuser password in secrets management as break-glass only, accessible to security admins (not mounted on any service or job by default).
 

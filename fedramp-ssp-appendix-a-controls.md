@@ -115,7 +115,6 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 **Implementation**: Information flow is controlled at multiple layers:
 
 - **Network**: VPC with private IP only (no public IPs on any service). FQDN-based egress firewall with default-deny-all and explicit allowlist for Google APIs and Microsoft Graph API (`graph.microsoft.com`, `login.microsoftonline.com` for SharePoint/OneDrive document sync). Cloud Armor WAF with OWASP Core Rule Set.
-- **Org policy enforcement**: Cloud Run VPC egress is locked to `ALL_TRAFFIC` via `run.allowedVPCEgress` org policy, ensuring all outbound traffic traverses the VPC where firewall rules and VPC Service Controls apply. Internet NEGs are prohibited (`compute.disableInternetNetworkEndpointGroup`), preventing load balancer backends from routing to arbitrary external endpoints. Protocol forwarding is restricted to INTERNAL only (`compute.restrictProtocolForwardingCreationForTypes`).
 - **Application**: RLS enforces workspace-scoped data access. Vector store token restrictions prevent cross-workspace search. The auth interceptor prevents cross-org request routing via DB-backed subdomain validation.
 - **Per-Org IP Allowlisting**: Organization administrators configure CIDR-based IP allowlists via `UpdateOrganizationSettings`. Allowlists are synced to Cloud Armor WAF rules using CEL expressions matching org hostname + IP range. This enables agencies to restrict access to government/VPN IP ranges.
 
@@ -564,7 +563,7 @@ At the infrastructure level, GCP Data Access audit logging is enabled for all cr
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Services are restricted to essential functions: (1) Cloud Run containers use distroless base images with no shell, package manager, or unnecessary utilities; (2) FQDN egress firewall blocks all outbound except Google APIs; (3) Only HTTP methods GET, POST, OPTIONS are permitted through Cloud Armor; (4) No SSH, FTP, or remote administration services are exposed; (5) Cloud Run services have `--no-allow-unauthenticated` set (except SPAs which serve the static app bundle); (6) Org policies enforce least functionality at the GCP organization level: default service accounts are denied automatic Editor grants (`iam.automaticIamGrantsForDefaultServiceAccounts`), VM guest attribute access is disabled (`compute.disableGuestAttributesAccess`), and internet NEGs are prohibited (`compute.disableInternetNetworkEndpointGroup`).
+**Implementation**: Services are restricted to essential functions: (1) Cloud Run containers use distroless base images with no shell, package manager, or unnecessary utilities; (2) FQDN egress firewall blocks all outbound except Google APIs; (3) Only HTTP methods GET, POST, OPTIONS are permitted through Cloud Armor; (4) No SSH, FTP, or remote administration services are exposed; (5) Cloud Run services have `--no-allow-unauthenticated` set (except SPAs which serve the static app bundle).
 
 ### CM-7(1): Periodic Review
 
@@ -1467,10 +1466,10 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 
 **Implementation**: System boundary protection includes:
 
-- **External boundary**: Cloud Armor WAF (OWASP CRS, HTTP method enforcement, origin restriction, bot blocking, per-org IP allowlisting) → Global HTTPS Load Balancer → Cloud Run (private IP only). Internet NEGs are prohibited by org policy (`compute.disableInternetNetworkEndpointGroup`), preventing load balancer backends from routing traffic to external endpoints.
-- **Internal boundary**: VPC with no public IPs on any service (`compute.vmExternalIpAccess` deny-all). FQDN-based egress firewall with default-deny-all. Only Google API endpoints are reachable outbound. Cloud Run VPC egress is locked to `ALL_TRAFFIC` via org policy (`run.allowedVPCEgress`), ensuring all outbound traverses the VPC where VPC Service Controls and firewall rules apply. Protocol forwarding restricted to INTERNAL only (`compute.restrictProtocolForwardingCreationForTypes`).
+- **External boundary**: Cloud Armor WAF (OWASP CRS, HTTP method enforcement, origin restriction, bot blocking, per-org IP allowlisting) → Global HTTPS Load Balancer → Cloud Run (private IP only)
+- **Internal boundary**: VPC with no public IPs on any service. FQDN-based egress firewall with default-deny-all. Only Google API endpoints are reachable outbound.
 - **Cross-project boundary**: Scoped cross-project IAM grants: `archon-admin` SA receives `cloudtasks.enqueuer` and `storage.objectAdmin` on the ops project; `archon-app` SA receives `aiplatform.user` and `storage.objectViewer` on the ops project; Cloud SQL access via `cloudsql.client` and `cloudsql.instanceUser`. Each grant is minimum-necessary for the service's function.
-- **Org boundary**: 5-layer org isolation in auth interceptor prevents cross-org request routing via DB-backed subdomain validation. IAM policy members restricted to `latentarchon.com` domain via `iam.allowedPolicyMemberDomains`. Essential contacts restricted to `@latentarchon.com` via `essentialcontacts.allowedContactDomains`.
+- **Org boundary**: 5-layer org isolation in auth interceptor prevents cross-org request routing via DB-backed subdomain validation
 
 ### SC-7(3): Access Points
 
