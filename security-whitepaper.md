@@ -966,16 +966,13 @@ All Cloudflare and Cloud Armor modules are managed via Terraform/Terragrunt (`in
 | Scanner Detection (v33-stable) | 307 | Automated Vulnerability Scanners |
 | JSON SQLi (canary) | 308 | JSON-based SQL Injection (Connect-RPC payloads) |
 
-### Adaptive / Intelligent Protection
+### L7 DDoS Protection
 
-ML-based L7 DDoS detection is enabled on all WAF policies:
-- **GCP**: Cloud Armor Adaptive Protection
+Application-layer DDoS protection is provided through the dual-layer WAF architecture:
+- **Cloudflare Edge**: Global anycast network absorbs volumetric DDoS before traffic reaches GCP. Edge rate limiting enforces per-IP thresholds at four tiers.
+- **Cloud Armor Origin**: Standard L7 DDoS protection at the load balancer level with rate-based bans and OWASP CRS rules. Regional security policies are used for IL5 data residency compliance.
 
-<!-- MULTI-CLOUD: Original also included:
-- AWS: WAFv2 intelligent threat mitigation + Shield Advanced
-- Azure: Front Door WAF bot protection + DDoS Protection -->
-
-Adaptive protection uses machine learning to detect and alert on anomalous traffic patterns that may indicate application-layer DDoS attacks, automatically generating suggested rules for mitigation.
+Note: Cloud Armor Adaptive Protection (ML-based anomaly detection) is not available for regional security policies (`google_compute_region_security_policy`). Regional policies are required for Assured Workloads / IL5 compliance.
 
 ### Tiered Rate Limiting
 
@@ -1019,7 +1016,7 @@ Geographic restriction is enforced at both WAF layers:
 - **Threat Score Challenge**: Requests with Cloudflare threat score > 14 receive a managed challenge
 - **Path Probing Protection**: Common probe paths blocked (/.env, /wp-admin, /.git, /phpmyadmin, /actuator, /cgi-bin, etc.)
 - **Zone Hardening**: TLS 1.2+ minimum, TLS 1.3 with 0-RTT, always-HTTPS, browser integrity check, email obfuscation, hotlink protection, automatic HTTPS rewrites
-- **Zero Trust Access**: Admin endpoints (admin SPA + API) protected by Cloudflare Access identity gate — users must authenticate at edge before traffic reaches GCP
+- **Zero Trust Access**: Admin endpoints (admin SPA + API) protected by Cloudflare Access identity gate — users must authenticate at edge before traffic reaches GCP. Backend validates `Cf-Access-Jwt-Assertion` JWT via JWKS verification to ensure requests actually transited through CF Access
 
 **Cloud Armor Origin:**
 - **Cloudflare-Only Origin Restriction**: Load balancers only accept traffic from Cloudflare IP ranges (auto-updated via `data.cloudflare_ip_ranges`); GCP health check probe IPs explicitly allowed; non-CF traffic denied

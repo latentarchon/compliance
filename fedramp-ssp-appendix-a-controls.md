@@ -2488,7 +2488,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Automated security alerts are generated across application and infrastructure layers. Real-time email notifications to org admins cover role changes, authentication failures, SCIM provisioning events, and member modifications. Cloud Monitoring alert policies (`infra/gcp/modules/monitoring/main.tf`) detect WAF blocks, 5xx error rate spikes (MQL-based), Cloud SQL authentication failures, rate-limit bans, Adaptive Protection events, and IAM privilege escalation (SetIamPolicy). Break-glass secret access triggers a CRITICAL severity alert. KMS key lifecycle events generate notifications. Dependabot vulnerability alerts are configured on all 6 classified repositories. All alert policies are defined in IaC and version-controlled.
+**Implementation**: Automated security alerts are generated across application and infrastructure layers. Real-time email notifications to org admins cover role changes, authentication failures, SCIM provisioning events, and member modifications. Cloud Monitoring alert policies (`infra/gcp/modules/monitoring/main.tf`) detect WAF blocks, 5xx error rate spikes (MQL-based), Cloud SQL authentication failures, rate-limit bans, and IAM privilege escalation (SetIamPolicy). Break-glass secret access triggers a CRITICAL severity alert. KMS key lifecycle events generate notifications. Dependabot vulnerability alerts are configured on all 6 classified repositories. All alert policies are defined in IaC and version-controlled.
 
 ### SI-4(14): Wireless Intrusion Detection
 

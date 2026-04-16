@@ -75,7 +75,7 @@ func ArchonRiskRegister() []RiskDef {
 			Category:           "OPERATIONAL",
 			InherentLikelihood: 3, InherentImpact: 3,
 			ResidualLikelihood: 2, ResidualImpact: 2,
-			TreatmentPlan:      "Mitigated by: Cloud Armor WAF with rate limiting and adaptive protection, Cloud Run auto-scaling, multi-zone Cloud SQL HA, GCS multi-region replication, Cloud CDN caching, per-tenant IP allowlisting for sensitive orgs.",
+			TreatmentPlan:      "Mitigated by: Dual-layer WAF (Cloudflare Edge + Cloud Armor origin) with rate limiting, Cloud Run auto-scaling, multi-zone Cloud SQL HA, GCS multi-region replication, Cloud CDN caching, per-tenant IP allowlisting for sensitive orgs.",
 		},
 		{
 			Name:               "Insider Threat",

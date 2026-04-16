@@ -94,7 +94,7 @@ func ArchonAssets() []AssetDef {
 		},
 		{
 			Name:        "Cloud Armor — WAF Policies",
-			Description: "Web Application Firewall policies for both admin and app load balancers. OWASP Top 10 rules, rate limiting, per-tenant IP allowlisting (dynamic deny rules), adaptive protection.",
+			Description: "Web Application Firewall policies for both admin and app load balancers. OWASP Top 10 rules, rate limiting, per-tenant IP allowlisting (dynamic deny rules), Cloudflare-only origin restriction.",
 			AssetType:   "VIRTUAL",
 		},
 		{

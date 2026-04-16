@@ -82,10 +82,9 @@ This policy covers security incidents affecting:
 
 | Source | What It Detects | Alert Mechanism |
 |--------|----------------|-----------------|
-| Cloudflare Edge WAF | OWASP attacks, managed rulesets, leaked credentials, threat scoring, geo-blocking | Cloudflare dashboard + analytics |
+| Cloudflare Edge WAF | OWASP attacks, managed rulesets, threat scoring, geo-blocking | Cloudflare dashboard + analytics |
 | Cloudflare Edge Rate Limiting | Volumetric abuse, brute force, auth endpoint abuse | Cloudflare rate limit actions |
 | Cloud Armor Origin WAF | OWASP attacks, DDoS, suspicious IPs, non-Cloudflare origin traffic | Cloud monitoring alert policy |
-| Cloud Armor Adaptive Protection | ML-detected L7 DDoS anomalies | Cloud monitoring alert policy |
 | Cloud Armor Block Spike Alert | Elevated WAF DENY event volume | Cloud monitoring alert (HIGH) |
 | 5xx Error Rate Alert | 5xx/total request ratio exceeds threshold | Cloud monitoring alert (HIGH) |
 | Database Auth Failure Alert | `FATAL` or `password authentication failed` in DB logs | Cloud monitoring alert (HIGH) |
@@ -130,7 +129,7 @@ This policy covers security incidents affecting:
 | **Privilege Escalation** | Revoke IAM grants; disable service accounts; block affected IP ranges in Cloudflare Edge WAF and Cloud Armor |
 | **Data Exfiltration** | Block source IP in Cloudflare Edge WAF (immediate edge block) + Cloud Armor; revoke affected user sessions; enable enhanced logging |
 | **Injection Attack** | Update Cloudflare Edge WAF custom rules + Cloud Armor rules; deploy application patch; enable request body logging |
-| **DDoS** | Adjust Cloudflare edge rate limits (volumetric absorption); adjust Cloud Armor rate limits; enable adaptive protection; contact CSP support |
+| **DDoS** | Adjust Cloudflare edge rate limits (volumetric absorption); adjust Cloud Armor rate limits; contact CSP support |
 | **Supply Chain** | Pin affected dependency; revert to known-good version; audit recent deployments |
 
 #### Platform-Specific Actions
