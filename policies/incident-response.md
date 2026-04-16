@@ -82,9 +82,11 @@ This policy covers security incidents affecting:
 
 | Source | What It Detects | Alert Mechanism |
 |--------|----------------|-----------------|
-| WAF | OWASP attacks, DDoS, suspicious IPs | Cloud monitoring alert policy |
-| WAF Adaptive Protection | ML-detected L7 DDoS anomalies | Cloud monitoring alert policy |
-| WAF Block Spike Alert | Elevated WAF DENY event volume | Cloud monitoring alert (HIGH) |
+| Cloudflare Edge WAF | OWASP attacks, managed rulesets, leaked credentials, threat scoring, geo-blocking | Cloudflare dashboard + analytics |
+| Cloudflare Edge Rate Limiting | Volumetric abuse, brute force, auth endpoint abuse | Cloudflare rate limit actions |
+| Cloud Armor Origin WAF | OWASP attacks, DDoS, suspicious IPs, non-Cloudflare origin traffic | Cloud monitoring alert policy |
+| Cloud Armor Adaptive Protection | ML-detected L7 DDoS anomalies | Cloud monitoring alert policy |
+| Cloud Armor Block Spike Alert | Elevated WAF DENY event volume | Cloud monitoring alert (HIGH) |
 | 5xx Error Rate Alert | 5xx/total request ratio exceeds threshold | Cloud monitoring alert (HIGH) |
 | Database Auth Failure Alert | `FATAL` or `password authentication failed` in DB logs | Cloud monitoring alert (HIGH) |
 | IAM Privilege Escalation Alert | `SetIamPolicy`, `CreateRole`, `UpdateRole` API calls | Cloud monitoring alert (CRITICAL) |
@@ -92,7 +94,7 @@ This policy covers security incidents affecting:
 | Secret Access Alert | Secret access calls on managed secrets | Cloud monitoring alert (CRITICAL) |
 | DLP Findings | PII, credentials, or financial data detected in uploaded documents | DLP inspect template findings log |
 | Audit Events (WARN level) | Auth failures, privilege escalation, deletions | Cloud logging alert policy |
-| Rate Limit Violations | Brute force, API abuse (tiered: SCIM 30/min, auth 20/min, login 10/min, global 100/min) | WAF rate-based ban |
+| Rate Limit Violations | Brute force, API abuse — Edge: auth 20/min, login 10/min, admin mutations 30/min, global 100/min; Origin: SCIM 30/min, auth 20/min, login 10/min, global 100/min | Cloudflare edge block + Cloud Armor rate-based ban |
 | Red Team Dashboard | Attack request volume, IAM denials, auth failures | Cloud monitoring dashboard |
 | Dependabot | Vulnerable dependencies | GitHub notification + PR |
 | Cloud Audit Logs | IAM changes, resource modifications, API calls | Cloud logging alert policy |
@@ -125,17 +127,18 @@ This policy covers security incidents affecting:
 | Category | Containment Action |
 |----------|-------------------|
 | **Auth Bypass** | Revoke compromised tokens; disable affected user accounts via identity provider admin SDK; rotate affected secrets |
-| **Privilege Escalation** | Revoke IAM grants; disable service accounts; block affected IP ranges in WAF |
-| **Data Exfiltration** | Block source IP in WAF; revoke affected user sessions; enable enhanced logging |
-| **Injection Attack** | Update WAF rules; deploy application patch; enable request body logging |
-| **DDoS** | Adjust WAF rate limits; enable adaptive protection; contact CSP support |
+| **Privilege Escalation** | Revoke IAM grants; disable service accounts; block affected IP ranges in Cloudflare Edge WAF and Cloud Armor |
+| **Data Exfiltration** | Block source IP in Cloudflare Edge WAF (immediate edge block) + Cloud Armor; revoke affected user sessions; enable enhanced logging |
+| **Injection Attack** | Update Cloudflare Edge WAF custom rules + Cloud Armor rules; deploy application patch; enable request body logging |
+| **DDoS** | Adjust Cloudflare edge rate limits (volumetric absorption); adjust Cloud Armor rate limits; enable adaptive protection; contact CSP support |
 | **Supply Chain** | Pin affected dependency; revert to known-good version; audit recent deployments |
 
 #### Platform-Specific Actions
 
 - **Container service**: Deploy previous revision (instant rollback via traffic split)
 - **Database**: Enable enhanced audit logging; snapshot current state
-- **WAF**: Add emergency IP block rules; adjust rate limits
+- **Cloudflare Edge WAF**: Add emergency IP/ASN block rules; adjust edge rate limits (immediate global effect)
+- **Cloud Armor Origin WAF**: Add emergency IP block rules; adjust origin rate limits
 - **Identity provider**: Disable affected IDP pool; revoke all sessions for affected org
 - **Kill Switch**: Red team tooling includes kill-on-breach capability for immediate containment
 
@@ -321,7 +324,8 @@ In addition to US-CERT, the **FedRAMP PMO** must be notified:
 |------|---------|--------|
 | Cloud Logging | Log search, analysis, alerting | Cloud console |
 | Cloud Monitoring | Metrics, dashboards, alert policies | Cloud console |
-| WAF | WAF rules, IP blocking, rate limiting | Cloud console |
+| Cloudflare Edge WAF | Edge WAF managed rulesets, custom rules, rate limiting, geo-blocking, IP/ASN blocklists | Cloudflare dashboard (Terragrunt-managed) |
+| Cloud Armor Origin WAF | Origin WAF rules, IP blocking, rate limiting, Cloudflare-only origin restriction | Cloud console (Terragrunt-managed) |
 | Identity Provider Console | User management, session revocation | Provider console |
 | Terraform/Terragrunt | Infrastructure state, rollback | CLI + cloud storage state |
 | Red Team CLI | Attack suite execution, validation | `redteam/cmd/redteam/` |

@@ -206,13 +206,13 @@
         "remarks": "System is in pre-authorization status. Infrastructure-as-code validated in staging. Production deployment pending authorization boundary finalization and 3PAO engagement."
       },
       "authorization-boundary": {
-        "description": "The authorization boundary encompasses all components required to deliver the Latent Archon SaaS offering: application code (Go backend, React SPAs), GCP infrastructure (Cloud Run, Cloud SQL, Cloud Storage, Vertex AI, Cloud Armor, Cloud KMS, Identity Platform), CI/CD pipelines (GitHub Actions with Workload Identity Federation), administrative interfaces, and supporting services (ClamAV malware scanning, Document AI OCR). The system uses a two-project architecture for blast-radius isolation: App Project (archon-fed-app-prod) for user-facing services and Admin Project (archon-fed-admin-prod) for administrative, processing, and data storage services."
+        "description": "The authorization boundary encompasses all components required to deliver the Latent Archon SaaS offering: application code (Go backend, React SPAs), GCP infrastructure (Cloud Run, Cloud SQL, Cloud Storage, Vertex AI, Cloud Armor, Cloud KMS, Identity Platform), Cloudflare edge services (DNS, Edge WAF, rate limiting, Zero Trust Access), CI/CD pipelines (GitHub Actions with Workload Identity Federation), administrative interfaces, and supporting services (ClamAV malware scanning, Document AI OCR). The system uses a two-project architecture for blast-radius isolation: App Project (archon-fed-app-prod) for user-facing services and Admin Project (archon-fed-admin-prod) for administrative, processing, and data storage services."
       },
       "network-architecture": {
-        "description": "All inbound traffic flows through Cloud Armor WAF and Global HTTPS Load Balancer. No services have public IP addresses. Internal communication uses VPC-native networking with Cloud SQL via VPC peering, Vertex AI via Private Service Connect, and Cloud Run serverless containers. Egress firewall is deny-all by default with FQDN-based allowlist for GCP APIs only."
+        "description": "All inbound traffic flows through Cloudflare Edge WAF (proxied mode — managed rulesets, OWASP, rate limiting, geo-blocking, threat scoring) → Cloud Armor Origin WAF (OWASP CRS, Cloudflare-only origin restriction, adaptive protection) → Global HTTPS Load Balancer. No services have public IP addresses. Cloud Armor enforces Cloudflare-only origin restriction (deny-all non-CF IPs) using auto-updated Cloudflare IP ranges. Internal communication uses VPC-native networking with Cloud SQL via VPC peering, Vertex AI via Private Service Connect, and Cloud Run serverless containers. Egress firewall is deny-all by default with FQDN-based allowlist for GCP APIs only."
       },
       "data-flow": {
-        "description": "Document upload: Browser → Cloud Armor → HTTPS LB → Admin API (auth, MFA, RBAC, malware scan) → Cloud Storage (CMEK) → Cloud Tasks → Ops Service (OCR, chunking, embedding) → Vertex AI Vector Search. App query: Browser → Cloud Armor → HTTPS LB → App API (auth, MFA, workspace check) → Vector Search (semantic query) → Gemini LLM (streaming response) → Client. All data at rest encrypted with AES-256 (CMEK via Cloud KMS). All data in transit encrypted with TLS 1.2+."
+        "description": "Document upload: Browser → Cloudflare Edge WAF → Cloud Armor Origin WAF → HTTPS LB → Admin API (auth, MFA, RBAC, malware scan) → Cloud Storage (CMEK) → Cloud Tasks → Ops Service (OCR, chunking, embedding) → Vertex AI Vector Search. App query: Browser → Cloudflare Edge WAF → Cloud Armor Origin WAF → HTTPS LB → App API (auth, MFA, workspace check) → Vector Search (semantic query) → Gemini LLM (streaming response) → Client. All data at rest encrypted with AES-256 (CMEK via Cloud KMS). All data in transit encrypted with TLS 1.2+."
       }
     },
     "system-implementation": {
@@ -234,6 +234,18 @@
           ],
           "party-uuid": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
           "date-authorized": "2018-05-18"
+        },
+        {
+          "uuid": "f8a91b2c-3d4e-4f5a-6b7c-8d9e0f1a2b3c",
+          "title": "Cloudflare (DNS, WAF, Zero Trust Access)",
+          "props": [
+            {
+              "name": "implementation-point",
+              "value": "external"
+            }
+          ],
+          "party-uuid": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+          "date-authorized": "2024-02-28"
         }
       ],
       "users": [
@@ -398,10 +410,19 @@
           }
         },
         {
+          "uuid": "a2b3c4d5-e6f7-4a8b-9c0d-1e2f3a4b5c6d",
+          "type": "service",
+          "title": "Cloudflare Edge WAF",
+          "description": "Edge Web Application Firewall providing first-layer defense: Cloudflare Managed Ruleset, OWASP Core Rule Set, tiered rate limiting (auth, login, admin mutations, global API), custom firewall rules (geo-blocking US-only, threat score challenges, path probing protection, IP/ASN blocklists), and Zero Trust Access for admin endpoints. All traffic proxied through Cloudflare before reaching origin.",
+          "status": {
+            "state": "under-development"
+          }
+        },
+        {
           "uuid": "e1f2a3b4-c5d6-4e7f-8091-021324354657",
           "type": "service",
-          "title": "Cloud Armor WAF",
-          "description": "Web Application Firewall with OWASP CRS v3.3, rate limiting, bot blocking, HTTP method enforcement, per-tenant IP allowlisting.",
+          "title": "Cloud Armor Origin WAF",
+          "description": "Origin Web Application Firewall with OWASP CRS v3.3, rate limiting, bot blocking, HTTP method enforcement, per-tenant IP allowlisting, and Cloudflare-only origin restriction (deny-all non-Cloudflare IPs). Works in tandem with Cloudflare Edge WAF for defense-in-depth.",
           "status": {
             "state": "under-development"
           }
@@ -726,7 +747,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "0af2ef5f-d7f0-4454-9663-057c535c00b5",
-                  "description": "Information flow is controlled at multiple layers:\n- Network: VPC with private IP only (no public IPs on any service). FQDN-based egress firewall with default-deny-all and explicit allowlist for Google APIs and Microsoft Graph API (`graph.microsoft.com`, `login.microsoftonline.com` for SharePoint/OneDrive document sync). Cloud Armor WAF with OWASP Core Rule Set.\n- Application: RLS enforces workspace-scoped data access. Vector store token restrictions prevent cross-workspace search. The auth interceptor prevents cross-org request routing via DB-backed subdomain validation.\n- Per-Org IP Allowlisting: Organization administrators configure CIDR-based IP allowlists via `UpdateOrganizationSettings`. Allowlists are synced to Cloud Armor WAF rules using CEL expressions matching org hostname + IP range. This enables agencies to restrict access to government/VPN IP ranges.",
+                  "description": "Information flow is controlled at multiple layers:\n- Edge: Cloudflare Edge WAF (managed rulesets, OWASP, geo-blocking US-only, threat scoring, rate limiting) filters traffic before it reaches the origin. Cloudflare Zero Trust Access gates admin endpoints with identity verification at the edge.\n- Network: VPC with private IP only (no public IPs on any service). FQDN-based egress firewall with default-deny-all and explicit allowlist for Google APIs and Microsoft Graph API (`graph.microsoft.com`, `login.microsoftonline.com` for SharePoint/OneDrive document sync). Cloud Armor origin WAF with OWASP Core Rule Set and Cloudflare-only origin restriction.\n- Application: RLS enforces workspace-scoped data access. Vector store token restrictions prevent cross-workspace search. The auth interceptor prevents cross-org request routing via DB-backed subdomain validation.\n- Per-Org IP Allowlisting: Organization administrators configure CIDR-based IP allowlists via `UpdateOrganizationSettings`. Allowlists are synced to Cloud Armor origin WAF rules using CEL expressions matching org hostname + IP range. This enables agencies to restrict access to government/VPN IP ranges.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -974,7 +995,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "2e62a5bf-5c6b-4351-8747-93d2cece0462",
-                  "description": "Identity Platform provides built-in brute-force protection that temporarily locks accounts after repeated failed login attempts. The application implements two-tier rate limiting: (1) IP-based rate limiting at Cloud Armor, (2) per-user rate limiting in the Connect-RPC interceptor chain. Failed authentication attempts are logged with IP address and user agent for security monitoring.",
+                  "description": "Identity Platform provides built-in brute-force protection that temporarily locks accounts after repeated failed login attempts. The application implements three-tier rate limiting: (1) Cloudflare Edge rate limiting (auth 20/min, login 10/min, admin mutations 30/min, global 100/min), (2) Cloud Armor origin rate limiting (per-IP and per-path), (3) per-user rate limiting in the Connect-RPC interceptor chain. Failed authentication attempts are logged with IP address and user agent for security monitoring.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -1160,7 +1181,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "967dca66-c5af-47d5-97ac-ed61bea90383",
-                  "description": "All access to Latent Archon is remote by design (cloud-native SaaS). Remote access protections include: TLS 1.2+ enforced on all connections, HSTS with 2-year max-age and preload, Cloud Armor WAF with OWASP CRS, per-org IP allowlisting, and MFA enforcement. No VPN or direct infrastructure access is provided to customers. Infrastructure access for Latent Archon engineers uses GCP IAM with WIF (no static credentials).",
+                  "description": "All access to Latent Archon is remote by design (cloud-native SaaS). Remote access protections include: TLS 1.2+ enforced on all connections (Cloudflare edge + origin), HSTS with 2-year max-age and preload, dual-layer WAF (Cloudflare Edge WAF with managed rulesets and OWASP + Cloud Armor origin WAF with OWASP CRS), Cloudflare Zero Trust Access for admin endpoints, per-org IP allowlisting, and MFA enforcement. No VPN or direct infrastructure access is provided to customers. Infrastructure access for Latent Archon engineers uses GCP IAM with WIF (no static credentials).",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -1191,7 +1212,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "345d5930-40ec-4236-b3db-ae27785b9b67",
-                  "description": "Cloud Logging captures all API access with source IP, user agent, and authentication context. Cloud Armor logs all blocked requests with rule match details. Audit events record all data access with user identity, action, and resource. Cloud Monitoring dashboards provide real-time visibility into access patterns.",
+                  "description": "Cloud Logging captures all API access with source IP, user agent, and authentication context. Cloudflare Edge WAF logs all edge-blocked requests with rule match details and threat scores. Cloud Armor logs all origin-blocked requests with rule match details. Audit events record all data access with user identity, action, and resource. Cloud Monitoring dashboards and Cloudflare analytics provide real-time visibility into access patterns.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -1315,7 +1336,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "6c7b930e-a4d7-461e-8cc6-64342c1a82d1",
-                  "description": "No customer content is publicly accessible. All document access requires authentication (valid JWT), MFA verification, organization membership, and workspace membership. Per-org IP allowlisting via Cloud Armor CEL expressions provides additional network-level access restriction. The system has no public-facing content pages — both SPAs require authentication before rendering any data.\n---\n## AT — Awareness and Training",
+                  "description": "No customer content is publicly accessible. All document access requires authentication (valid JWT), MFA verification, organization membership, and workspace membership. Per-org IP allowlisting via Cloud Armor CEL expressions provides additional network-level access restriction. Cloudflare Zero Trust Access provides identity-based access gating for admin endpoints at the edge. The system has no public-facing content pages — both SPAs require authentication before rendering any data.\n---\n## AT — Awareness and Training",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -2059,7 +2080,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "260e9209-836a-4631-847f-662a551b4f39",
-                  "description": "The only cross-project system interconnection is a single IAM grant: the app project service account receives `roles/cloudsql.client` and `roles/cloudsql.instanceUser` on the admin project for Cloud SQL database access. All other services are project-isolated. External interconnections (customer IdP SAML/SCIM, Cloudflare DNS) are documented in Section 4 of the SSP.",
+                  "description": "The only cross-project system interconnection is a single IAM grant: the app project service account receives `roles/cloudsql.client` and `roles/cloudsql.instanceUser` on the admin project for Cloud SQL database access. All other services are project-isolated. External interconnections (customer IdP SAML/SCIM, Cloudflare DNS/WAF/Zero Trust Access) are documented in Section 4 of the SSP.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -2462,7 +2483,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "89178826-e2e7-4808-b9cf-b9488c87705b",
-                  "description": "Security-relevant configuration settings include: (1) Cloud Armor WAF rules (OWASP CRS, bot blocking, rate limiting); (2) TLS configuration (1.2+ only, HSTS 2-year preload); (3) Database RLS policies (fail-closed); (4) Auth interceptor settings (REQUIRE_IDP_POOL, REQUIRE_MFA); (5) Session timeout defaults. All settings are managed in Terraform variables and environment variable configurations, versioned in Git. A Customer Secure Configuration Guide (`customer-secure-configuration-guide.md`, GUIDE-SCG-001) is published for customer agencies, covering MFA enrollment, session timeout configuration, RBAC role assignment, SSO/SCIM setup, IP allowlisting, data retention, and quarterly review procedures.",
+                  "description": "Security-relevant configuration settings include: (1) Cloudflare Edge WAF rules (managed rulesets, OWASP, rate limiting, geo-blocking, Zero Trust Access); (2) Cloud Armor origin WAF rules (OWASP CRS, bot blocking, rate limiting, Cloudflare-only origin restriction); (3) TLS configuration (1.2+ only, HSTS 2-year preload); (4) Database RLS policies (fail-closed); (5) Auth interceptor settings (REQUIRE_IDP_POOL, REQUIRE_MFA); (6) Session timeout defaults. All settings are managed in Terraform variables and environment variable configurations, versioned in Git. A Customer Secure Configuration Guide (`customer-secure-configuration-guide.md`, GUIDE-SCG-001) is published for customer agencies, covering MFA enrollment, session timeout configuration, RBAC role assignment, SSO/SCIM setup, IP allowlisting, data retention, and quarterly review procedures.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -3578,7 +3599,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "b21d8de7-a9d2-48f2-9f54-cf3bfe393b35",
-                  "description": "All Latent Archon personnel receive incident response training upon onboarding and annually thereafter. Operations personnel receive additional hands-on training covering: incident detection tools (Cloud Armor analytics, Cloud Logging queries), containment procedures (Identity Platform session revocation, Cloud Armor emergency rules), and communication protocols. Training is tracked in Drata.",
+                  "description": "All Latent Archon personnel receive incident response training upon onboarding and annually thereafter. Operations personnel receive additional hands-on training covering: incident detection tools (Cloudflare analytics, Cloud Armor analytics, Cloud Logging queries), containment procedures (Cloudflare edge IP/ASN blocking, Identity Platform session revocation, Cloud Armor emergency rules), and communication protocols. Training is tracked in Drata.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -3640,7 +3661,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "787c7ded-a7c8-4e43-96b7-a892987c9227",
-                  "description": "Incident handling follows a 5-phase process: (1) Detection — Cloud Armor WAF alerts, Cloud Monitoring anomaly detection, audit event analysis, red team findings, customer reports; (2) Analysis — severity classification (SEV-1 through SEV-4), MITRE ATT&CK mapping, scope determination; (3) Containment — Identity Platform session revocation, Cloud Armor IP blocking, IDP pool disabling for affected org; (4) Eradication — root cause remediation, credential rotation, configuration correction; (5) Recovery — service restoration, monitoring validation, customer notification.",
+                  "description": "Incident handling follows a 5-phase process: (1) Detection — Cloudflare Edge WAF alerts, Cloud Armor origin WAF alerts, Cloud Monitoring anomaly detection, audit event analysis, red team findings, customer reports; (2) Analysis — severity classification (SEV-1 through SEV-4), MITRE ATT&CK mapping, scope determination; (3) Containment — Cloudflare edge IP/ASN blocking (immediate global effect), Identity Platform session revocation, Cloud Armor IP blocking, IDP pool disabling for affected org; (4) Eradication — root cause remediation, credential rotation, configuration correction; (5) Recovery — service restoration, monitoring validation, customer notification.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -4446,7 +4467,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "c7a6b4ea-22ed-438c-abc9-aec189c03059",
-                  "description": "Security resources are allocated through: (1) Dedicated security budget for tools (Drata, scanning tools, Cloud Armor), 3PAO engagement, and training; (2) Engineering time allocation for security controls implementation (estimated 30% of engineering capacity); (3) Automated compliance tooling (Drata sync, CI/CD security pipeline) to reduce manual compliance burden.",
+                  "description": "Security resources are allocated through: (1) Dedicated security budget for tools (Drata, scanning tools, Cloudflare, Cloud Armor), 3PAO engagement, and training; (2) Engineering time allocation for security controls implementation (estimated 30% of engineering capacity); (3) Automated compliance tooling (Drata sync, CI/CD security pipeline) to reduce manual compliance burden.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -4787,7 +4808,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "2f4c62a9-ebab-4149-bf53-f4c2ba39fe70",
-                  "description": "Threat awareness is maintained through: (1) Dependabot automatic vulnerability alerting for all dependencies; (2) govulncheck for Go-specific vulnerability detection; (3) CISA KEV (Known Exploited Vulnerabilities) monitoring; (4) Red team program incorporating MITRE ATT&CK-mapped attack scenarios; (5) Cloud Armor threat intelligence integration for WAF rule updates.\n---\n## PS — Personnel Security",
+                  "description": "Threat awareness is maintained through: (1) Dependabot automatic vulnerability alerting for all dependencies; (2) govulncheck for Go-specific vulnerability detection; (3) CISA KEV (Known Exploited Vulnerabilities) monitoring; (4) Red team program incorporating MITRE ATT&CK-mapped attack scenarios; (5) Cloudflare managed rulesets (auto-updated threat intelligence) and Cloud Armor OWASP CRS for WAF rule updates.\n---\n## PS — Personnel Security",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -6089,7 +6110,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "98fbb658-08a2-47e4-bd02-31e291131c86",
-                  "description": "DoS/DDoS protection is provided at multiple layers: (1) Cloud Armor WAF: DDoS absorption at Google's global edge network with adaptive protection; (2) Rate Limiting: Per-IP and per-user request rate limits enforced at Cloud Armor and application layers; (3) Cloud Run Auto-scaling: Automatic scaling with configurable max instances prevents resource exhaustion; (4) FQDN Egress Firewall: Prevents the system from being used as a DDoS amplifier.",
+                  "description": "DoS/DDoS protection is provided at multiple layers: (1) Cloudflare Edge: Volumetric DDoS absorption via Cloudflare's global anycast network (proxied mode), edge rate limiting (4 tiers), geo-blocking (US-only), threat score challenges; (2) Cloud Armor Origin WAF: DDoS adaptive protection, origin rate limiting, Cloudflare-only origin restriction (deny-all non-CF IPs); (3) Cloud Run Auto-scaling: Automatic scaling with configurable max instances prevents resource exhaustion; (4) FQDN Egress Firewall: Prevents the system from being used as a DDoS amplifier.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -6120,7 +6141,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "98da6dbe-2b1b-49a9-9d59-87e54de6a55d",
-                  "description": "System boundary protection includes:\n- External boundary: Cloud Armor WAF (OWASP CRS, HTTP method enforcement, origin restriction, bot blocking, per-org IP allowlisting) → Global HTTPS Load Balancer → Cloud Run (private IP only)\n- Internal boundary: VPC with no public IPs on any service. FQDN-based egress firewall with default-deny-all. Only Google API endpoints are reachable outbound.\n- Cross-project boundary: Scoped cross-project IAM grants: `archon-admin` SA receives `cloudtasks.enqueuer` and `storage.objectAdmin` on the ops project; `archon-app` SA receives `aiplatform.user` and `storage.objectViewer` on the ops project; Cloud SQL access via `cloudsql.client` and `cloudsql.instanceUser`. Each grant is minimum-necessary for the service's function.\n- Org boundary: 5-layer org isolation in auth interceptor prevents cross-org request routing via DB-backed subdomain validation",
+                  "description": "System boundary protection includes:\n- External boundary: Cloudflare Edge WAF (managed rulesets, OWASP, geo-blocking US-only, threat scoring, rate limiting, Zero Trust Access for admin endpoints) → Cloud Armor Origin WAF (OWASP CRS, HTTP method enforcement, Cloudflare-only origin restriction, bot blocking, per-org IP allowlisting) → Global HTTPS Load Balancer → Cloud Run (private IP only). Cloud Armor denies all non-Cloudflare source IPs, ensuring all traffic traverses the edge security layer.\n- Internal boundary: VPC with no public IPs on any service. FQDN-based egress firewall with default-deny-all. Only Google API endpoints are reachable outbound.\n- Cross-project boundary: Scoped cross-project IAM grants: `archon-admin` SA receives `cloudtasks.enqueuer` and `storage.objectAdmin` on the ops project; `archon-app` SA receives `aiplatform.user` and `storage.objectViewer` on the ops project; Cloud SQL access via `cloudsql.client` and `cloudsql.instanceUser`. Each grant is minimum-necessary for the service's function.\n- Org boundary: 5-layer org isolation in auth interceptor prevents cross-org request routing via DB-backed subdomain validation",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -6151,7 +6172,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "eb9ed37a-8184-40d8-b578-e1ae3424d23b",
-                  "description": "External access points are minimized to: (1) App project HTTPS endpoint (app.latentarchon.com); (2) Admin project HTTPS endpoint (admin.latentarchon.com); (3) SCIM endpoint (admin API path). All access points terminate at Cloud Armor WAF → Global HTTPS Load Balancer. No other external access points exist. No SSH, VPN, or direct infrastructure access is provided.",
+                  "description": "External access points are minimized to: (1) App project HTTPS endpoint (app.latentarchon.com); (2) Admin project HTTPS endpoint (admin.latentarchon.com); (3) SCIM endpoint (admin API path). All access points terminate at Cloudflare Edge WAF (proxied DNS) → Cloud Armor Origin WAF (Cloudflare-only origin restriction) → Global HTTPS Load Balancer. Cloud Armor denies all non-Cloudflare source IPs, ensuring traffic must traverse the edge security layer. No other external access points exist. No SSH, VPN, or direct infrastructure access is provided.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -6213,7 +6234,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "3e232b55-d834-434d-a4fa-4beac82d8190",
-                  "description": "Network traffic follows deny-by-default: (1) Egress: FQDN firewall denies all outbound except explicitly allowlisted Google API domains; (2) Cloud Armor: Default action is configurable per environment (deny(403) in production, allow in staging); (3) Auth interceptor: All requests denied unless authenticated, MFA-verified, and org-membership validated; (4) RLS: Database queries return zero rows unless session variables are properly set (fail-closed).",
+                  "description": "Network traffic follows deny-by-default: (1) Cloudflare Edge: Geo-blocking restricts to US-only; threat score challenges block suspicious sources; edge rate limiting enforces request volume limits; (2) Cloud Armor Origin: Cloudflare-only origin restriction denies all non-Cloudflare source IPs; default action is configurable per environment (deny(403) in production, allow in staging); (3) Egress: FQDN firewall denies all outbound except explicitly allowlisted Google API domains; (4) Auth interceptor: All requests denied unless authenticated, MFA-verified, and org-membership validated; (5) RLS: Database queries return zero rows unless session variables are properly set (fail-closed).",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -6244,7 +6265,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "014e69cf-ca21-4be0-93d3-9b0d0b01901f",
-                  "description": "Split tunneling is not applicable to the SaaS delivery model. All system traffic traverses the defined boundary (Cloud Armor → Load Balancer → VPC). There are no VPN connections or client-side agents.",
+                  "description": "Split tunneling is not applicable to the SaaS delivery model. All system traffic traverses the defined boundary (Cloudflare Edge WAF → Cloud Armor Origin WAF → Load Balancer → VPC). There are no VPN connections or client-side agents.",
                   "implementation-status": {
                     "state": "not-applicable"
                   }
@@ -6988,7 +7009,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "0ecdd516-85c5-403d-b09e-ce6326c820fe",
-                  "description": "Intrusion detection is provided by: (1) Cloud Armor with OWASP CRS for web application attacks (SQLi, XSS, LFI, RFI, RCE); (2) Red team program for proactive detection validation; (3) Audit event analysis for anomalous access patterns; (4) Cloud Monitoring anomaly detection for infrastructure-level indicators. Customer agencies can ingest audit data via Pub/Sub for integration with their own IDS/SIEM.",
+                  "description": "Intrusion detection is provided by: (1) Cloudflare Edge WAF with managed rulesets and OWASP for web application attacks at the edge; (2) Cloud Armor origin WAF with OWASP CRS for defense-in-depth (SQLi, XSS, LFI, RFI, RCE); (3) Red team program for proactive detection validation; (4) Audit event analysis for anomalous access patterns; (5) Cloud Monitoring anomaly detection for infrastructure-level indicators. Customer agencies can ingest audit data via Pub/Sub for integration with their own IDS/SIEM.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -7019,7 +7040,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "03c06697-5135-4855-b55c-041fcfc8d578",
-                  "description": "Real-time analysis tools include: Cloud Armor real-time request analysis and blocking, Cloud Monitoring real-time metric analysis with alert policies, structured audit logging with immediate Cloud Logging ingestion, and real-time security email notifications triggered by audit events.",
+                  "description": "Real-time analysis tools include: Cloudflare Edge WAF real-time request analysis and blocking at the edge, Cloud Armor origin WAF real-time request analysis and blocking, Cloud Monitoring real-time metric analysis with alert policies, structured audit logging with immediate Cloud Logging ingestion, and real-time security email notifications triggered by audit events.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -7050,7 +7071,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "4d03f98c-081f-4a89-9c7e-ed9d69034dbc",
-                  "description": "Inbound traffic is monitored through Cloud Armor (all requests logged with source IP, matched rules, and action). Outbound traffic is monitored through VPC flow logs and FQDN egress firewall logs (blocked attempts are logged). Internal traffic between services is logged at the application level via audit events.",
+                  "description": "Inbound traffic is monitored through Cloudflare Edge WAF (all requests logged with threat score, matched rules, and action) and Cloud Armor origin WAF (all requests logged with source IP, matched rules, and action). Cloud Armor uses CF-Connecting-IP and X-Forwarded-For headers to identify real client IPs behind the Cloudflare proxy. Outbound traffic is monitored through VPC flow logs and FQDN egress firewall logs (blocked attempts are logged). Internal traffic between services is logged at the application level via audit events.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -7081,7 +7102,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "f0917013-a001-439f-90dd-dabb8a307720",
-                  "description": "Automated alerts are generated for: (1) Cloud Armor WAF rule matches; (2) Cloud Monitoring metric thresholds (error rate > 5%, latency > 2s, CPU > 80%); (3) Audit events at WARN level (role escalation, cross-org attempts, auth failures); (4) Dependabot vulnerability discoveries; (5) CI/CD security scan failures. Alerts route to operations team via Cloud Monitoring notification channels.",
+                  "description": "Automated alerts are generated for: (1) Cloudflare Edge WAF rule matches and rate limit actions (Cloudflare analytics); (2) Cloud Armor origin WAF rule matches (Cloud Monitoring alert policies); (3) Cloud Monitoring metric thresholds (error rate > 5%, latency > 2s, CPU > 80%); (4) Audit events at WARN level (role escalation, cross-org attempts, auth failures); (5) Dependabot vulnerability discoveries; (6) CI/CD security scan failures. Alerts route to operations team via Cloud Monitoring notification channels and Cloudflare dashboard.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -7236,7 +7257,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "f459d847-388a-4e6e-9f6b-9c2a96321baa",
-                  "description": "Spam protection is provided by: (1) Firebase App Check with reCAPTCHA Enterprise for client attestation; (2) Cloud Armor bot/scanner blocking rules; (3) Rate limiting at IP and per-user levels; (4) No user-to-user messaging within the platform (conversation is user-to-AI only).",
+                  "description": "Spam protection is provided by: (1) Firebase App Check with reCAPTCHA Enterprise for client attestation; (2) Cloudflare Edge WAF threat scoring and bot management; (3) Cloud Armor origin bot/scanner blocking rules; (4) Dual-layer rate limiting at Cloudflare edge and Cloud Armor origin; (5) No user-to-user messaging within the platform (conversation is user-to-AI only).",
                   "implementation-status": {
                     "state": "implemented"
                   }

@@ -36,7 +36,7 @@ This policy applies to:
 | Tier | Services | RPO | RTO | Justification |
 |------|----------|-----|-----|---------------|
 | **Tier 1 — Critical** | Database (PostgreSQL), Document storage, Authentication | < 5 minutes | < 1 hour | Customer data and authentication — any loss is unacceptable |
-| **Tier 2 — Essential** | Container services (app API, admin API, ops), Load Balancers, WAF | 0 (stateless) | < 4 hours | Stateless services rebuilt from container images + Terraform |
+| **Tier 2 — Essential** | Container services (app API, admin API, ops), Load Balancers, Cloudflare Edge WAF, Cloud Armor Origin WAF | 0 (stateless) | < 4 hours | Stateless services rebuilt from container images + Terraform; Cloudflare edge config restored via Terragrunt |
 | **Tier 3 — Supporting** | AI services (Vector Search + LLM), Document extraction, Task queue, Ops Service | < 24 hours | < 8 hours | AI/search features; system usable without them (degraded mode) |
 | **Tier 4 — Non-critical** | Staging environments, CI/CD, monitoring dashboards, Drata sync | N/A | < 24 hours | Operational tooling; no customer impact |
 
@@ -193,6 +193,7 @@ Cloud-specific service: GCS (GCP).
 | Vendor | Risk | Mitigation |
 |--------|------|-----------|
 | **GCP** | Regional outage | Multi-zone HA (current), cross-region DR (planned) |
+| **Cloudflare** | Edge service outage | DNS falls back to direct origin; Cloud Armor origin WAF continues enforcement; Cloudflare config restorable via Terragrunt |
 | **GitHub** | Service outage | Local git clones, GitHub archive export |
 | **Drata** | Service outage | Compliance docs stored locally in Git |
 

@@ -57,7 +57,7 @@ Customer agencies upload documents that may contain any category of PII dependin
 1. **Account Registration**: Email and display name collected via Identity Platform sign-up flow (app or admin app)
 2. **SAML SSO**: Email, name, and IdP-assigned attributes received in SAML assertion
 3. **SCIM Provisioning**: Email, name, external ID, and group memberships pushed by customer IdP
-4. **HTTP Requests**: IP address and user agent captured automatically by WAF and application audit logger
+4. **HTTP Requests**: IP address and user agent captured automatically by Cloudflare Edge WAF, Cloud Armor origin WAF, and application audit logger
 5. **Document Upload**: Customer-uploaded documents may contain arbitrary PII
 
 ### 3.2 PII Storage Locations
@@ -96,7 +96,7 @@ PII is **never** shared with: marketing platforms, analytics services, third-par
   - RBAC with least privilege
   - MFA required for all users
   - Per-org session timeouts (configurable)
-  - Per-org IP allowlisting via WAF (Cloud Armor / WAFv2 / Front Door WAF)
+  - Per-org IP allowlisting via Cloud Armor origin WAF (Cloud Armor / WAFv2 / Front Door WAF)
 - **Residual Risk**: Low
 
 ### 4.2 Risk: PII Exposure via AI/Search

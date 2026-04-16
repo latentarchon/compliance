@@ -122,7 +122,7 @@ Security incidents are managed under the Incident Response Policy (POL-IR-001) w
 
 - 4 severity levels (SEV-1 through SEV-4) with MITRE ATT&CK mapping
 - Defined response team with primary and backup personnel
-- Automated detection via WAF, audit event alerting, and red team monitoring dashboard
+- Automated detection via dual-layer WAF (Cloudflare Edge + Cloud Armor), audit event alerting, and red team monitoring dashboard
 - Customer notification timelines (24 hours for confirmed breaches)
 - Post-incident review with lessons learned and POA&M tracking
 
@@ -134,7 +134,7 @@ Security incidents are managed under the Incident Response Policy (POL-IR-001) w
 |-----------|---------------|
 | **Defense in Depth** | 5-layer org isolation (interceptor → RLS → DB roles → vector scoping → audit) |
 | **Least Privilege** | Separate DB roles per service, per-service IAM, no shared credentials |
-| **Zero Trust** | All requests authenticated and authorized; no implicit trust based on network position |
+| **Zero Trust** | All requests authenticated and authorized; no implicit trust based on network position; Cloudflare Zero Trust Access for admin endpoints (identity gate at edge) |
 | **Encryption Everywhere** | AES-256 at rest, TLS 1.2+ in transit, CMEK via cloud KMS (HSM-backed), FIPS 140-2 BoringCrypto |
 | **Immutable Infrastructure** | Distroless containers, IaC-managed, no SSH access to production |
 | **Separation of Duties** | Admin/app auth pool isolation, PR review requirements, production deploy gates |

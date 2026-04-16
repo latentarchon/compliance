@@ -185,7 +185,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: Identity Platform provides built-in brute-force protection that temporarily locks accounts after repeated failed login attempts. The application implements two-tier rate limiting: (1) IP-based rate limiting at Cloud Armor, (2) per-user rate limiting in the Connect-RPC interceptor chain. Failed authentication attempts are logged with IP address and user agent for security monitoring.
+**Implementation**: Identity Platform provides built-in brute-force protection that temporarily locks accounts after repeated failed login attempts. The application implements three-tier rate limiting: (1) Edge rate limiting at Cloudflare (auth 30/min, login 10/min per IP), (2) IP-based rate limiting at Cloud Armor (auth 15-20/min, login 5-8/min per IP with ban), (3) per-user rate limiting in the Connect-RPC interceptor chain. Failed authentication attempts are logged with IP address and user agent for security monitoring.
 
 **Customer Responsibility**: Customers may configure additional login attempt restrictions through their SSO Identity Provider.
 
@@ -236,14 +236,14 @@ Organization administrators configure timeouts via `UpdateOrganizationSettings` 
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: All access to Latent Archon is remote by design (cloud-native SaaS). Remote access protections include: TLS 1.2+ enforced on all connections, HSTS with 2-year max-age and preload, Cloud Armor WAF with OWASP CRS, per-org IP allowlisting, and MFA enforcement. No VPN or direct infrastructure access is provided to customers. Infrastructure access for Latent Archon engineers uses GCP IAM with WIF (no static credentials).
+**Implementation**: All access to Latent Archon is remote by design (cloud-native SaaS). Remote access protections include: TLS 1.2+ enforced on all connections, HSTS with 2-year max-age and preload, Cloudflare edge WAF (Managed + OWASP rulesets, geo-blocking US-only, rate limiting), Cloud Armor origin WAF with OWASP CRS, per-org IP allowlisting, Cloudflare Zero Trust Access for admin endpoints (identity gate at edge), and MFA enforcement. No VPN or direct infrastructure access is provided to customers. Infrastructure access for Latent Archon engineers uses GCP IAM with WIF (no static credentials).
 
 ### AC-17(1): Monitoring and Control of Remote Access
 
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: Cloud Logging captures all API access with source IP, user agent, and authentication context. Cloud Armor logs all blocked requests with rule match details. Audit events record all data access with user identity, action, and resource. Cloud Monitoring dashboards provide real-time visibility into access patterns.
+**Implementation**: Cloud Logging captures all API access with source IP, user agent, and authentication context. Cloudflare logs all edge WAF events, rate-limit actions, and Zero Trust Access decisions. Cloud Armor logs all origin WAF blocked requests with rule match details. Audit events record all data access with user identity, action, and resource. Cloud Monitoring dashboards provide real-time visibility into access patterns.
 
 ### AC-17(2): Protection of Confidentiality and Integrity of Remote Access
 
@@ -1458,7 +1458,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: DoS/DDoS protection is provided at multiple layers: (1) **Cloud Armor WAF**: DDoS absorption at Google's global edge network with adaptive protection; (2) **Rate Limiting**: Per-IP and per-user request rate limits enforced at Cloud Armor and application layers; (3) **Cloud Run Auto-scaling**: Automatic scaling with configurable max instances prevents resource exhaustion; (4) **FQDN Egress Firewall**: Prevents the system from being used as a DDoS amplifier.
+**Implementation**: DoS/DDoS protection is provided at multiple layers: (1) **Cloudflare Edge WAF**: DDoS absorption at Cloudflare's global anycast network with Managed + OWASP rulesets, geo-blocking (US-only), and edge rate limiting (global 500/min, auth 30/min, login 10/min); (2) **Cloud Armor WAF**: Origin-layer DDoS protection with OWASP CRS v3.3, Cloudflare-only origin restriction (non-CF traffic denied), per-org IP allowlisting, and per-endpoint rate limiting; (3) **Rate Limiting**: Per-IP rate limits enforced at both Cloudflare edge and Cloud Armor, plus per-user rate limits at the application layer; (4) **Cloud Run Auto-scaling**: Automatic scaling with configurable max instances prevents resource exhaustion; (5) **FQDN Egress Firewall**: Prevents the system from being used as a DDoS amplifier.
 
 ### SC-7: Boundary Protection
 
@@ -1467,7 +1467,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 
 **Implementation**: System boundary protection includes:
 
-- **External boundary**: Cloud Armor WAF (OWASP CRS, HTTP method enforcement, origin restriction, bot blocking, per-org IP allowlisting) → Global HTTPS Load Balancer → Cloud Run (private IP only). Internet NEGs are prohibited by org policy (`compute.disableInternetNetworkEndpointGroup`), preventing load balancer backends from routing traffic to external endpoints.
+- **External boundary**: Cloudflare Edge WAF (Managed + OWASP rulesets, rate limiting, geo-blocking US-only, threat scoring, Zero Trust Access for admin endpoints) → Cloud Armor origin WAF (OWASP CRS, HTTP method enforcement, origin restriction, bot blocking, per-org IP allowlisting, Cloudflare-only origin restriction) → Regional HTTPS Load Balancer → Cloud Run (private IP only). Origin load balancers only accept traffic from Cloudflare IP ranges (auto-updated via `data.cloudflare_ip_ranges`); client IP identified via CF-Connecting-IP header. Internet NEGs are prohibited by org policy (`compute.disableInternetNetworkEndpointGroup`), preventing load balancer backends from routing traffic to external endpoints.
 - **Internal boundary**: VPC with no public IPs on any service (`compute.vmExternalIpAccess` deny-all). FQDN-based egress firewall with default-deny-all. Only Google API endpoints are reachable outbound. Cloud Run VPC egress is locked to `ALL_TRAFFIC` via org policy (`run.allowedVPCEgress`), ensuring all outbound traverses the VPC where VPC Service Controls and firewall rules apply. Protocol forwarding restricted to INTERNAL only (`compute.restrictProtocolForwardingCreationForTypes`).
 - **Cross-project boundary**: Scoped cross-project IAM grants: `archon-admin` SA receives `cloudtasks.enqueuer` and `storage.objectAdmin` on the ops project; `archon-app` SA receives `aiplatform.user` and `storage.objectViewer` on the ops project; Cloud SQL access via `cloudsql.client` and `cloudsql.instanceUser`. Each grant is minimum-necessary for the service's function.
 - **Org boundary**: 5-layer org isolation in auth interceptor prevents cross-org request routing via DB-backed subdomain validation. IAM policy members restricted to `latentarchon.com` domain via `iam.allowedPolicyMemberDomains`. Essential contacts restricted to `@latentarchon.com` via `essentialcontacts.allowedContactDomains`.
@@ -1477,7 +1477,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: External access points are minimized to: (1) App project HTTPS endpoint (app.latentarchon.com); (2) Admin project HTTPS endpoint (admin.latentarchon.com); (3) SCIM endpoint (admin API path). All access points terminate at Cloud Armor WAF → Global HTTPS Load Balancer. No other external access points exist. No SSH, VPN, or direct infrastructure access is provided.
+**Implementation**: External access points are minimized to: (1) App project HTTPS endpoint (app.latentarchon.com); (2) Admin project HTTPS endpoint (admin.latentarchon.com); (3) SCIM endpoint (admin API path). All access points are proxied through Cloudflare edge (WAF, rate limiting, geo-blocking) before reaching Cloud Armor WAF → Regional HTTPS Load Balancer. Admin endpoints are additionally protected by Cloudflare Zero Trust Access (identity gate at edge). No other external access points exist. No SSH, VPN, or direct infrastructure access is provided.
 
 ### SC-7(4): External Telecommunications Services
 
@@ -1491,21 +1491,21 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Network traffic follows deny-by-default: (1) **Egress**: FQDN firewall denies all outbound except explicitly allowlisted Google API domains; (2) **Cloud Armor**: Default action is configurable per environment (deny(403) in production, allow in staging); (3) **Auth interceptor**: All requests denied unless authenticated, MFA-verified, and org-membership validated; (4) **RLS**: Database queries return zero rows unless session variables are properly set (fail-closed).
+**Implementation**: Network traffic follows deny-by-default: (1) **Cloudflare Edge**: Geo-blocking denies all traffic from outside US + territories; threat score challenge blocks suspicious IPs; path protection blocks common probe paths; (2) **Cloud Armor**: Origin restriction denies all non-Cloudflare traffic; default action is configurable per environment; (3) **Egress**: FQDN firewall denies all outbound except explicitly allowlisted Google API domains; (4) **Auth interceptor**: All requests denied unless authenticated, MFA-verified, and org-membership validated; (5) **RLS**: Database queries return zero rows unless session variables are properly set (fail-closed).
 
 ### SC-7(7): Split Tunneling Prevention
 
 - **Responsibility**: CSP
 - **Status**: N/A
 
-**Implementation**: Split tunneling is not applicable to the SaaS delivery model. All system traffic traverses the defined boundary (Cloud Armor → Load Balancer → VPC). There are no VPN connections or client-side agents.
+**Implementation**: Split tunneling is not applicable to the SaaS delivery model. All system traffic traverses the defined boundary (Cloudflare Edge → Cloud Armor → Load Balancer → VPC). There are no VPN connections or client-side agents.
 
 ### SC-7(8): Route Traffic to Authenticated Proxy Servers
 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: All inbound traffic is routed through Google Cloud Load Balancer (authenticated proxy) which terminates TLS and forwards to Cloud Run services. All outbound API traffic is routed through VPC network infrastructure with FQDN egress filtering. Private Service Connect routes Vertex AI traffic through Google's private backbone without traversing the public internet.
+**Implementation**: All inbound traffic is routed through Cloudflare's edge proxy (WAF, rate limiting, geo-blocking) then through Cloud Armor and Google Cloud Load Balancer (TLS termination) before reaching Cloud Run services. Origin load balancers only accept traffic from Cloudflare IP ranges, ensuring all inbound requests traverse the authenticated proxy chain. All outbound API traffic is routed through VPC network infrastructure with FQDN egress filtering. Private Service Connect routes Vertex AI traffic through Google's private backbone without traversing the public internet.
 
 ### SC-8: Transmission Confidentiality and Integrity
 
@@ -1575,7 +1575,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: Cloudflare DNS provides authoritative DNS with DNSSEC enabled (`cloudflare_zone_dnssec` Terraform resource). DS record is registered at the domain registrar. Authoritative zone signing provides data origin authentication and integrity protection for all DNS responses.
+**Implementation**: Cloudflare provides authoritative DNS with DNSSEC enabled (`cloudflare_zone_dnssec` Terraform resource) and operates as the edge proxy for all inbound traffic (proxied DNS mode). DS record is registered at the domain registrar. Authoritative zone signing provides data origin authentication and integrity protection for all DNS responses. Zone-level security hardening includes TLS 1.2+ minimum, TLS 1.3 with 0-RTT, always-HTTPS, browser integrity check, and email obfuscation.
 
 ### SC-21: Secure Name/Address Resolution Service (Recursive/Caching)
 
@@ -1589,7 +1589,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: DNS services are provisioned for fault tolerance through: (1) Cloudflare operates globally distributed authoritative DNS with anycast routing; (2) GCP internal DNS uses Google's global DNS infrastructure; (3) Multiple NS records provide redundancy. DNS is managed via Terraform (`cloudflare_zone_dnssec` resource) for reproducibility.
+**Implementation**: DNS services are provisioned for fault tolerance through: (1) Cloudflare operates globally distributed authoritative DNS with anycast routing and serves as the edge security proxy (WAF, rate limiting, geo-blocking, Zero Trust Access); (2) GCP internal DNS uses Google's global DNS infrastructure; (3) Multiple NS records provide redundancy. DNS and all Cloudflare security modules are managed via Terraform/Terragrunt (modules: `dns`, `waf`, `rate-limiting`, `firewall-rules`, `access`, `zone-settings`, `ip-ranges`) for reproducibility.
 
 ### SC-23: Session Authenticity
 

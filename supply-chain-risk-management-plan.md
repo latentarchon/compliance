@@ -39,7 +39,7 @@ This plan covers all external components within or supporting the authorization 
 | Amazon Web Services | Infrastructure (ECS Fargate, RDS, S3, Bedrock, KMS, WAFv2, SQS, CloudWatch, OpenSearch, Textract) | Critical | FedRAMP High | Quarterly |
 | Microsoft Azure | Infrastructure (Container Apps, PostgreSQL Flex, Blob Storage, Azure OpenAI, Key Vault, Front Door WAF, Service Bus, Azure Monitor) | Critical | FedRAMP High | Quarterly | -->
 | **GitHub** | Source control, CI/CD (Actions), Dependabot | High | SOC 2 Type II | Semi-annual |
-| **Cloudflare** | DNS, DNSSEC | Medium | FedRAMP Moderate | Annual |
+| **Cloudflare** | DNS, DNSSEC, Edge WAF (Managed + OWASP rulesets), rate limiting, geo-blocking, Zero Trust Access | High | FedRAMP Moderate | Quarterly |
 | **Drata** | Compliance automation | Low | SOC 2 Type II | Annual |
 
 Each customer deployment uses a **single cloud provider**. The vendor risk for that deployment is assessed against the specific CSP used.

@@ -137,10 +137,10 @@ The authoritative risk register is maintained in **Drata** and synced automatica
 | # | Risk | Category | Inherent | Residual | Treatment |
 |---|------|----------|----------|----------|-----------|
 | 1 | Unauthorized Access to Customer Data | Security | 20 (4×5) | 5 (1×5) | MFA, RLS, pool isolation, red team |
-| 2 | Data Exfiltration via App Vulnerability | Security | 15 (3×5) | 5 (1×5) | RLS, WAF, SAST, input validation |
+| 2 | Data Exfiltration via App Vulnerability | Security | 15 (3×5) | 5 (1×5) | RLS, dual-layer WAF (Cloudflare Edge + Cloud Armor), SAST, input validation |
 | 3 | Supply Chain Compromise | Security | 12 (3×4) | 4 (1×4) | SBOM, Dependabot, Trivy, distroless |
 | 4 | Cloud Infrastructure Misconfiguration | Operational | 12 (3×4) | 4 (1×4) | IaC, org policies, drift detection |
-| 5 | Denial of Service | Operational | 9 (3×3) | 4 (2×2) | WAF, auto-scaling, rate limiting |
+| 5 | Denial of Service | Operational | 9 (3×3) | 4 (2×2) | Dual-layer WAF (Cloudflare edge absorption + Cloud Armor origin), Cloudflare proxied mode (volumetric DDoS mitigation), tiered rate limiting at edge and origin, auto-scaling |
 | 6 | Insider Threat | Security | 10 (2×5) | 4 (1×4) | Least privilege, audit logging, PR review |
 | 7 | Encryption Key Compromise | Security | 5 (1×5) | 5 (1×5) | Cloud KMS (HSM-backed), auto-rotation, IAM |
 | 8 | Vendor/Third-Party Breach | Third-Party | 10 (2×5) | 6 (2×3) | Per-customer single-cloud, encryption, vendor monitoring |

@@ -157,8 +157,9 @@ Vector search results are scoped to authorized workspace IDs via token restricti
 
 ```
 Client (SPA)
-  → WAF (Cloud Armor — OWASP CRS)
-  → Load Balancer (TLS termination, DDoS protection)
+  → Cloudflare Edge (WAF: Managed + OWASP rulesets, rate limiting, geo-blocking)
+  → Cloud Armor (origin WAF: OWASP CRS, Cloudflare-only origin restriction)
+  → Load Balancer (TLS termination)
   → Container Runtime (Cloud Run)
     → CORS Middleware
     → Security Headers Middleware
@@ -943,9 +944,15 @@ All clouds implement deny-by-default egress with explicit allowlists:
 
 ## 19. Web Application Firewall
 
-Cloud Armor WAF is deployed in front of all load-balanced services:
+WAF is deployed as a defense-in-depth dual-layer architecture:
 
-### OWASP Top 10 Protection
+1. **Cloudflare Edge WAF** (FedRAMP Moderate) — filters traffic at Cloudflare's global anycast edge before it reaches GCP. Deploys Cloudflare Managed Ruleset and OWASP Core Ruleset. Provides edge rate limiting, geo-blocking (US + territories only), threat score challenge, path probing protection, and Zero Trust Access for admin endpoints.
+
+2. **Cloud Armor Origin WAF** (IL5) — filters traffic at the GCP load balancer. Deploys OWASP CRS v3.3 preconfigured rules, per-org IP allowlisting, bot/scanner blocking, HTTP method enforcement, and per-endpoint rate limiting. Origin restriction ensures only Cloudflare IPs reach the load balancer (auto-updated via `data.cloudflare_ip_ranges`). Client IPs are identified via `CF-Connecting-IP` header.
+
+All Cloudflare and Cloud Armor modules are managed via Terraform/Terragrunt (`infra/cloudflare/modules/waf/`, `infra/cloudflare/modules/rate-limiting/`, `infra/cloudflare/modules/firewall-rules/`, `infra/cloudflare/modules/access/`, `infra/gcp/modules/cloud-armor/`).
+
+### Cloud Armor — OWASP Top 10 Protection
 
 | Rule | Priority | Protection |
 |------|----------|------------|
@@ -972,31 +979,55 @@ Adaptive protection uses machine learning to detect and alert on anomalous traff
 
 ### Tiered Rate Limiting
 
+Rate limiting is enforced at both the Cloudflare edge and Cloud Armor origin, defense-in-depth:
+
+**Cloudflare Edge (absorbs volumetric abuse before GCP):**
+
+| Tier | Path Pattern | Limit | Block Duration | Purpose |
+|------|-------------|-------|---------------|--------|
+| Global API | `/api/*` | 500 req/60s | 10 min | Volumetric abuse absorption |
+| Auth endpoints | `/api/auth/*` | 30 req/60s | 15 min | Edge brute force prevention |
+| Login / magic link | `/auth/login`, `/auth/magic-link`, `/auth/verify-otp` | 10 req/60s | 30 min | Edge account takeover prevention |
+| Admin mutations | `POST /api/admin/*` | 20 req/60s | 10 min | Admin abuse prevention |
+
+Health checks (`/healthz`) and static assets are excluded from counting via `counting_expression`.
+
+**Cloud Armor Origin (granular per-endpoint limits):**
+
 | Tier | Path Pattern | Limit | Ban Duration | Purpose |
 |------|-------------|-------|-------------|--------|
 | SCIM provisioning | `/scim/v2/*` | 30 req/60s | 10 min | IdP provisioning is low-volume |
-| Auth endpoints | `/api/auth/*` | 20 req/60s | 10 min | Brute force / credential stuffing prevention |
-| Login / magic link | `/api/auth/login`, `/api/auth/magic-link`, `/api/auth/verify-otp` | 10 req/60s | 15 min | Account takeover prevention |
-| Global | All paths | 100 req/60s | 5 min | General abuse prevention |
+| Auth endpoints | `/api/auth/*` | 15-20 req/60s | 10-15 min | Brute force / credential stuffing prevention |
+| Login / magic link | `/api/auth/login`, `/api/auth/magic-link`, `/api/auth/verify-otp` | 5-10 req/60s | 15-30 min | Account takeover prevention |
+| Global | All paths | 100-200 req/60s | 5 min | General abuse prevention |
 
-All rate limits use `rate_based_ban` with automatic IP banning on exceedance.
+All Cloud Armor rate limits use `rate_based_ban` with automatic IP banning on exceedance.
 
-### Geographic Restriction (OFAC Compliance)
+### Geographic Restriction (OFAC / FedRAMP Compliance)
 
-Traffic from OFAC-embargoed countries is blocked at the WAF layer when geo-restriction is enabled:
+Geographic restriction is enforced at both WAF layers:
 
-- **Denied regions**: Cuba (CU), Iran (IR), North Korea (KP), Syria (SY), Russia (RU)
-- GCP: Cloud Armor CEL expression matching `origin.region_code`
+- **Cloudflare Edge**: Blocks all traffic from outside US + territories (US, GU, PR, VI, AS, MP) via `cloudflare_ruleset` firewall rules. This is the primary geo-block — traffic from denied countries never reaches GCP.
+- **Cloud Armor**: Additionally blocks OFAC-embargoed countries (CU, IR, KP, SY, RU) via CEL expression matching `origin.region_code` as a defense-in-depth measure.
 - Configurable per-policy via Terraform variables
 
 <!-- MULTI-CLOUD: Original also included AWS WAFv2 geographic match statement and Azure Front Door geo-filtering rule. -->
 
 ### Additional WAF Controls
 
+**Cloudflare Edge:**
+- **Threat Score Challenge**: Requests with Cloudflare threat score > 14 receive a managed challenge
+- **Path Probing Protection**: Common probe paths blocked (/.env, /wp-admin, /.git, /phpmyadmin, /actuator, /cgi-bin, etc.)
+- **Zone Hardening**: TLS 1.2+ minimum, TLS 1.3 with 0-RTT, always-HTTPS, browser integrity check, email obfuscation, hotlink protection, automatic HTTPS rewrites
+- **Zero Trust Access**: Admin endpoints (admin SPA + API) protected by Cloudflare Access identity gate — users must authenticate at edge before traffic reaches GCP
+
+**Cloud Armor Origin:**
+- **Cloudflare-Only Origin Restriction**: Load balancers only accept traffic from Cloudflare IP ranges (auto-updated via `data.cloudflare_ip_ranges`); GCP health check probe IPs explicitly allowed; non-CF traffic denied
 - **HTTP Method Enforcement**: Only GET, POST, OPTIONS allowed; TRACE, DELETE, PATCH blocked at WAF
 - **Origin Header Restriction**: Requests with disallowed `Origin` headers denied
 - **Bot Blocking**: Empty/missing `User-Agent` denied; known scanner/attack tools (curl, wget, sqlmap, nikto, nmap, nuclei, etc.) blocked
 - **IP Allowlisting**: Configurable for government/VPN IP ranges (plus per-org self-service allowlisting)
+- **Client IP Identification**: CF-Connecting-IP + X-Forwarded-For headers used for real client IP when behind Cloudflare proxy
 
 ---
 
@@ -1068,7 +1099,8 @@ Latent Archon is deployed on GCP within **IL5 Assured Workloads** folders. Data-
 | Database | Cloud SQL (PostgreSQL) | IL5 |
 | Object storage | Cloud Storage | IL5 |
 | Load balancer | Cloud Load Balancing | IL5 |
-| WAF / DDoS | Cloud Armor | IL5 |
+| Edge WAF / DDoS | Cloudflare WAF | FedRAMP Moderate |
+| Origin WAF / DDoS | Cloud Armor | IL5 |
 | KMS | Cloud KMS | IL5 |
 | Logging / monitoring | Cloud Logging + Monitoring | IL5 |
 | LLM | Vertex AI (Gemini) | IL5 |

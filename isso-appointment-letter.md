@@ -38,7 +38,7 @@ As ISSO, I am responsible for:
 - Direct operational control of all system components (infrastructure, application, data)
 - Hands-on management of security controls implementation on GCP
 <!-- MULTI-CLOUD: Original also listed AWS and Azure environments. -->
-- Responsible for all security engineering decisions including: encryption (FIPS 140-2 validated modules), authentication (phishing-resistant MFA), access control (RBAC + RLS), and network security (WAF, VPC, egress controls)
+- Responsible for all security engineering decisions including: encryption (FIPS 140-2 validated modules), authentication (phishing-resistant MFA), access control (RBAC + RLS), and network security (dual-layer WAF — Cloudflare Edge + Cloud Armor origin, VPC, egress controls)
 
 ## Duration
 

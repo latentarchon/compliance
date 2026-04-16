@@ -48,7 +48,8 @@ This plan covers monitoring of all security controls within the authorization bo
 | Tool | What It Monitors | Alert Mechanism |
 |------|-----------------|----------------|
 | **Cloud Monitoring** | CPU, memory, latency, error rates, database metrics | Alert policies → notification channels |
-| **WAF Analytics** (Cloud Armor) | WAF rule matches, DDoS events, blocked requests, bot traffic | Dashboard + alert policies |
+| **Cloudflare WAF Analytics** | Edge WAF rule matches, rate-limit actions, geo-blocks, Zero Trust Access decisions | Cloudflare dashboard |
+| **Cloud Armor Analytics** | Origin WAF rule matches, DDoS events, blocked requests, bot traffic | Dashboard + alert policies |
 | **Cloud Audit Logs** | All cloud resource changes, data access events | Log-based alerts |
 | **Application Audit Logger** | Authentication, authorization, data access, role changes, SCIM events | WARN-level events → email notifications |
 | **Dependabot** | Dependency vulnerabilities across all repositories | GitHub alerts + automated PRs |
@@ -56,8 +57,8 @@ This plan covers monitoring of all security controls within the authorization bo
 | **CI/CD Security Pipeline** | SAST findings, container vulnerabilities, secret exposure, image signing (Cosign) | Build failure + PR blocking |
 | **DLP** (Cloud DLP) | PII, credentials, and financial data in uploaded documents (pre-RAG scanning) | DLP findings logged; optional redaction via de-identify template |
 <!-- MULTI-CLOUD: Original monitoring tools also referenced CloudWatch, Azure Monitor, WAFv2, Front Door WAF, Comprehend, AI Language. -->
-| **Security Alert Policies** | WAF block spikes, 5xx error rate, database auth failures, IAM privilege escalation, KMS key lifecycle, secret access | Cloud monitoring alert → notification channels |
-| **KSI Evidence Collector** | Network firewall rules, container services, WAF policies, KMS rotation, log sinks, container images, DB backups, storage versioning | Weekly CI artifact (365-day retention) |
+| **Security Alert Policies** | Cloud Armor WAF block spikes, 5xx error rate, database auth failures, IAM privilege escalation, KMS key lifecycle, secret access | Cloud monitoring alert → notification channels |
+| **KSI Evidence Collector** | Network firewall rules, container services, Cloud Armor WAF policies, KMS rotation, log sinks, container images, DB backups, storage versioning | Weekly CI artifact (365-day retention) |
 | **SCN Classifier** | Security-critical file changes in PRs (30+ patterns) | PR comment (advisory, non-blocking) |
 | **OSCAL Validator** | SSP structural conformance to OSCAL v1.1.3 schema | PR check (advisory, non-blocking) |
 
@@ -133,7 +134,7 @@ Refer to the Incident Response Policy (POL-IR-001) for detailed procedures.
 | SCIM token creation/revocation | Application audit logger | Notification to org admin |
 | ClamAV malware detection | Upload handler | File quarantine + investigation |
 | DLP findings (PII/credentials in uploads) | Cloud DLP inspect template | Logged findings; optional redaction; review for data handling |
-| WAF block spike | Cloud Monitoring alert (Cloud Armor DENY events) | Active attack assessment; WAF rule review |
+| Cloud Armor WAF block spike | Cloud Monitoring alert (Cloud Armor DENY events) | Active attack assessment; WAF rule review |
 | 5xx error rate spike | Cloud Monitoring MQL alert (ratio > threshold) | Service health investigation; rollback assessment |
 | Cloud SQL auth failures | Cloud Monitoring alert (FATAL/password failures) | Brute force assessment; SA credential review |
 | IAM privilege escalation | Cloud Monitoring alert (SetIamPolicy/CreateRole/UpdateRole) | Unauthorized change investigation; revert if unapproved |

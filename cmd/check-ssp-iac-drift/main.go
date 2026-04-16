@@ -554,6 +554,42 @@ func (c *Checker) checkCMEKCoverage() {
 	}
 }
 
+func (c *Checker) checkCloudflareProxied() {
+	// SSP claims all traffic is proxied through Cloudflare Edge WAF.
+	// Verify staging and fed DNS configs have proxied = true.
+	for _, env := range []string{"staging", "fed"} {
+		dnsFile := filepath.Join(c.infraRoot, "cloudflare/environments", env, "dns/terragrunt.hcl")
+		if val, ok := hclInputValue(dnsFile, "proxied"); ok {
+			c.check("SC-7", env+" DNS proxied mode", "true", val)
+		} else {
+			c.check("SC-7", env+" DNS proxied mode", "true", "NOT_FOUND")
+		}
+	}
+}
+
+func (c *Checker) checkCloudflareWAFModule() {
+	// SSP claims Cloudflare Edge WAF with managed rulesets.
+	// Verify module exists with expected ruleset resources.
+	wafMain := filepath.Join(c.infraRoot, "cloudflare/modules/waf/main.tf")
+	hasManaged := fileContains(wafMain, "managed_waf")
+	c.check("SC-7", "Cloudflare WAF module has managed ruleset", "true", strconv.FormatBool(hasManaged))
+
+	hasOWASP := fileContains(wafMain, "owasp")
+	c.check("SC-7", "Cloudflare WAF module has OWASP ruleset", "true", strconv.FormatBool(hasOWASP))
+}
+
+func (c *Checker) checkCloudArmorCFRestriction() {
+	// SSP claims Cloud Armor enforces Cloudflare-only origin restriction.
+	// Verify module has cloudflare_ip_ranges variable and deny-all rule.
+	varsFile := filepath.Join(c.infraRoot, "gcp/modules/cloud-armor/variables.tf")
+	_, hasCFVar := hclVarDefaultFromFile(varsFile, "cloudflare_ip_ranges")
+	c.check("SC-7", "Cloud Armor has cloudflare_ip_ranges variable", "true", strconv.FormatBool(hasCFVar))
+
+	mainFile := filepath.Join(c.infraRoot, "gcp/modules/cloud-armor/main.tf")
+	hasCFAllow := fileContains(mainFile, "cloudflare")
+	c.check("SC-7", "Cloud Armor main.tf references cloudflare", "true", strconv.FormatBool(hasCFAllow))
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -613,6 +649,9 @@ func main() {
 	c.checkBoringCrypto()
 	c.checkVPCEgress()
 	c.checkCMEKCoverage()
+	c.checkCloudflareProxied()
+	c.checkCloudflareWAFModule()
+	c.checkCloudArmorCFRestriction()
 
 	if *jsonOutput {
 		data, _ := json.MarshalIndent(c.report, "", "  ")

@@ -43,7 +43,7 @@ Latent Archon is a multi-tenant document intelligence SaaS platform deployed on 
 - **Object storage**: Document file storage (GCS)
 - **AI services**: Vector search and LLM inference (Vertex AI)
 - **Identity**: Authentication with two pools: app and admin (Identity Platform)
-- **WAF**: DDoS and application-layer protection (Cloud Armor)
+- **WAF**: Dual-layer — Cloudflare Edge WAF (managed rulesets, rate limiting, geo-blocking) + Cloud Armor origin WAF (OWASP CRS, origin restriction)
 - **KMS**: Encryption key management (Cloud KMS)
 
 <!-- MULTI-CLOUD: Original also listed RDS/PostgreSQL Flexible Server, S3/Blob Storage, Bedrock+OpenSearch/Azure OpenAI+AI Search, SAML federation/Azure AD, WAFv2/Front Door WAF, AWS KMS/Key Vault. -->
@@ -55,7 +55,7 @@ All infrastructure is managed via Terraform/Terragrunt, enabling reproducible de
 | Service Tier | Components | RPO | RTO | Description |
 |-------------|------------|-----|-----|-------------|
 | **Tier 1 — Critical** | Database (PostgreSQL), Document Storage, Authentication | < 5 min | < 1 hr | Customer data and authentication — any loss is unacceptable |
-| **Tier 2 — Essential** | Container APIs (app, admin, ops), Load Balancers, WAF | 0 (stateless) | < 4 hr | Stateless services rebuilt from container images + Terraform |
+| **Tier 2 — Essential** | Container APIs (app, admin, ops), Load Balancers, Cloudflare Edge WAF, Cloud Armor Origin WAF | 0 (stateless) | < 4 hr | Stateless services rebuilt from container images + Terraform; Cloudflare edge config restored via Terragrunt |
 | **Tier 3 — Supporting** | AI services (Vector Search + LLM), Document extraction, Task queue, Ops Service | < 24 hr | < 8 hr | AI/search features; system usable without them (degraded mode) |
 | **Tier 4 — Non-Critical** | CI/CD pipelines, Monitoring dashboards, Drata sync | N/A | < 24 hr | Operational tooling; does not affect customer service |
 

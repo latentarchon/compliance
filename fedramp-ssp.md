@@ -104,7 +104,7 @@ Each customer deployment runs on a **single cloud provider** selected at onboard
 | CSP/Service | Authorization | Impact Level | Authorization ID |
 |-------------|---------------|--------------|------------------|
 | Google Cloud Platform | FedRAMP High P-ATO | High (IL5 Assured Workloads) | FR1805181233 |
-| Cloudflare DNS | FedRAMP Moderate | Moderate | — |
+| Cloudflare (DNS, WAF, Zero Trust Access) | FedRAMP Moderate | Moderate | — |
 
 <!-- MULTI-CLOUD: Original also included:
 | Amazon Web Services | FedRAMP High P-ATO | High | FR1603057795 |
@@ -176,7 +176,8 @@ The auth projects communicate with the data plane via JWT public key validation 
 | Vector Search | Vertex AI Vector Search | IL5 | Semantic search index (private endpoint) |
 | Text Generation | Vertex AI (Gemini) | IL5 | LLM for RAG conversation responses |
 | Identity | Identity Platform | FedRAMP High (auth projects) | Auth pools for multi-tenant isolation; JWTs validated offline in IL5 boundary |
-| WAF | Cloud Armor | IL5 | DDoS protection, OWASP CRS, bot blocking, IP allowlisting |
+| Edge WAF | Cloudflare WAF | FedRAMP Moderate | Edge-layer Managed + OWASP rulesets, rate limiting, geo-blocking (US-only), threat scoring, Zero Trust Access for admin |
+| Origin WAF | Cloud Armor | IL5 | Origin-layer DDoS protection, OWASP CRS, bot blocking, IP allowlisting, Cloudflare-only origin restriction |
 | Load Balancing | Regional external ALB | IL5 | TLS termination, host-based routing, health checks |
 | Key Management | Cloud KMS | IL5 | CMEK for database and storage encryption |
 | Task Queue | Cloud Tasks | IL5 | Async document processing and embedding queues |
@@ -185,7 +186,7 @@ The auth projects communicate with the data plane via JWT public key validation 
 | Logging | Cloud Logging + Monitoring | IL5 | Centralized logging, metrics, alerting |
 | Container Registry | Artifact Registry | IL5 | Docker image storage for all services |
 | TLS Certificates | Regional SSL certificates (self-managed) | IL5 | Self-managed TLS certs on regional LB; Certificate Manager is not IL5-supported |
-| DNS | Cloudflare | FedRAMP Moderate | Authoritative DNS with DNSSEC enabled |
+| DNS | Cloudflare | FedRAMP Moderate | Authoritative DNS with DNSSEC enabled, proxied mode (traffic flows through Cloudflare edge) |
 
 <!-- MULTI-CLOUD: Original table included AWS Service (ECS Fargate, RDS, S3, OpenSearch Serverless, Bedrock Claude, Textract, SAML IdP, WAFv2, ALB, AWS KMS, SQS, CloudWatch, ECR, ACM) and Azure Service (Container Apps, PostgreSQL Flexible Server, Blob Storage, Azure AI Search, Azure OpenAI GPT-4o, Document Intelligence, Azure AD, Front Door WAF, Front Door, Key Vault, Service Bus, Azure Monitor, Container Registry, Front Door managed) columns. -->
 
@@ -242,7 +243,7 @@ All environments are managed via Terraform/Terragrunt. No manual cloud console c
 | Customer Browser | Inbound | HTTPS | 443 | SPA access | N/A |
 | Microsoft Graph API | Outbound | HTTPS REST | 443 | SharePoint/OneDrive document sync (delta queries, file download) | Microsoft FedRAMP High |
 | Microsoft Entra ID (Azure AD) | Outbound | HTTPS (OAuth2) | 443 | OAuth2 authorization code grant for Graph API token exchange | Microsoft FedRAMP High |
-| Cloudflare DNS | Outbound | DNS/HTTPS | 53/443 | Authoritative DNS with DNSSEC | FedRAMP Moderate |
+| Cloudflare | Inbound/Outbound | HTTPS/DNS | 443/53 | Edge WAF proxy (inbound traffic), authoritative DNS with DNSSEC, Zero Trust Access for admin | FedRAMP Moderate |
 | Cloud Provider APIs | Outbound | HTTPS | 443 | All cloud service APIs (via egress firewall allowlist) | FedRAMP High (inherited) |
 | GitHub | Outbound | HTTPS | 443 | CI/CD source code, Dependabot | N/A |
 
@@ -391,7 +392,7 @@ All database roles operate under PostgreSQL Row-Level Security (RLS). RLS polici
 │  ┌─ Fed/IL5/ — IL5 Assured Workloads ──────────────────────────────┐   │
 │  │                                                                   │   │
 │  │  ┌─ App Project (archon-fed-app-*) ──────────────────────┐   │   │
-│  │  │  WAF → Load Balancer → App SPA (container)               │   │   │
+│  │  │  CF Edge WAF → Cloud Armor → LB → App SPA (container)    │   │   │
 │  │  │                       → App API (container)               │   │   │
 │  │  │  Logging + Monitoring │ Container Registry                 │   │   │
 │  │  └───────────────────────────────────────────────────────────┘   │   │
@@ -407,7 +408,7 @@ All database roles operate under PostgreSQL Row-Level Security (RLS). RLS polici
 │  │  └───────────────────────────────────────────────────────────┘   │   │
 │  │          │ Cross-project: database IAM grant (read-write)         │   │
 │  │  ┌─ Admin Project (archon-fed-admin-*) ───────────────────┐   │   │
-│  │  │  WAF → Load Balancer → Admin SPA (container)              │   │   │
+│  │  │  CF Edge WAF → Cloud Armor → LB → Admin SPA (container)   │   │   │
 │  │  │                       → Admin API (container)              │   │   │
 │  │  │  Logging + Monitoring │ Container Registry                  │   │   │
 │  │  └───────────────────────────────────────────────────────────┘   │   │
@@ -446,8 +447,10 @@ External (outside boundary):
   • Customer IdP (Okta/Azure AD) — SAML 2.0 inbound
   • Microsoft Graph API — SharePoint/OneDrive document sync (outbound HTTPS)
   • Microsoft Entra ID — OAuth2 token exchange (outbound HTTPS)
-  • Cloudflare DNS — DNSSEC-signed authoritative DNS
-  • Customer browsers — HTTPS only
+  • Cloudflare (FedRAMP Moderate) — DNSSEC-signed authoritative DNS, edge WAF proxy
+    (Managed + OWASP rulesets, rate limiting, geo-blocking, Zero Trust Access for admin),
+    origin restricted to Cloudflare IPs via Cloud Armor
+  • Customer browsers — HTTPS only (traffic proxied through Cloudflare edge)
   • CSP FedRAMP High infrastructure — inherited controls (GCP)
 ```
 
@@ -457,7 +460,17 @@ External (outside boundary):
 Customer Browser (HTTPS/TLS 1.2+)
     │
     ▼
-WAF (Cloud Armor — OWASP CRS, rate limiting, bot blocking)
+Cloudflare Edge (proxied DNS):
+    ├─► Edge WAF (Managed + OWASP rulesets)
+    ├─► Rate limiting (global, auth, login tiers)
+    ├─► Geo-blocking (US + territories only)
+    ├─► Zero Trust Access (admin endpoints)
+    │
+    ▼
+Cloud Armor (origin WAF — Cloudflare IPs only):
+    ├─► OWASP CRS, rate limiting, bot blocking
+    ├─► Per-org IP allowlisting
+    ├─► Client IP from CF-Connecting-IP header
     │
     ▼
 Load Balancer (managed TLS cert, HSTS 2yr)
@@ -537,7 +550,7 @@ Audit event logged
 Customer Browser (HTTPS/TLS 1.2+)
     │
     ▼
-WAF → Load Balancer
+Cloudflare Edge WAF → Cloud Armor → Load Balancer
     │
     ▼
 App API (container) — Auth Interceptor (same 7-layer chain)
@@ -566,16 +579,25 @@ Audit event logged
 Internet
     │
     ▼
-Cloudflare DNS (DNSSEC enabled)
+Cloudflare Edge (proxied DNS, DNSSEC enabled):
+    ├─► Edge WAF: Cloudflare Managed + OWASP Core rulesets
+    ├─► Rate limiting (global 500/min, auth 30/min, login 10/min)
+    ├─► Geo-blocking (US + territories only)
+    ├─► Threat score challenge (score > 14)
+    ├─► Path probing protection (/.env, /wp-admin, /.git, etc.)
+    ├─► Zero Trust Access (admin endpoints — identity gate)
+    ├─► Zone hardening (TLS 1.2+, TLS 1.3 0-RTT, browser check)
     │
     ▼
-WAF (Cloud Armor / WAFv2 / Front Door WAF — per environment):
+Cloud Armor (origin WAF — Cloudflare IPs only):
     ├─► OWASP CRS v3.3 (SQLi, XSS, LFI, RFI, RCE, Scanner)
     ├─► HTTP method enforcement (GET, POST, OPTIONS only)
     ├─► Origin header restriction
     ├─► Bot/scanner blocking (User-Agent rules)
     ├─► Per-org IP allowlisting
-    ├─► Rate limiting
+    ├─► Rate limiting (per-endpoint tiers)
+    ├─► Cloudflare-only origin restriction (non-CF traffic denied)
+    ├─► Client IP via CF-Connecting-IP + X-Forwarded-For headers
     │
     ▼
 Load Balancer:
@@ -608,13 +630,14 @@ Logging (structured JSON → cloud-native logging → optional SIEM export)
 | SCIM Provisioning | 443 | TCP/TLS 1.2+ | Inbound | Automated user lifecycle | Yes |
 | Cloud Provider APIs | 443 | TCP/TLS 1.2+ | Outbound | All cloud service communication | Yes |
 | DNS | 53, 443 | UDP/TCP, HTTPS | Outbound | Cloudflare DNS (DNSSEC) | Yes (DoH) |
+| Cloudflare Edge | 443 | TCP/TLS 1.2+ | Inbound (proxied) | Edge WAF, rate limiting, Zero Trust Access | Yes |
 | PostgreSQL | 5432 | TCP/TLS | Internal VPC/VNet | Database connections | Yes |
 | ClamAV REST | 8080 | TCP/TLS | Internal VPC/VNet | Malware scanning (internal-only container) | Yes |
 | AI Services | 443 | TCP/TLS | Internal VPC/VNet | Vector search and LLM via private endpoint | Yes |
 | Microsoft Graph API | 443 | TCP/TLS 1.2+ | Outbound | SharePoint/OneDrive document sync (`graph.microsoft.com`) | Yes |
 | Microsoft Entra ID | 443 | TCP/TLS 1.2+ | Outbound | OAuth2 token exchange (`login.microsoftonline.com`) | Yes |
 
-**All inbound traffic flows through WAF and load balancer. No services have public IP addresses. All internal communication uses TLS.**
+**All inbound traffic flows through Cloudflare edge WAF, then Cloud Armor origin WAF, then load balancer. Origin load balancers only accept traffic from Cloudflare IP ranges. No services have public IP addresses. All internal communication uses TLS.**
 
 ---
 

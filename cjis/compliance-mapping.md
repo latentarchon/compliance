@@ -200,12 +200,12 @@ CJIS requires "Advanced Authentication" (MFA) for:
 
 | Requirement | Implementation | Evidence |
 |-------------|----------------|----------|
-| Boundary protection | Cloud Armor WAF + VPC firewall + FQDN-based egress restrictions | `fedramp-ssp.md` §8.4 |
+| Boundary protection | Cloudflare Edge WAF + Cloud Armor origin WAF + VPC firewall + FQDN-based egress restrictions | `fedramp-ssp.md` §8.4 |
 | Encryption in transit (FIPS 140-2) | TLS 1.2+ with BoringSSL (FIPS 140-2 cert #4407) | `policies/encryption.md` §6.1 |
 | Encryption at rest (FIPS 140-2) | AES-256 via Cloud KMS (FIPS 140-2 Level 3 HSMs) | `policies/encryption.md` §4 |
-| Intrusion detection | Cloud Armor WAF rules (OWASP CRS), audit log alerting, red team monitoring | `policies/incident-response.md` §5 |
+| Intrusion detection | Cloudflare Edge WAF (managed rulesets) + Cloud Armor WAF rules (OWASP CRS), audit log alerting, red team monitoring | `policies/incident-response.md` §5 |
 | Partitioning (data isolation) | PostgreSQL RLS, workspace-scoped vector search, three-project isolation (auth + data tier) | `policies/access-control.md` §6 |
-| Denial of service protection | Cloud Armor DDoS protection, rate limiting, adaptive protection | `fedramp-ssp.md` §8.4 |
+| Denial of service protection | Cloudflare edge DDoS absorption (proxied mode) + Cloud Armor origin DDoS protection, dual-layer rate limiting, adaptive protection | `fedramp-ssp.md` §8.4 |
 | VoIP (N/A) | Platform does not use VoIP | N/A |
 
 ---

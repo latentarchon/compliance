@@ -177,7 +177,7 @@ Latent Archon systems are monitored for policy compliance. Monitoring includes:
 - Cloud audit logs for all cloud API calls
 - Application audit events for data access
 - GitHub audit logs for repository access and changes
-- WAF logs for network-level activity
+- Cloudflare Edge WAF logs and Cloud Armor origin WAF logs for network-level activity
 
 ### 9.2 Enforcement
 

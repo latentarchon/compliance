@@ -105,7 +105,7 @@ This policy applies to:
 ### 4.4 Failed Authentication
 
 - Identity Platform provides built-in brute-force protection
-- IP-based rate limiting (pre-authentication) limits login attempt volume
+- Dual-layer IP-based rate limiting (pre-authentication): Cloudflare edge rate limits + Cloud Armor origin rate limits
 - Per-user rate limiting (post-authentication) limits authenticated request volume
 - Failed authentication attempts are audit-logged
 
@@ -221,8 +221,8 @@ Each pool's membership is established through that pool's own authentication, wi
 Organization administrators can configure CIDR-based IP allowlists enforced at the WAF layer:
 
 - Self-service configuration via `UpdateOrganizationSettings` RPC with CIDR validation
-- Allowlists synced to WAF deny rules via cloud API
-- Rules match org hostname + IP range for per-org enforcement
+- Allowlists synced to Cloud Armor WAF deny rules via cloud API
+- Rules match org hostname + IP range for per-org enforcement at Cloud Armor origin layer
 - Full reconciliation logic (add/update/remove) ensures WAF rules stay in sync with database state
 - Sync failure is non-fatal — database is source of truth; logged and audit-recorded
 - Periodic reconciliation cron catches WAF drift
@@ -230,9 +230,11 @@ Organization administrators can configure CIDR-based IP allowlists enforced at t
 ### 8.2 Remote Access
 
 - All platform access is remote by design (cloud-native SaaS)
-- TLS 1.2+ enforced on all connections
+- TLS 1.2+ enforced on all connections (Cloudflare edge + origin)
 - HSTS with 2-year max-age and preload
-- WAF with OWASP Core Rule Set (Cloud Armor)
+- Dual-layer WAF: Cloudflare Edge WAF (managed rulesets, OWASP, custom rules, geo-blocking, threat scoring) → Cloud Armor origin WAF (OWASP Core Rule Set, Cloudflare-only origin restriction)
+- Cloudflare Zero Trust Access for admin endpoints (identity gate at edge)
+- Tiered rate limiting at both Cloudflare edge and Cloud Armor origin
 <!-- MULTI-CLOUD: Original also listed WAFv2 (AWS) and Front Door WAF (Azure). -->
 - CORS strict origin allowlist (localhost only in development)
 

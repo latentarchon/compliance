@@ -118,7 +118,8 @@ The production baseline is defined by:
 | Dependencies | Dependabot alerts | Continuous |
 | Container images | Trivy scan of deployed images | Per-build |
 | Database schema | Migration version check | Per-deploy |
-| WAF rules | Terraform state comparison | Weekly |
+| Cloud Armor origin WAF rules | Terraform state comparison | Weekly |
+| Cloudflare Edge WAF / rate-limiting / firewall rules | Terraform state comparison (Cloudflare provider) | Weekly |
 
 ### 5.2 Unauthorized Change Detection
 
