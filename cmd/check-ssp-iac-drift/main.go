@@ -590,6 +590,22 @@ func (c *Checker) checkCloudArmorCFRestriction() {
 	c.check("SC-7", "Cloud Armor main.tf references cloudflare", "true", strconv.FormatBool(hasCFAllow))
 }
 
+func (c *Checker) checkCloudflareLogpush() {
+	logpushMain := filepath.Join(c.infraRoot, "cloudflare/modules/logpush/main.tf")
+	hasLogpush := fileContains(logpushMain, "cloudflare_logpush_job")
+	c.check("SI-4", "Cloudflare Logpush module exists", "true", strconv.FormatBool(hasLogpush))
+
+	hasFirewallEvents := fileContains(logpushMain, "firewall_events")
+	c.check("SI-4", "Logpush exports firewall_events dataset", "true", strconv.FormatBool(hasFirewallEvents))
+
+	envConfig := filepath.Join(c.infraRoot, "cloudflare/environments/zone/logpush/terragrunt.hcl")
+	if val, ok := hclInputValue(envConfig, "enable_firewall_events"); ok {
+		c.check("SI-4", "Logpush firewall_events enabled", "true", val)
+	} else {
+		c.check("SI-4", "Logpush firewall_events enabled", "true", "NOT_FOUND")
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -652,6 +668,7 @@ func main() {
 	c.checkCloudflareProxied()
 	c.checkCloudflareWAFModule()
 	c.checkCloudArmorCFRestriction()
+	c.checkCloudflareLogpush()
 
 	if *jsonOutput {
 		data, _ := json.MarshalIndent(c.report, "", "  ")

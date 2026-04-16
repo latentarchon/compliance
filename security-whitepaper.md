@@ -950,7 +950,9 @@ WAF is deployed as a defense-in-depth dual-layer architecture:
 
 2. **Cloud Armor Origin WAF** (IL5) — filters traffic at the GCP load balancer. Deploys OWASP CRS v3.3 preconfigured rules, per-org IP allowlisting, bot/scanner blocking, HTTP method enforcement, and per-endpoint rate limiting. Origin restriction ensures only Cloudflare IPs reach the load balancer (auto-updated via `data.cloudflare_ip_ranges`). Client IPs are identified via `CF-Connecting-IP` header.
 
-All Cloudflare and Cloud Armor modules are managed via Terraform/Terragrunt (`infra/cloudflare/modules/waf/`, `infra/cloudflare/modules/rate-limiting/`, `infra/cloudflare/modules/firewall-rules/`, `infra/cloudflare/modules/access/`, `infra/gcp/modules/cloud-armor/`).
+Cloudflare Logpush exports `firewall_events` (WAF matches, rate limit actions, firewall rule triggers) to a GCS bucket for long-term retention (365 days standard, then coldline) and SIEM integration. This provides centralized visibility into edge security events beyond Cloudflare's default 72-hour dashboard retention.
+
+All Cloudflare and Cloud Armor modules are managed via Terraform/Terragrunt (`infra/cloudflare/modules/waf/`, `infra/cloudflare/modules/rate-limiting/`, `infra/cloudflare/modules/firewall-rules/`, `infra/cloudflare/modules/access/`, `infra/cloudflare/modules/logpush/`, `infra/gcp/modules/cloud-armor/`).
 
 ### Cloud Armor — OWASP Top 10 Protection
 

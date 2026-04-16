@@ -82,7 +82,7 @@ This policy covers security incidents affecting:
 
 | Source | What It Detects | Alert Mechanism |
 |--------|----------------|-----------------|
-| Cloudflare Edge WAF | OWASP attacks, managed rulesets, threat scoring, geo-blocking | Cloudflare dashboard + analytics |
+| Cloudflare Edge WAF | OWASP attacks, managed rulesets, threat scoring, geo-blocking | Cloudflare dashboard + Logpush to GCS |
 | Cloudflare Edge Rate Limiting | Volumetric abuse, brute force, auth endpoint abuse | Cloudflare rate limit actions |
 | Cloud Armor Origin WAF | OWASP attacks, DDoS, suspicious IPs, non-Cloudflare origin traffic | Cloud monitoring alert policy |
 | Cloud Armor Block Spike Alert | Elevated WAF DENY event volume | Cloud monitoring alert (HIGH) |
