@@ -590,6 +590,25 @@ func (c *Checker) checkCloudArmorCFRestriction() {
 	c.check("SC-7", "Cloud Armor main.tf references cloudflare", "true", strconv.FormatBool(hasCFAllow))
 }
 
+func (c *Checker) checkCloudflareFirewallRules() {
+	fwMain := filepath.Join(c.infraRoot, "cloudflare/modules/firewall-rules/main.tf")
+
+	hasThreatScore := fileContains(fwMain, "threat_score")
+	c.check("SC-7", "Firewall rules has threat score challenge", "true", strconv.FormatBool(hasThreatScore))
+
+	hasPathProtection := fileContains(fwMain, "blocked_paths")
+	c.check("SC-7", "Firewall rules has path probing protection", "true", strconv.FormatBool(hasPathProtection))
+
+	hasIPBlocklist := fileContains(fwMain, "blocked_ips")
+	c.check("SC-7", "Firewall rules has IP blocklist", "true", strconv.FormatBool(hasIPBlocklist))
+
+	hasASNBlocking := fileContains(fwMain, "blocked_asns")
+	c.check("SC-7", "Firewall rules has ASN blocking", "true", strconv.FormatBool(hasASNBlocking))
+
+	hasNoGeoBlock := !fileContains(fwMain, "geo") && !fileContains(fwMain, "allowed_countries")
+	c.check("SC-7", "Firewall rules has no geo-blocking (removed)", "true", strconv.FormatBool(hasNoGeoBlock))
+}
+
 func (c *Checker) checkCloudflareLogpush() {
 	logpushMain := filepath.Join(c.infraRoot, "cloudflare/modules/logpush/main.tf")
 	hasLogpush := fileContains(logpushMain, "cloudflare_logpush_job")
@@ -667,6 +686,7 @@ func main() {
 	c.checkCMEKCoverage()
 	c.checkCloudflareProxied()
 	c.checkCloudflareWAFModule()
+	c.checkCloudflareFirewallRules()
 	c.checkCloudArmorCFRestriction()
 	c.checkCloudflareLogpush()
 
