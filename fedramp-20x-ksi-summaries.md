@@ -4,8 +4,7 @@
 > **Version**: 1.1 — DRAFT
 > **Date**: April 2026
 > **System**: Latent Archon Document Intelligence Platform (LA-DIP)
-> **Baseline**: FedRAMP 20x Moderate
-> **High Readiness**: Appendix A-2 of the SSP documents 85+ FedRAMP High enhancement controls. Technical architecture supports High assessment.
+> **Baseline**: FedRAMP High (IL5)
 
 Per FedRAMP requirement FRR-KSI-02, this document provides implementation summaries for each KSI theme, including:
 1. Goals for implementation and validation (pass/fail criteria)
