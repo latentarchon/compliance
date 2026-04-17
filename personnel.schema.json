@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Personnel Roster",
+  "description": "Schema for compliance/personnel.json — single source of truth for role-to-person mappings.",
+  "type": "object",
+  "required": ["organization", "personnel", "roles"],
+  "properties": {
+    "organization": {
+      "type": "object",
+      "required": ["name", "email", "homepage", "uuid"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "email": { "type": "string", "format": "email" },
+        "homepage": { "type": "string", "format": "uri" },
+        "uuid": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" }
+      },
+      "additionalProperties": false
+    },
+    "personnel": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "title", "email", "uuid", "us_person", "status", "roles"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "email": { "type": "string", "format": "email" },
+          "uuid": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" },
+          "us_person": { "const": true },
+          "status": { "enum": ["active", "inactive", "terminated"] },
+          "roles": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "roles": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-z][a-z0-9-]*$": {
+          "type": "object",
+          "required": ["title", "description"],
+          "properties": {
+            "title": { "type": "string" },
+            "oscal_id": { "type": ["string", "null"] },
+            "description": { "type": "string" },
+            "documents": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "us_person_requirement": { "type": "object" }
+  },
+  "additionalProperties": true
+}

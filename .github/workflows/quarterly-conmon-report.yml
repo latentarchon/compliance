@@ -1,5 +1,8 @@
 name: Quarterly ConMon Report
 
+permissions:
+  contents: read
+
 on:
   # Run on the 1st of January, April, July, October (start of each quarter)
   schedule:
