@@ -19,8 +19,8 @@ func verifiedControls() []ControlDef {
 		{ID: "ac-4", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			ComponentUUIDs: []string{thisSystem, edgeWAF, cloudArmor},
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Information flow is controlled at multiple layers: (1) Cloudflare Edge WAF enforces geo-blocking (US-only) %s; (2) Cloud Armor origin WAF restricts traffic to Cloudflare IPs only %s; (3) VPC egress firewall is deny-all by default with FQDN allowlist for GCP APIs only; (4) Cloud Run services configured with ingress=%s restricting to internal + load-balancer traffic; (5) Cloud SQL has no public IP (public_ip=%v, enforced by org policy sql.restrictPublicIp); (6) Vertex AI accessed via Private Service Connect (PSC) within the VPC.",
-					boolStr(f.CFGeoBlockingEnabled, "(active)", "(module exists)"),
+				return fmt.Sprintf("Information flow is controlled at multiple layers: (1) Cloudflare Edge WAF with managed rulesets, OWASP CRS, threat score challenges, path probing protection, and IP/ASN blocking %s; (2) Cloud Armor origin WAF restricts traffic to Cloudflare IPs only %s; (3) VPC egress firewall is deny-all by default with FQDN allowlist for GCP APIs only; (4) Cloud Run services configured with ingress=%s restricting to internal + load-balancer traffic; (5) Cloud SQL has no public IP (public_ip=%v, enforced by org policy sql.restrictPublicIp); (6) Vertex AI accessed via Private Service Connect (PSC) within the VPC.",
+					boolStr(f.CFFirewallRulesEnabled, "(active)", "(module exists)"),
 					boolStr(f.CloudArmorCFRestriction, "(Cloudflare-only rule active)", ""),
 					or(f.CloudRunIngress, "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"),
 					f.CloudSQLPublicIP)
@@ -151,7 +151,7 @@ func verifiedControls() []ControlDef {
 		{ID: "sc-7", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			ComponentUUIDs: []string{thisSystem, edgeWAF, cloudArmor},
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Boundary protection is implemented at: (1) Cloudflare Edge WAF — first-layer defense with managed rulesets, OWASP CRS, rate limiting, geo-blocking; (2) Cloud Armor Origin WAF — Cloudflare-only origin restriction (%s), OWASP CRS, rate-based bans; (3) Regional HTTPS Load Balancer; (4) VPC egress firewall — deny-all with FQDN allowlist; (5) Cloud Run ingress restricted to %s; (6) No public IP addresses on any service.",
+				return fmt.Sprintf("Boundary protection is implemented at: (1) Cloudflare Edge WAF — first-layer defense with managed rulesets, OWASP CRS, rate limiting, threat score challenges, path probing protection, IP/ASN blocking; (2) Cloud Armor Origin WAF — Cloudflare-only origin restriction (%s), OWASP CRS, rate-based bans; (3) Regional HTTPS Load Balancer; (4) VPC egress firewall — deny-all with FQDN allowlist; (5) Cloud Run ingress restricted to %s; (6) No public IP addresses on any service.",
 					boolStr(f.CloudArmorCFRestriction, "active", "configured"),
 					or(f.CloudRunIngress, "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"))
 			}},
@@ -233,7 +233,7 @@ func verifiedControls() []ControlDef {
 		// IL5 verified
 		{ID: "sc-7.24", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "il5",
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Data residency enforcement for IL5: (1) Assured Workloads %s constrains all data and processing to US territory; (2) GCP region restricted to %s (CONUS); (3) Cloudflare geo-blocking restricts access to US-origin requests; (4) GCS data location enforced by Assured Workloads.",
+				return fmt.Sprintf("Data residency enforcement for IL5: (1) Assured Workloads %s constrains all data and processing to US territory; (2) GCP region restricted to %s (CONUS); (3) Cloudflare Zero Trust Access enforces identity-based access controls on admin endpoints; (4) GCS data location enforced by Assured Workloads.",
 					boolStr(f.AWSComplianceRegime != "", "("+f.AWSComplianceRegime+" regime)", ""),
 					or(f.Region, "us-east4"))
 			}},
