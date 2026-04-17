@@ -43,7 +43,7 @@ Latent Archon is a multi-tenant document intelligence SaaS platform deployed on 
 - **Object storage**: Document file storage (GCS)
 - **AI services**: Vector search and LLM inference (Vertex AI)
 - **Identity**: Authentication with two pools: app and admin (Identity Platform)
-- **WAF**: Dual-layer — Cloudflare Edge WAF (managed rulesets, rate limiting, geo-blocking) + Cloud Armor origin WAF (OWASP CRS, origin restriction)
+- **WAF**: Dual-layer — Cloudflare Edge WAF (managed rulesets, rate limiting, threat score challenges, path probing protection) + Cloud Armor origin WAF (OWASP CRS, origin restriction)
 - **KMS**: Encryption key management (Cloud KMS)
 
 <!-- MULTI-CLOUD: Original also listed RDS/PostgreSQL Flexible Server, S3/Blob Storage, Bedrock+OpenSearch/Azure OpenAI+AI Search, SAML federation/Azure AD, WAFv2/Front Door WAF, AWS KMS/Key Vault. -->

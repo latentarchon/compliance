@@ -209,7 +209,7 @@
         "description": "The authorization boundary encompasses all components required to deliver the Latent Archon SaaS offering: application code (Go backend, React SPAs), GCP infrastructure (Cloud Run, Cloud SQL, Cloud Storage, Vertex AI, Cloud Armor, Cloud KMS, Identity Platform), Cloudflare edge services (DNS, Edge WAF, rate limiting, Zero Trust Access), CI/CD pipelines (GitHub Actions with Workload Identity Federation), administrative interfaces, and supporting services (ClamAV malware scanning, Document AI OCR). The system uses a two-project architecture for blast-radius isolation: App Project (archon-fed-app-prod) for user-facing services and Admin Project (archon-fed-admin-prod) for administrative, processing, and data storage services."
       },
       "network-architecture": {
-        "description": "All inbound traffic flows through Cloudflare Edge WAF (proxied mode — managed rulesets, OWASP, rate limiting, geo-blocking, threat scoring) → Cloud Armor Origin WAF (OWASP CRS, Cloudflare-only origin restriction, rate-based bans) → Regional HTTPS Load Balancer. No services have public IP addresses. Cloud Armor enforces Cloudflare-only origin restriction (deny-all non-CF IPs) using auto-updated Cloudflare IP ranges. Regional security policies are used for IL5/Assured Workloads data residency compliance. Internal communication uses VPC-native networking with Cloud SQL via VPC peering, Vertex AI via Private Service Connect, and Cloud Run serverless containers. Egress firewall is deny-all by default with FQDN-based allowlist for GCP APIs only."
+        "description": "All inbound traffic flows through Cloudflare Edge WAF (proxied mode — managed rulesets, OWASP, rate limiting, threat score challenges, path probing protection, IP/ASN blocking) → Cloud Armor Origin WAF (OWASP CRS, Cloudflare-only origin restriction, rate-based bans) → Regional HTTPS Load Balancer. No services have public IP addresses. Cloud Armor enforces Cloudflare-only origin restriction (deny-all non-CF IPs) using auto-updated Cloudflare IP ranges. Regional security policies are used for IL5/Assured Workloads data residency compliance. Internal communication uses VPC-native networking with Cloud SQL via VPC peering, Vertex AI via Private Service Connect, and Cloud Run serverless containers. Egress firewall is deny-all by default with FQDN-based allowlist for GCP APIs only."
       },
       "data-flow": {
         "description": "Document upload: Browser → Cloudflare Edge WAF → Cloud Armor Origin WAF → HTTPS LB → Admin API (auth, MFA, RBAC, malware scan) → Cloud Storage (CMEK) → Cloud Tasks → Ops Service (OCR, chunking, embedding) → Vertex AI Vector Search. App query: Browser → Cloudflare Edge WAF → Cloud Armor Origin WAF → HTTPS LB → App API (auth, MFA, workspace check) → Vector Search (semantic query) → Gemini LLM (streaming response) → Client. All data at rest encrypted with AES-256 (CMEK via Cloud KMS). All data in transit encrypted with TLS 1.2+."
@@ -413,7 +413,7 @@
           "uuid": "a2b3c4d5-e6f7-4a8b-9c0d-1e2f3a4b5c6d",
           "type": "service",
           "title": "Cloudflare Edge WAF",
-          "description": "Edge Web Application Firewall providing first-layer defense: Cloudflare Managed Ruleset, OWASP Core Rule Set, tiered rate limiting (auth, login, admin mutations, global API), custom firewall rules (geo-blocking US-only, threat score challenges, path probing protection, IP/ASN blocklists), and Zero Trust Access for admin endpoints. All traffic proxied through Cloudflare before reaching origin.",
+          "description": "Edge Web Application Firewall providing first-layer defense: Cloudflare Managed Ruleset, OWASP Core Rule Set, tiered rate limiting (auth, login, admin mutations, global API), custom firewall rules (threat score challenges, path probing protection, IP/ASN blocklists), and Zero Trust Access for admin endpoints. All traffic proxied through Cloudflare before reaching origin. Cloudflare Logpush exports firewall_events to GCS for long-term retention and SIEM integration.",
           "status": {
             "state": "under-development"
           }
@@ -835,7 +835,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "ecd08cea-52ae-4919-830c-725d7012e6bc",
-                  "description": "Information flow is controlled at multiple layers: (1) Cloudflare Edge WAF enforces geo-blocking (US-only) (active); (2) Cloud Armor origin WAF restricts traffic to Cloudflare IPs only (Cloudflare-only rule active); (3) VPC egress firewall is deny-all by default with FQDN allowlist for GCP APIs only; (4) Cloud Run services configured with ingress=internal-and-cloud-load-balancing restricting to internal + load-balancer traffic; (5) Cloud SQL has no public IP (public_ip=false, enforced by org policy sql.restrictPublicIp); (6) Vertex AI accessed via Private Service Connect (PSC) within the VPC.",
+                  "description": "Information flow is controlled at multiple layers: (1) Cloudflare Edge WAF with managed rulesets, OWASP CRS, threat score challenges, path probing protection, and IP/ASN blocking (active); (2) Cloud Armor origin WAF restricts traffic to Cloudflare IPs only (Cloudflare-only rule active); (3) VPC egress firewall is deny-all by default with FQDN allowlist for GCP APIs only; (4) Cloud Run services configured with ingress=internal-and-cloud-load-balancing restricting to internal + load-balancer traffic; (5) Cloud SQL has no public IP (public_ip=false, enforced by org policy sql.restrictPublicIp); (6) Vertex AI accessed via Private Service Connect (PSC) within the VPC.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -7879,7 +7879,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "c2222b0e-9dc1-4784-816a-3836019794a7",
-                  "description": "Boundary protection is implemented at: (1) Cloudflare Edge WAF — first-layer defense with managed rulesets, OWASP CRS, rate limiting, geo-blocking; (2) Cloud Armor Origin WAF — Cloudflare-only origin restriction (active), OWASP CRS, rate-based bans; (3) Regional HTTPS Load Balancer; (4) VPC egress firewall — deny-all with FQDN allowlist; (5) Cloud Run ingress restricted to internal-and-cloud-load-balancing; (6) No public IP addresses on any service.",
+                  "description": "Boundary protection is implemented at: (1) Cloudflare Edge WAF — first-layer defense with managed rulesets, OWASP CRS, rate limiting, threat score challenges, path probing protection, IP/ASN blocking; (2) Cloud Armor Origin WAF — Cloudflare-only origin restriction (active), OWASP CRS, rate-based bans; (3) Regional HTTPS Load Balancer; (4) VPC egress firewall — deny-all with FQDN allowlist; (5) Cloud Run ingress restricted to internal-and-cloud-load-balancing; (6) No public IP addresses on any service.",
                   "implementation-status": {
                     "state": "implemented"
                   }

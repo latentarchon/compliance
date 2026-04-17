@@ -232,7 +232,7 @@ Organization administrators can configure CIDR-based IP allowlists enforced at t
 - All platform access is remote by design (cloud-native SaaS)
 - TLS 1.2+ enforced on all connections (Cloudflare edge + origin)
 - HSTS with 2-year max-age and preload
-- Dual-layer WAF: Cloudflare Edge WAF (managed rulesets, OWASP, custom rules, geo-blocking, threat scoring) → Cloud Armor origin WAF (OWASP Core Rule Set, Cloudflare-only origin restriction)
+- Dual-layer WAF: Cloudflare Edge WAF (managed rulesets, OWASP, custom firewall rules, threat score challenges, path probing protection, IP/ASN blocking) → Cloud Armor origin WAF (OWASP Core Rule Set, Cloudflare-only origin restriction)
 - Cloudflare Zero Trust Access for admin endpoints (identity gate at edge)
 - Tiered rate limiting at both Cloudflare edge and Cloud Armor origin
 <!-- MULTI-CLOUD: Original also listed WAFv2 (AWS) and Front Door WAF (Azure). -->

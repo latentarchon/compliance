@@ -82,7 +82,7 @@ This policy covers security incidents affecting:
 
 | Source | What It Detects | Alert Mechanism |
 |--------|----------------|-----------------|
-| Cloudflare Edge WAF | OWASP attacks, managed rulesets, threat scoring, geo-blocking | Cloudflare dashboard + Logpush to GCS |
+| Cloudflare Edge WAF | OWASP attacks, managed rulesets, threat scoring, path probing, IP/ASN blocking | Cloudflare dashboard + Logpush to GCS |
 | Cloudflare Edge Rate Limiting | Volumetric abuse, brute force, auth endpoint abuse | Cloudflare rate limit actions |
 | Cloud Armor Origin WAF | OWASP attacks, DDoS, suspicious IPs, non-Cloudflare origin traffic | Cloud monitoring alert policy |
 | Cloud Armor Block Spike Alert | Elevated WAF DENY event volume | Cloud monitoring alert (HIGH) |
@@ -323,7 +323,7 @@ In addition to US-CERT, the **FedRAMP PMO** must be notified:
 |------|---------|--------|
 | Cloud Logging | Log search, analysis, alerting | Cloud console |
 | Cloud Monitoring | Metrics, dashboards, alert policies | Cloud console |
-| Cloudflare Edge WAF | Edge WAF managed rulesets, custom rules, rate limiting, geo-blocking, IP/ASN blocklists | Cloudflare dashboard (Terragrunt-managed) |
+| Cloudflare Edge WAF | Edge WAF managed rulesets, custom rules, rate limiting, threat score challenges, path probing protection, IP/ASN blocklists | Cloudflare dashboard (Terragrunt-managed) |
 | Cloud Armor Origin WAF | Origin WAF rules, IP blocking, rate limiting, Cloudflare-only origin restriction | Cloud console (Terragrunt-managed) |
 | Identity Provider Console | User management, session revocation | Provider console |
 | Terraform/Terragrunt | Infrastructure state, rollback | CLI + cloud storage state |

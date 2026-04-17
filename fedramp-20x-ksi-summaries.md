@@ -351,10 +351,10 @@ Implementation follows FedRAMP's recommended order:
 
 **Pass/Fail Criteria**:
 - ✅ VPC/VNet egress controls: deny-all by default, explicit allowlists only
-- ✅ Edge WAF (Cloudflare): Managed + OWASP rulesets, edge rate limiting (global/auth/login/admin tiers), geo-blocking (US + territories only), threat score challenge, path probing protection, Zero Trust Access for admin
+- ✅ Edge WAF (Cloudflare): Managed + OWASP rulesets, edge rate limiting (global/auth/login/admin tiers), threat score challenges (managed_challenge for high-risk IPs), path probing protection (blocks /.env, /wp-admin, /.git, etc.), IP/ASN blocking, Zero Trust Access for admin
 - ✅ Origin WAF (Cloud Armor / WAFv2 / Front Door WAF): OWASP CRS, tiered rate limiting, bot blocking, Cloudflare-only origin restriction (non-CF traffic denied)
 - ✅ Adaptive/intelligent DDoS protection: ML-based L7 detection enabled on all WAF policies; Cloudflare absorbs volumetric abuse at edge
-- ✅ Geographic restriction: US + territories only at Cloudflare edge; OFAC-embargoed countries (CU, IR, KP, SY, RU) additionally blocked at Cloud Armor
+- ✅ Geographic restriction: OFAC-embargoed countries (CU, IR, KP, SY, RU) blocked at Cloud Armor origin WAF; data residency enforced via Assured Workloads (not edge geo-blocking)
 - ✅ No public IPs on any service (containers, database, AI services all private)
 - ✅ Container ingress restricted to internal + load balancer only
 - ✅ Private endpoints for AI services

@@ -157,7 +157,7 @@ Vector search results are scoped to authorized workspace IDs via token restricti
 
 ```
 Client (SPA)
-  → Cloudflare Edge (WAF: Managed + OWASP rulesets, rate limiting, geo-blocking)
+  → Cloudflare Edge (WAF: Managed + OWASP rulesets, rate limiting, threat score challenges, path probing protection)
   → Cloud Armor (origin WAF: OWASP CRS, Cloudflare-only origin restriction)
   → Load Balancer (TLS termination)
   → Container Runtime (Cloud Run)
@@ -946,7 +946,7 @@ All clouds implement deny-by-default egress with explicit allowlists:
 
 WAF is deployed as a defense-in-depth dual-layer architecture:
 
-1. **Cloudflare Edge WAF** (FedRAMP Moderate) — filters traffic at Cloudflare's global anycast edge before it reaches GCP. Deploys Cloudflare Managed Ruleset and OWASP Core Ruleset. Provides edge rate limiting, geo-blocking (US + territories only), threat score challenge, path probing protection, and Zero Trust Access for admin endpoints.
+1. **Cloudflare Edge WAF** (FedRAMP Moderate) — filters traffic at Cloudflare's global anycast edge before it reaches GCP. Deploys Cloudflare Managed Ruleset and OWASP Core Ruleset. Provides edge rate limiting, threat score challenges (managed_challenge for high-risk IPs), path probing protection (blocks common probe targets like /.env, /wp-admin, /.git), IP/ASN blocking, and Zero Trust Access for admin endpoints.
 
 2. **Cloud Armor Origin WAF** (IL5) — filters traffic at the GCP load balancer. Deploys OWASP CRS v3.3 preconfigured rules, per-org IP allowlisting, bot/scanner blocking, HTTP method enforcement, and per-endpoint rate limiting. Origin restriction ensures only Cloudflare IPs reach the load balancer (auto-updated via `data.cloudflare_ip_ranges`). Client IPs are identified via `CF-Connecting-IP` header.
 
@@ -1002,15 +1002,15 @@ Health checks (`/healthz`) and static assets are excluded from counting via `cou
 
 All Cloud Armor rate limits use `rate_based_ban` with automatic IP banning on exceedance.
 
-### Geographic Restriction (OFAC / FedRAMP Compliance)
+### Edge Firewall Rules (Custom Protection)
 
-Geographic restriction is enforced at both WAF layers:
+Custom firewall rules are enforced at the Cloudflare edge before traffic reaches GCP:
 
-- **Cloudflare Edge**: Blocks all traffic from outside US + territories (US, GU, PR, VI, AS, MP) via `cloudflare_ruleset` firewall rules. This is the primary geo-block — traffic from denied countries never reaches GCP.
+- **Threat Score Challenges**: Requests with elevated Cloudflare threat scores (>14) receive managed challenges, blocking automated attacks and known-bad IPs without impacting legitimate users.
+- **Path Probing Protection**: Blocks access to common probe targets (/.env, /wp-admin, /wp-login, /phpmyadmin, /.git, /actuator, /cgi-bin, /debug, /trace, etc.) to prevent reconnaissance.
+- **IP/ASN Blocking**: Custom blocklists for specific IPs and suspicious ASNs (hosting providers commonly used for attacks).
 - **Cloud Armor**: Additionally blocks OFAC-embargoed countries (CU, IR, KP, SY, RU) via CEL expression matching `origin.region_code` as a defense-in-depth measure.
-- Configurable per-policy via Terraform variables
-
-<!-- MULTI-CLOUD: Original also included AWS WAFv2 geographic match statement and Azure Front Door geo-filtering rule. -->
+- All rules are configurable via Terraform variables and managed in `infra/cloudflare/modules/firewall-rules/`.
 
 ### Additional WAF Controls
 

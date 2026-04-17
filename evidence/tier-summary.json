@@ -1,0 +1,105 @@
+{
+  "generated-at": "2026-04-17T14:24:55Z",
+  "baseline": "high",
+  "total-controls": 251,
+  "verified": 30,
+  "templated": 196,
+  "manual": 25,
+  "verified-pct": 11.952191235059761,
+  "templated-pct": 78.08764940239044,
+  "manual-pct": 9.9601593625498,
+  "by-family": {
+    "AC": 33,
+    "AT": 5,
+    "AU": 17,
+    "CA": 9,
+    "CM": 17,
+    "CP": 13,
+    "IA": 19,
+    "IR": 9,
+    "MA": 6,
+    "MP": 7,
+    "PE": 1,
+    "PL": 6,
+    "PM": 14,
+    "PS": 8,
+    "PT": 8,
+    "RA": 9,
+    "SA": 13,
+    "SC": 28,
+    "SI": 20,
+    "SR": 9
+  },
+  "by-family-by-tier": {
+    "AC": {
+      "templated": 26,
+      "verified": 7
+    },
+    "AT": {
+      "manual": 5
+    },
+    "AU": {
+      "templated": 13,
+      "verified": 4
+    },
+    "CA": {
+      "templated": 9
+    },
+    "CM": {
+      "templated": 16,
+      "verified": 1
+    },
+    "CP": {
+      "templated": 8,
+      "verified": 5
+    },
+    "IA": {
+      "templated": 17,
+      "verified": 2
+    },
+    "IR": {
+      "templated": 9
+    },
+    "MA": {
+      "templated": 6
+    },
+    "MP": {
+      "templated": 5,
+      "verified": 2
+    },
+    "PE": {
+      "manual": 1
+    },
+    "PL": {
+      "manual": 2,
+      "templated": 4
+    },
+    "PM": {
+      "manual": 1,
+      "templated": 13
+    },
+    "PS": {
+      "manual": 8
+    },
+    "PT": {
+      "manual": 8
+    },
+    "RA": {
+      "templated": 9
+    },
+    "SA": {
+      "templated": 13
+    },
+    "SC": {
+      "templated": 20,
+      "verified": 8
+    },
+    "SI": {
+      "templated": 19,
+      "verified": 1
+    },
+    "SR": {
+      "templated": 9
+    }
+  }
+}

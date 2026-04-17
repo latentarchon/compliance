@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 func templatedControls() []ControlDef {
 	var controls []ControlDef
 	controls = append(controls, templatedACControls()...)

@@ -48,7 +48,7 @@ This plan covers monitoring of all security controls within the authorization bo
 | Tool | What It Monitors | Alert Mechanism |
 |------|-----------------|----------------|
 | **Cloud Monitoring** | CPU, memory, latency, error rates, database metrics | Alert policies → notification channels |
-| **Cloudflare WAF Analytics** | Edge WAF rule matches, rate-limit actions, geo-blocks, Zero Trust Access decisions | Cloudflare dashboard + Logpush to GCS |
+| **Cloudflare WAF Analytics** | Edge WAF rule matches, rate-limit actions, threat score challenges, firewall rule blocks, Zero Trust Access decisions | Cloudflare dashboard + Logpush to GCS |
 | **Cloud Armor Analytics** | Origin WAF rule matches, DDoS events, blocked requests, bot traffic | Dashboard + alert policies |
 | **Cloud Audit Logs** | All cloud resource changes, data access events | Log-based alerts |
 | **Application Audit Logger** | Authentication, authorization, data access, role changes, SCIM events | WARN-level events → email notifications |

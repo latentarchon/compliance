@@ -176,7 +176,7 @@ The auth projects communicate with the data plane via JWT public key validation 
 | Vector Search | Vertex AI Vector Search | IL5 | Semantic search index (private endpoint) |
 | Text Generation | Vertex AI (Gemini) | IL5 | LLM for RAG conversation responses |
 | Identity | Identity Platform | FedRAMP High (auth projects) | Auth pools for multi-tenant isolation; JWTs validated offline in IL5 boundary |
-| Edge WAF | Cloudflare WAF | FedRAMP Moderate | Edge-layer Managed + OWASP rulesets, rate limiting, geo-blocking (US-only), threat scoring, Zero Trust Access for admin |
+| Edge WAF | Cloudflare WAF | FedRAMP Moderate | Edge-layer Managed + OWASP rulesets, rate limiting, threat score challenges, path probing protection, IP/ASN blocking, Zero Trust Access for admin |
 | Origin WAF | Cloud Armor | IL5 | Origin-layer DDoS protection, OWASP CRS, bot blocking, IP allowlisting, Cloudflare-only origin restriction |
 | Load Balancing | Regional external ALB | IL5 | TLS termination, host-based routing, health checks |
 | Key Management | Cloud KMS | IL5 | CMEK for database and storage encryption |
@@ -448,7 +448,7 @@ External (outside boundary):
   • Microsoft Graph API — SharePoint/OneDrive document sync (outbound HTTPS)
   • Microsoft Entra ID — OAuth2 token exchange (outbound HTTPS)
   • Cloudflare (FedRAMP Moderate) — DNSSEC-signed authoritative DNS, edge WAF proxy
-    (Managed + OWASP rulesets, rate limiting, geo-blocking, Zero Trust Access for admin),
+    (Managed + OWASP rulesets, rate limiting, threat score challenges, path probing protection, Zero Trust Access for admin),
     origin restricted to Cloudflare IPs via Cloud Armor
   • Customer browsers — HTTPS only (traffic proxied through Cloudflare edge)
   • CSP FedRAMP High infrastructure — inherited controls (GCP)

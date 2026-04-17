@@ -605,7 +605,7 @@ func (c *Checker) checkCloudflareFirewallRules() {
 	hasASNBlocking := fileContains(fwMain, "blocked_asns")
 	c.check("SC-7", "Firewall rules has ASN blocking", "true", strconv.FormatBool(hasASNBlocking))
 
-	hasNoGeoBlock := !fileContains(fwMain, "geo") && !fileContains(fwMain, "allowed_countries")
+	hasNoGeoBlock := !fileContains(fwMain, "allowed_countries") && !fileContains(fwMain, "geo_restriction") && !fileContains(fwMain, "geo-block") && !fileContains(fwMain, "Block non-US")
 	c.check("SC-7", "Firewall rules has no geo-blocking (removed)", "true", strconv.FormatBool(hasNoGeoBlock))
 }
 

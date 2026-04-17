@@ -2,7 +2,6 @@
 *.pdf
 node_modules/
 dist/
-evidence/
 /ksi-evidence
 /classify-scn
 /verify-controls
