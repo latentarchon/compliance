@@ -35,7 +35,7 @@ The system does not support anonymous or temporary accounts. All invite tokens a
 
 **Status:** implemented | **Baseline:** moderate
 
-Inactive accounts are disabled after 90 days of no successful authentication. A Cloud Scheduler cron job queries the last login timestamp from Identity Platform. Disabled accounts are automatically removed after 90 additional days. Accounts flagged for removal are logged to the audit trail with reason 'inactivity'.
+Inactive accounts are detected via an automated access-review tool (cmd/access-review) that runs weekly via Cloud Build. The tool queries Identity Platform tenants across all projects, enumerates users, and flags accounts with no successful authentication in 90+ days. In dry-run mode (default), it generates a report for administrative review. With --disable, it calls the Identity Platform accounts:update API to disable flagged accounts. Disabled accounts are automatically removed after 90 additional days via the account purge service. Reports are uploaded to Drata as evidence.
 
 ---
 
@@ -123,7 +123,7 @@ The system displays a system use notification banner before granting access. The
 
 **Status:** implemented | **Baseline:** moderate
 
-The system limits concurrent sessions to 3 per user. When a fourth session is initiated, the oldest session is invalidated. Session tracking uses Firebase Auth token management with server-side session validation. Concurrent session counts are enforced in the auth interceptor.
+The system limits concurrent sessions to 3 per user. When a fourth session is initiated, the new session is rejected with an error instructing the user to sign out from another device. Session tracking uses a server-side user_sessions table with last-seen timestamps; the auth interceptor counts active sessions (seen within the idle timeout window) and enforces the limit per request.
 
 ---
 
@@ -238,7 +238,7 @@ Additional warning is provided when allocated audit log storage volume reaches 8
 
 **Status:** implemented | **Baseline:** moderate
 
-Audit records are reviewed weekly by the Security Lead for: (1) unusual access patterns; (2) failed authentication spikes; (3) privilege escalation attempts; (4) unauthorized data access attempts; (5) configuration changes outside change windows. Automated analysis via Cloud Logging queries surfaces anomalies.
+Audit records are reviewed weekly via an automated audit-review tool (cmd/audit-review) that queries BigQuery audit_logs datasets across all projects. The tool checks for: (1) failed authentication spikes (>10/hour); (2) IAM policy changes (SetIamPolicy events); (3) privilege escalation attempts (CreateRole, CreateServiceAccountKey); (4) bulk data deletion events; (5) off-hours administrative access by non-service-accounts; (6) application-layer auth failures. Reports are generated weekly via Cloud Build scheduler and uploaded to Drata. Cloud Monitoring alert policies provide real-time anomaly detection in parallel.
 
 ---
 
@@ -313,7 +313,7 @@ System interconnections are authorized and documented: (1) Customer IdP connecti
 
 **Status:** implemented | **Baseline:** moderate
 
-Plan of Action and Milestones (POA&M) is maintained and tracked via Drata. POA&M items are created from: security assessment findings, vulnerability scan results, audit findings, and continuous monitoring alerts. Items include: weakness description, severity, responsible party, milestone dates, and remediation status.
+Plan of Action and Milestones (POA&M) is maintained and tracked via Drata. An automated POA&M report generator (cmd/poam-report) runs daily via Cloud Build, parsing SARIF scan results from GoSec, Semgrep, Trivy, govulncheck, and Gitleaks. Findings are deduplicated by fingerprint (tool + rule + location), tracked with severity-based remediation deadlines (CRITICAL: 15 days, HIGH: 30 days, MEDIUM: 90 days, LOW: 180 days), and automatically closed when resolved. Reports are uploaded to Drata as evidence artifacts.
 
 ---
 

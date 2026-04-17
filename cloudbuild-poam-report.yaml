@@ -1,0 +1,92 @@
+# Cloud Build — POA&M Report (CA-5)
+#
+# Triggered by: Cloud Scheduler (daily at 9:00 AM UTC, after security scans)
+# Parses SARIF scan results from GCS, generates POA&M report with
+# finding tracking, severity-based remediation deadlines, and auto-close.
+# Uploads report to GCS and Drata.
+
+substitutions:
+  _GO_VERSION: '1.25'
+  _SCAN_BUCKET: '${PROJECT_ID}-build-artifacts'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  - id: fetch-state
+    name: gcr.io/cloud-builders/gsutil
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gsutil cp gs://${_SCAN_BUCKET}/poam/poam-state.json /workspace/poam-state.json 2>/dev/null || echo "[]" > /workspace/poam-state.json
+
+  - id: poam-report
+    name: golang:${_GO_VERSION}
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        mkdir -p /workspace/reports
+        go run ./cmd/poam-report/ \
+          --scan-bucket ${_SCAN_BUCKET} \
+          --scan-prefix security-scans/ \
+          --state-file /workspace/poam-state.json \
+          --output-dir /workspace/reports
+    waitFor: ['fetch-state']
+
+  - id: save-state
+    name: gcr.io/cloud-builders/gsutil
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gsutil cp /workspace/poam-state.json gs://${_SCAN_BUCKET}/poam/poam-state.json
+    waitFor: ['poam-report']
+
+  - id: drata-build
+    name: golang:${_GO_VERSION}
+    dir: drata
+    entrypoint: go
+    args: ['build', '-o', '/workspace/drata-sync', './cmd/drata-sync/']
+
+  - id: drata-upload
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    secretEnv: ['DRATA_API_KEY', 'DRATA_WORKSPACE_ID', 'DRATA_OWNER_ID']
+    args:
+      - -c
+      - |
+        DATE=$(date +%Y-%m-%d)
+        REPORT=$(ls /workspace/reports/poam-report-*.md 2>/dev/null | head -1)
+        if [ -n "$${REPORT}" ]; then
+          /workspace/drata-sync \
+            --owner-id "$$DRATA_OWNER_ID" \
+            --artifact-name "POA&M Report — $${DATE}" \
+            --artifact-desc "Daily vulnerability finding triage for CA-5, RA-5" \
+            --artifact-file "$${REPORT}" \
+            --artifact-controls "DCF-CA-5,DCF-RA-5" \
+            ci-artifact || true
+        fi
+    waitFor: ['poam-report', 'drata-build']
+
+  - id: archive
+    name: gcr.io/cloud-builders/gsutil
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        DATE=$(date +%Y-%m-%d)
+        gsutil cp /workspace/reports/poam-report-*.* gs://${_SCAN_BUCKET}/poam/$${DATE}/ || true
+    waitFor: ['poam-report']
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/${PROJECT_ID}/secrets/drata-api-key/versions/latest
+      env: DRATA_API_KEY
+    - versionName: projects/${PROJECT_ID}/secrets/drata-workspace-id/versions/latest
+      env: DRATA_WORKSPACE_ID
+    - versionName: projects/${PROJECT_ID}/secrets/drata-owner-id/versions/latest
+      env: DRATA_OWNER_ID
+
+timeout: 300s

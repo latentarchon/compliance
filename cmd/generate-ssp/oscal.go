@@ -13,6 +13,7 @@ type SSP struct {
 	SystemCharacteristics SystemCharacteristics `json:"system-characteristics"`
 	SystemImplementation  SystemImplementation  `json:"system-implementation"`
 	ControlImplementation ControlImplementation `json:"control-implementation"`
+	BackMatter            *BackMatter           `json:"back-matter,omitempty"`
 }
 
 type Metadata struct {
@@ -197,4 +198,20 @@ type ByComponent struct {
 
 type ImplStatus struct {
 	State string `json:"state"`
+}
+
+type BackMatter struct {
+	Resources []Resource `json:"resources,omitempty"`
+}
+
+type Resource struct {
+	UUID        string  `json:"uuid"`
+	Title       string  `json:"title"`
+	Description string  `json:"description,omitempty"`
+	RLinks      []RLink `json:"rlinks,omitempty"`
+}
+
+type RLink struct {
+	Href      string `json:"href"`
+	MediaType string `json:"media-type,omitempty"`
 }

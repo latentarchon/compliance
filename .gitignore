@@ -8,6 +8,9 @@ dist/
 /check-ssp-iac-drift
 /generate-ssp
 /policy-review
+/access-review
+/audit-review
+/poam-report
 .cache/
 
 # Sensitive internal docs — defense in depth

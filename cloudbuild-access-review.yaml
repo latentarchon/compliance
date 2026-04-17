@@ -1,0 +1,74 @@
+# Cloud Build — Access Review (AC-2.3 Stale Account Detection)
+#
+# Triggered by: Cloud Scheduler (weekly, Monday at 7:00 AM UTC)
+# Queries Identity Platform tenants for inactive accounts (>90 days).
+# Uploads report to GCS and Drata.
+
+substitutions:
+  _GO_VERSION: '1.25'
+  _TARGET_ENV: 'staging'
+  _MAX_INACTIVE_DAYS: '90'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  - id: access-review
+    name: golang:${_GO_VERSION}
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        mkdir -p /workspace/reports
+        go run ./cmd/access-review/ \
+          --env ${_TARGET_ENV} \
+          --max-inactive-days ${_MAX_INACTIVE_DAYS} \
+          --output-dir /workspace/reports \
+          --warn-only
+
+  - id: drata-build
+    name: golang:${_GO_VERSION}
+    dir: drata
+    entrypoint: go
+    args: ['build', '-o', '/workspace/drata-sync', './cmd/drata-sync/']
+
+  - id: drata-upload
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    secretEnv: ['DRATA_API_KEY', 'DRATA_WORKSPACE_ID', 'DRATA_OWNER_ID']
+    args:
+      - -c
+      - |
+        DATE=$(date +%Y-%m-%d)
+        REPORT=$(ls /workspace/reports/access-review-*.md 2>/dev/null | head -1)
+        if [ -n "$${REPORT}" ]; then
+          /workspace/drata-sync \
+            --owner-id "$$DRATA_OWNER_ID" \
+            --artifact-name "Access Review Report — $${DATE}" \
+            --artifact-desc "Weekly inactive account review for AC-2(3)" \
+            --artifact-file "$${REPORT}" \
+            --artifact-controls "DCF-AC-2" \
+            ci-artifact || true
+        fi
+    waitFor: ['access-review', 'drata-build']
+
+  - id: archive
+    name: gcr.io/cloud-builders/gsutil
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        DATE=$(date +%Y-%m-%d)
+        gsutil cp /workspace/reports/access-review-*.* gs://${PROJECT_ID}-build-artifacts/access-review/$${DATE}/ || true
+    waitFor: ['access-review']
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/${PROJECT_ID}/secrets/drata-api-key/versions/latest
+      env: DRATA_API_KEY
+    - versionName: projects/${PROJECT_ID}/secrets/drata-workspace-id/versions/latest
+      env: DRATA_WORKSPACE_ID
+    - versionName: projects/${PROJECT_ID}/secrets/drata-owner-id/versions/latest
+      env: DRATA_OWNER_ID
+
+timeout: 300s
