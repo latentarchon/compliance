@@ -329,6 +329,22 @@ func TestScanCloudflareModules(t *testing.T) {
 	for _, mod := range []string{"waf", "rate-limiting", "access", "logpush", "firewall-rules", "ip-ranges"} {
 		os.MkdirAll(filepath.Join(cfModules, mod), 0755)
 	}
+	os.WriteFile(filepath.Join(cfModules, "firewall-rules/main.tf"), []byte(`
+resource "cloudflare_ruleset" "custom_firewall" {
+  dynamic "rules" {
+    for_each = var.enable_threat_score_challenge ? [1] : []
+    content {
+      expression = "cf.threat_score gt 14"
+    }
+  }
+  dynamic "rules" {
+    for_each = var.enable_path_protection ? [1] : []
+    content {
+      expression = join(" or ", [for p in var.blocked_paths : "http.request.uri.path contains p"])
+    }
+  }
+}
+`), 0644)
 
 	facts := &InfraFacts{}
 	scanCloudflareModules(dir, facts)
@@ -345,8 +361,8 @@ func TestScanCloudflareModules(t *testing.T) {
 	if !facts.CFLogpushEnabled {
 		t.Error("CFLogpushEnabled should be true")
 	}
-	if !facts.CFGeoBlockingEnabled {
-		t.Error("CFGeoBlockingEnabled should be true")
+	if !facts.CFFirewallRulesEnabled {
+		t.Error("CFFirewallRulesEnabled should be true")
 	}
 	if !facts.CFIPRangesConfigured {
 		t.Error("CFIPRangesConfigured should be true")

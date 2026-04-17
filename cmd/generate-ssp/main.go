@@ -260,7 +260,7 @@ func freshSSP(facts *InfraFacts) SSPDocument {
 						or(facts.AdminProjectID), or(facts.OpsProjectID), or(facts.AppProjectID), or(facts.KMSProjectID)),
 				},
 				NetworkArchitecture: DescriptionBlock{
-					Description: fmt.Sprintf("All inbound traffic flows through Cloudflare Edge WAF (proxied mode — managed rulesets, OWASP, rate limiting, geo-blocking) → Cloud Armor Origin WAF (OWASP CRS, Cloudflare-only origin restriction) → Regional HTTPS Load Balancer. No services have public IP addresses. Cloud Armor enforces Cloudflare-only origin restriction using auto-updated Cloudflare IP ranges. Cloud Run services use ingress=%s. VPC egress firewall is deny-all by default with FQDN-based allowlist for GCP APIs only. Internal communication uses VPC-native networking with Cloud SQL via VPC peering and Vertex AI via Private Service Connect. Region: %s.",
+					Description: fmt.Sprintf("All inbound traffic flows through Cloudflare Edge WAF (proxied mode — managed rulesets, OWASP, rate limiting, threat score challenges, path probing protection, IP/ASN blocking) → Cloud Armor Origin WAF (OWASP CRS, Cloudflare-only origin restriction) → Regional HTTPS Load Balancer. No services have public IP addresses. Cloud Armor enforces Cloudflare-only origin restriction using auto-updated Cloudflare IP ranges. Cloud Run services use ingress=%s. VPC egress firewall is deny-all by default with FQDN-based allowlist for GCP APIs only. Internal communication uses VPC-native networking with Cloud SQL via VPC peering and Vertex AI via Private Service Connect. Region: %s.",
 						or(facts.CloudRunIngress, "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"), or(facts.Region, "us-east4")),
 				},
 				DataFlow: DescriptionBlock{
