@@ -1,0 +1,57 @@
+name: Quarterly ConMon Report
+
+on:
+  # Run on the 1st of January, April, July, October (start of each quarter)
+  schedule:
+    - cron: '0 6 1 1,4,7,10 *'
+  workflow_dispatch:
+    inputs:
+      quarter:
+        description: 'Quarter (e.g., Q1, Q2, Q3, Q4)'
+        required: false
+      year:
+        description: 'Year (e.g., 2026)'
+        required: false
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Determine quarter
+        id: quarter
+        run: |
+          if [ -n "${{ inputs.quarter }}" ]; then
+            echo "quarter=${{ inputs.quarter }}" >> "$GITHUB_OUTPUT"
+            echo "year=${{ inputs.year || '2026' }}" >> "$GITHUB_OUTPUT"
+          else
+            # Previous quarter (since this runs at the start of a new quarter)
+            MONTH=$(date +%-m)
+            YEAR=$(date +%Y)
+            PREV_Q=$(( (MONTH - 2) / 3 + 1 ))
+            if [ "$PREV_Q" -le 0 ]; then
+              PREV_Q=4
+              YEAR=$((YEAR - 1))
+            fi
+            echo "quarter=Q${PREV_Q}" >> "$GITHUB_OUTPUT"
+            echo "year=${YEAR}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate ConMon report
+        run: |
+          node scripts/generate-conmon-report.mjs \
+            --quarter "${{ steps.quarter.outputs.quarter }}" \
+            --year "${{ steps.quarter.outputs.year }}" \
+            --output-dir reports/conmon
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: conmon-report-${{ steps.quarter.outputs.quarter }}-${{ steps.quarter.outputs.year }}
+          path: reports/conmon/
+          retention-days: 365

@@ -1146,7 +1146,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Personnel security requirements are documented in the Information Security Policy (POL-IS-001) and Acceptable Use Policy (POL-AU-001). The policies define background check requirements, access authorization procedures, acceptable use rules, and termination/transfer procedures.
+**Implementation**: Personnel security requirements are documented in the Information Security Policy (POL-IS-001, including §2.1 US Person Requirement), Acceptable Use Policy (POL-AU-001), Pre-Employment Screening SOP (SOP-HR-001), and Contractor Security Addendum template (CSA-TPL-001). The policies define US person verification, background check requirements, access authorization procedures, acceptable use rules, and termination/transfer procedures.
 
 ### PS-2: Position Risk Designation
 
@@ -1160,7 +1160,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: All Latent Archon personnel undergo background screening appropriate to their position risk designation before receiving system access. Screening includes identity verification and criminal history check. For High Risk positions, screening additionally includes employment verification and reference checks. Screening is re-conducted every 5 years or upon position change.
+**Implementation**: All Latent Archon personnel undergo background screening appropriate to their position risk designation before receiving system access. Screening includes: (1) **US person verification** — government-issued identification confirming US person status per 22 CFR § 120.62, required for all positions without exception (DFARS 252.204-7012, DoD CC SRG IL5, GCP Assured Workloads personnel controls); (2) identity verification and criminal history check. For High Risk positions, screening additionally includes employment verification and reference checks. Screening is re-conducted every 5 years or upon position change. US person verification records are retained in HR files.
 
 ### PS-4: Personnel Termination
 
@@ -1188,7 +1188,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Latent Archon does not currently use external contractors for system development or operations. If contractors are engaged, they will be subject to the same background screening, access agreement, and least-privilege access requirements as employees. Third-party vendor security is governed by the Vendor Risk Management Policy (POL-VR-001).
+**Implementation**: Latent Archon does not currently use external contractors for system development or operations. If contractors are engaged, they will be subject to the same requirements as employees, including: (1) US person verification (no exceptions — see PS-3 and POL-IS-001 §2.1); (2) background screening appropriate to position risk designation; (3) access agreement and NDA execution; (4) least-privilege access scoped to contract scope. Contractor agreements must include a US person attestation clause. Third-party vendor security is governed by the Vendor Risk Management Policy (POL-VR-001).
 
 ### PS-8: Personnel Sanctions
 

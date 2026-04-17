@@ -26,6 +26,22 @@ This policy applies to:
 - All third-party services processing Latent Archon or customer data
 - All development, staging, and production environments
 
+### 2.1 Personnel Eligibility — US Person Requirement
+
+All personnel with logical or physical access to Latent Archon information systems, source code repositories, CI/CD pipelines, cloud infrastructure, or customer data **must be United States persons** as defined by 22 CFR § 120.62 (U.S. citizens, lawful permanent residents, or protected individuals under 8 U.S.C. § 1324b(a)(3)).
+
+This requirement applies to:
+
+- All employees regardless of role or access level
+- All contractors, subcontractors, and temporary personnel
+- All third-party assessors (3PAOs) and auditors with system access
+
+**Rationale**: The system operates within GCP IL5 Assured Workloads processing CUI and DoD mission data. DFARS 252.204-7012, the DoD Cloud Computing SRG (IL5), and GCP Assured Workloads personnel controls require US person access restrictions for all personnel handling controlled information or administering systems that process it.
+
+**Verification**: US person status is verified during pre-employment screening (PS-3) through government-issued identification. Verification records are retained in HR files. Contractor agreements must include a US person attestation clause. Status is re-verified upon contract renewal or position change.
+
+**Exceptions**: None. This requirement has no exception process. Foreign nationals may not be granted access to Latent Archon systems under any circumstances, including temporary or read-only access.
+
 ---
 
 ## 3. Security Objectives

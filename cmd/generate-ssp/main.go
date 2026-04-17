@@ -12,6 +12,51 @@ import (
 	"time"
 )
 
+type PersonnelRoster struct {
+	Organization struct {
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+		Homepage string `json:"homepage"`
+		UUID     string `json:"uuid"`
+	} `json:"organization"`
+	Personnel []struct {
+		Name   string   `json:"name"`
+		Title  string   `json:"title"`
+		Email  string   `json:"email"`
+		UUID   string   `json:"uuid"`
+		Roles  []string `json:"roles"`
+	} `json:"personnel"`
+}
+
+func loadRoster(root string) (*PersonnelRoster, error) {
+	data, err := os.ReadFile(filepath.Join(root, "compliance", "personnel.json"))
+	if err != nil {
+		return nil, fmt.Errorf("personnel.json: %w", err)
+	}
+	var r PersonnelRoster
+	if err := json.Unmarshal(data, &r); err != nil {
+		return nil, fmt.Errorf("personnel.json: %w", err)
+	}
+	return &r, nil
+}
+
+func (r *PersonnelRoster) findByRole(role string) *struct {
+	Name  string   `json:"name"`
+	Title string   `json:"title"`
+	Email string   `json:"email"`
+	UUID  string   `json:"uuid"`
+	Roles []string `json:"roles"`
+} {
+	for i := range r.Personnel {
+		for _, rr := range r.Personnel[i].Roles {
+			if rr == role {
+				return &r.Personnel[i]
+			}
+		}
+	}
+	return nil
+}
+
 func main() {
 	infraRoot := flag.String("infra-root", "", "path to infra/ directory")
 	backendRoot := flag.String("backend-root", "", "path to backend/ directory")
@@ -34,6 +79,11 @@ func main() {
 		*existingSSP = filepath.Join(root, "compliance", "oscal", "ssp.json")
 	}
 
+	roster, err := loadRoster(root)
+	if err != nil {
+		log.Fatalf("roster error: %v", err)
+	}
+
 	facts, err := scanInfrastructure(*infraRoot, *backendRoot)
 	if err != nil {
 		log.Fatalf("scan error: %v", err)
@@ -47,7 +97,7 @@ func main() {
 	if data, err := os.ReadFile(*existingSSP); err == nil {
 		if err := json.Unmarshal(data, &doc); err != nil {
 			log.Printf("warning: could not parse existing SSP, generating fresh: %v", err)
-			doc = freshSSP(facts)
+			doc = freshSSP(facts, roster)
 		} else {
 			if len(doc.SystemSecurityPlan.SystemCharacteristics.SystemIDs) > 0 {
 				uuidNamespace = doc.SystemSecurityPlan.SystemCharacteristics.SystemIDs[0].ID
@@ -56,7 +106,7 @@ func main() {
 			doc.SystemSecurityPlan.Metadata.Version = bumpPatch(doc.SystemSecurityPlan.Metadata.Version)
 		}
 	} else {
-		doc = freshSSP(facts)
+		doc = freshSSP(facts, roster)
 	}
 
 	reqs := buildImplementedRequirements(facts)
@@ -171,7 +221,12 @@ func bumpPatch(version string) string {
 	return fmt.Sprintf("%d.%d.%d", major, minor, patch+1)
 }
 
-func freshSSP(facts *InfraFacts) SSPDocument {
+func freshSSP(facts *InfraFacts, roster *PersonnelRoster) SSPDocument {
+	owner := roster.findByRole("system-owner")
+	if owner == nil {
+		log.Fatal("personnel.json: no person with system-owner role")
+	}
+
 	return SSPDocument{
 		SystemSecurityPlan: SSP{
 			UUID: deterministicUUID("ssp-root"),
@@ -190,27 +245,27 @@ func freshSSP(facts *InfraFacts) SSPDocument {
 				},
 				Parties: []Party{
 					{
-						UUID: "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
-						Type: "organization",
-						Name: "Latent Archon, LLC",
-						EmailAddresses: []string{"ajhendel@latentarchon.com"},
+						UUID:           roster.Organization.UUID,
+						Type:           "organization",
+						Name:           roster.Organization.Name,
+						EmailAddresses: []string{roster.Organization.Email},
 						Links: []Link{
-							{Href: "https://latentarchon.com", Rel: "homepage"},
+							{Href: roster.Organization.Homepage, Rel: "homepage"},
 						},
 					},
 					{
-						UUID: "c3d4e5f6-a7b8-4c9d-8e1f-2a3b4c5d6e7f",
+						UUID: owner.UUID,
 						Type: "person",
-						Name: "Andrew Hendel",
+						Name: owner.Name,
 						Props: []Prop{
-							{Name: "job-title", Value: "Chief Executive Officer"},
+							{Name: "job-title", Value: owner.Title},
 						},
-						EmailAddresses:        []string{"ajhendel@latentarchon.com"},
-						MemberOfOrganizations: []string{"b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"},
+						EmailAddresses:        []string{owner.Email},
+						MemberOfOrganizations: []string{roster.Organization.UUID},
 					},
 				},
 				ResponsibleParties: []ResponsibleParty{
-					{RoleID: "system-owner", PartyUUIDs: []string{"c3d4e5f6-a7b8-4c9d-8e1f-2a3b4c5d6e7f"}},
+					{RoleID: "system-owner", PartyUUIDs: []string{owner.UUID}},
 				},
 			},
 			ImportProfile: ImportProfile{

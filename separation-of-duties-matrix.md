@@ -37,6 +37,8 @@ Latent Archon operates as a founder-led, automation-first security organization.
 | **Engineering Lead** | Dedicated code review, infrastructure deployment, technical implementation | Scaling milestone |
 | **Developer(s)** | Additional code authoring, testing, documentation capacity | Revenue supports headcount |
 
+**Personnel eligibility**: All roles require US person status per POL-IS-001 §2.1 (no exceptions). This constraint applies to employees, contractors, and 3PAO assessors with system access. US person verification occurs during pre-employment screening (PS-3).
+
 As the team grows, duties currently handled by the CEO will transfer to dedicated personnel. The automation-first architecture remains the foundation regardless of team size.
 
 </details>

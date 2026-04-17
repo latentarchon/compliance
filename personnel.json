@@ -1,0 +1,101 @@
+{
+  "$schema": "personnel-roster",
+  "description": "Single source of truth for personnel-to-role mappings across all compliance documents and OSCAL generators. Update this file when personnel change; run OSCAL generators to propagate.",
+  "organization": {
+    "name": "Latent Archon, LLC",
+    "email": "ajhendel@latentarchon.com",
+    "homepage": "https://latentarchon.com",
+    "uuid": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"
+  },
+  "personnel": [
+    {
+      "name": "Andrew Hendel",
+      "title": "Chief Executive Officer",
+      "email": "ajhendel@latentarchon.com",
+      "uuid": "c3d4e5f6-a7b8-4c9d-8e1f-2a3b4c5d6e7f",
+      "us_person": true,
+      "status": "active",
+      "roles": [
+        "system-owner",
+        "isso",
+        "plan-owner",
+        "config-manager",
+        "cp-coordinator",
+        "incident-commander"
+      ]
+    }
+  ],
+  "roles": {
+    "system-owner": {
+      "title": "System Owner",
+      "oscal_id": "system-owner",
+      "description": "Responsible for the overall system authorization and operation",
+      "documents": [
+        "fedramp-ssp.md (§1 System Identification)",
+        "oscal/ssp.json (metadata.responsible-parties)",
+        "sales/capability-statement.md",
+        "sales/law-enforcement-brief.md"
+      ]
+    },
+    "isso": {
+      "title": "Information System Security Officer",
+      "oscal_id": "information-system-security-officer",
+      "description": "Responsible for security program management, control implementation, and compliance",
+      "documents": [
+        "fedramp-ssp.md (§1 System Identification)",
+        "fedramp-ssp-appendix-a-controls.md (PM-2)",
+        "isso-appointment-letter.md",
+        "separation-of-duties-matrix.md",
+        "cybersecurity-education-tracker.md",
+        "rules-of-behavior.md",
+        "conmon-sops.md"
+      ]
+    },
+    "plan-owner": {
+      "title": "Plan Owner",
+      "oscal_id": null,
+      "description": "Owner of compliance plans (contingency, ConMon, config mgmt, SCRMP)",
+      "documents": [
+        "contingency-plan.md",
+        "continuous-monitoring-plan.md",
+        "configuration-management-plan.md",
+        "supply-chain-risk-management-plan.md"
+      ]
+    },
+    "config-manager": {
+      "title": "Configuration Manager",
+      "oscal_id": null,
+      "description": "Oversees configuration management process",
+      "documents": [
+        "configuration-management-plan.md"
+      ]
+    },
+    "cp-coordinator": {
+      "title": "Contingency Plan Coordinator",
+      "oscal_id": null,
+      "description": "Activates and coordinates contingency plan execution",
+      "documents": [
+        "contingency-plan.md"
+      ]
+    },
+    "incident-commander": {
+      "title": "Incident Commander",
+      "oscal_id": null,
+      "description": "Leads incident response and red team exercise review",
+      "documents": [
+        "cybersecurity-education-tracker.md",
+        "policies/incident-response.md"
+      ]
+    }
+  },
+  "us_person_requirement": {
+    "policy_reference": "POL-IS-001 §2.1",
+    "legal_basis": [
+      "22 CFR § 120.62 (US person definition)",
+      "DFARS 252.204-7012 (CUI protection)",
+      "DoD CC SRG IL5 (personnel controls)",
+      "GCP Assured Workloads (US person requirement)"
+    ],
+    "exceptions": "None. No exception process exists."
+  }
+}

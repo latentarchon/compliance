@@ -16,6 +16,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -95,11 +96,65 @@ var RequiredModules = []TrainingModule{
 	},
 }
 
+func loadPersonnelFromRoster() string {
+	dir, _ := os.Getwd()
+	for {
+		candidate := filepath.Join(dir, "compliance", "personnel.json")
+		if data, err := os.ReadFile(candidate); err == nil {
+			var roster struct {
+				Personnel []struct {
+					Name  string `json:"name"`
+					Title string `json:"title"`
+					Roles []string `json:"roles"`
+				} `json:"personnel"`
+			}
+			if err := json.Unmarshal(data, &roster); err == nil && len(roster.Personnel) > 0 {
+				var parts []string
+				for _, p := range roster.Personnel {
+					parts = append(parts, fmt.Sprintf("%s (%s)", p.Name, p.Title))
+				}
+				return strings.Join(parts, ", ")
+			}
+		}
+		candidate = filepath.Join(dir, "personnel.json")
+		if data, err := os.ReadFile(candidate); err == nil {
+			var roster struct {
+				Personnel []struct {
+					Name  string `json:"name"`
+					Title string `json:"title"`
+				} `json:"personnel"`
+			}
+			if err := json.Unmarshal(data, &roster); err == nil && len(roster.Personnel) > 0 {
+				var parts []string
+				for _, p := range roster.Personnel {
+					parts = append(parts, fmt.Sprintf("%s (%s)", p.Name, p.Title))
+				}
+				return strings.Join(parts, ", ")
+			}
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	return ""
+}
+
 func main() {
-	personnel := flag.String("personnel", envOrDefault("PERSONNEL", "Andrew Hendel (CEO/ISSO)"), "Comma-separated personnel list")
+	rosterDefault := loadPersonnelFromRoster()
+	if rosterDefault == "" {
+		rosterDefault = envOrDefault("PERSONNEL", "")
+	}
+	personnel := flag.String("personnel", rosterDefault, "Comma-separated personnel list (default: from personnel.json)")
 	outputDir := flag.String("output-dir", envOrDefault("OUTPUT_DIR", "./reports"), "Report output directory")
 	period := flag.String("period", "", "Training period (default: current quarter)")
 	flag.Parse()
+
+	if *personnel == "" {
+		fmt.Fprintf(os.Stderr, "error: no personnel specified. Use --personnel flag, PERSONNEL env, or create compliance/personnel.json\n")
+		os.Exit(1)
+	}
 
 	if *period == "" {
 		now := time.Now()

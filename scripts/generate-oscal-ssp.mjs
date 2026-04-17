@@ -21,6 +21,12 @@ import { randomUUID } from 'crypto';
 const ROOT = join(import.meta.dirname, '..');
 const DEFAULT_OUTPUT = join(ROOT, 'oscal', 'ssp.json');
 
+// Personnel roster — single source of truth for all person/role references
+const roster = JSON.parse(readFileSync(join(ROOT, 'personnel.json'), 'utf-8'));
+const org = roster.organization;
+const owner = roster.personnel.find(p => p.roles.includes('system-owner'));
+if (!owner) throw new Error('personnel.json: no person with system-owner role');
+
 // Parse CLI args
 const args = process.argv.slice(2);
 let outputPath = DEFAULT_OUTPUT;
@@ -212,29 +218,29 @@ function buildSSP(controls) {
         ],
         parties: [
           {
-            uuid: UUID.partyOrg,
+            uuid: org.uuid,
             type: 'organization',
-            name: 'Latent Archon, LLC',
-            'email-addresses': ['ajhendel@latentarchon.com'],
+            name: org.name,
+            'email-addresses': [org.email],
             links: [
-              { href: 'https://latentarchon.com', rel: 'homepage' },
+              { href: org.homepage, rel: 'homepage' },
             ],
           },
           {
-            uuid: UUID.partyOwner,
+            uuid: owner.uuid,
             type: 'person',
-            name: 'Andrew Hendel',
+            name: owner.name,
             props: [
-              { name: 'job-title', value: 'Chief Executive Officer' },
+              { name: 'job-title', value: owner.title },
             ],
-            'email-addresses': ['ajhendel@latentarchon.com'],
-            'member-of-organizations': [UUID.partyOrg],
+            'email-addresses': [owner.email],
+            'member-of-organizations': [org.uuid],
           },
         ],
         'responsible-parties': [
           {
             'role-id': UUID.roleSystemOwner,
-            'party-uuids': [UUID.partyOwner],
+            'party-uuids': [owner.uuid],
           },
         ],
       },
