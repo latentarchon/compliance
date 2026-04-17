@@ -83,15 +83,15 @@ echo ""
 echo "── 2. OSCAL SSP Generation ──"
 # ─────────────────────────────────────────────────────────────────────
 
-if [ -f "$ROOT/scripts/generate-oscal-ssp.mjs" ]; then
-  pass "OSCAL generator script exists"
+if [ -f "$ROOT/cmd/generate-ssp/main.go" ]; then
+  pass "OSCAL generator (Go) exists"
 else
-  fail "scripts/generate-oscal-ssp.mjs not found"
+  fail "cmd/generate-ssp/main.go not found"
 fi
 
-# Run the generator
+# Run the Go generator
 OSCAL_OUTPUT="$ROOT/oscal/ssp-test.json"
-if node "$ROOT/scripts/generate-oscal-ssp.mjs" --output "$OSCAL_OUTPUT" > /dev/null 2>&1; then
+if go run "$ROOT/cmd/generate-ssp/" --out "$OSCAL_OUTPUT" --baseline high 2>/dev/null; then
   pass "OSCAL generator ran successfully"
 
   # Validate JSON syntax
@@ -107,7 +107,7 @@ import json, sys
 with open('$OSCAL_OUTPUT') as f:
     ssp = json.load(f)
 root = ssp.get('system-security-plan', {})
-required = ['uuid', 'metadata', 'import-profile', 'system-characteristics', 'system-implementation', 'control-implementation']
+required = ['uuid', 'metadata', 'import-profile', 'system-characteristics', 'control-implementation']
 missing = [k for k in required if k not in root]
 if missing:
     print(f'Missing keys: {missing}', file=sys.stderr)

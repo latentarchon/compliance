@@ -7,10 +7,13 @@
     "build:pdfs": "node scripts/build-pdfs.mjs",
     "generate:oscal": "go run ./cmd/generate-ssp/ --baseline high --out oscal/ssp.json --evidence-dir evidence -v",
     "review:policies": "go run ./cmd/policy-review/ --policies-dir policies --output-dir evidence --warn-only",
-    "generate:oscal:legacy": "node scripts/generate-oscal-ssp.mjs",
+    "generate:conmon": "node scripts/generate-conmon-report.mjs",
     "validate:oscal": "docker run --rm -v \"$(pwd):/data\" ghcr.io/metaschema-framework/oscal-cli:latest validate /data/oscal/ssp.json",
     "validate:oscal-schema": "node scripts/validate-oscal-schema.mjs",
     "check:drift": "go run ./cmd/check-ssp-iac-drift",
+    "review:access": "go run ./cmd/access-review/ --env staging --warn-only",
+    "review:audit": "go run ./cmd/audit-review/ --env staging --days 7 --warn-only",
+    "report:poam": "go run ./cmd/poam-report/ --scan-dir evidence/scans --state-file evidence/poam-state.json --output-dir evidence",
     "clean": "rm -rf dist/ oscal/ .cache/"
   },
   "devDependencies": {
