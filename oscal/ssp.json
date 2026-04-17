@@ -3,8 +3,8 @@
     "uuid": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
     "metadata": {
       "title": "Latent Archon Document Intelligence Platform — System Security Plan",
-      "last-modified": "2026-04-17T13:52:26.654273Z",
-      "version": "1.0.2",
+      "last-modified": "2026-04-17T14:09:53.538352Z",
+      "version": "1.0.3",
       "oscal-version": "1.1.3",
       "props": [
         {
@@ -486,6 +486,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -519,6 +523,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -556,6 +564,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -589,6 +601,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -626,6 +642,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -659,6 +679,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -696,6 +720,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -729,6 +757,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -782,6 +814,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -833,6 +869,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -876,6 +916,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -909,6 +953,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -946,6 +994,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -979,6 +1031,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -1016,6 +1072,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -1051,6 +1111,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -1084,6 +1148,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -1149,6 +1217,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -1182,6 +1254,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -1235,6 +1311,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -1276,6 +1356,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -1327,6 +1411,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -1360,6 +1448,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -1397,6 +1489,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -1430,6 +1526,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -1467,6 +1567,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -1500,6 +1604,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -1537,6 +1645,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -1570,6 +1682,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "manual"
             },
             {
               "name": "baseline",
@@ -1607,6 +1723,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "manual"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -1640,6 +1760,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "manual"
             },
             {
               "name": "baseline",
@@ -1677,6 +1801,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "manual"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -1710,6 +1838,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "manual"
             },
             {
               "name": "baseline",
@@ -1747,6 +1879,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -1780,6 +1916,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -1817,6 +1957,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -1852,6 +1996,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -1885,6 +2033,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -1946,6 +2098,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -1979,6 +2135,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -2016,6 +2176,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -2049,6 +2213,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -2086,6 +2254,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -2121,6 +2293,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -2154,6 +2330,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -2207,6 +2387,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -2240,6 +2424,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -2285,6 +2473,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -2318,6 +2510,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -2355,6 +2551,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -2388,6 +2588,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -2425,6 +2629,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -2458,6 +2666,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -2495,6 +2707,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -2528,6 +2744,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -2565,6 +2785,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -2598,6 +2822,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -2635,6 +2863,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -2668,6 +2900,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -2705,6 +2941,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -2738,6 +2978,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -2783,6 +3027,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -2816,6 +3064,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -2853,6 +3105,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -2886,6 +3142,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -2923,6 +3183,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -2956,6 +3220,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -2993,6 +3261,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -3026,6 +3298,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -3063,6 +3339,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -3096,6 +3376,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -3133,6 +3417,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -3166,6 +3454,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -3203,6 +3495,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -3236,6 +3532,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -3273,6 +3573,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -3306,6 +3610,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -3343,6 +3651,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -3378,6 +3690,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -3411,6 +3727,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -3472,6 +3792,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -3507,6 +3831,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -3540,6 +3868,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -3585,6 +3917,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -3628,6 +3964,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -3661,6 +4001,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -3698,6 +4042,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -3731,6 +4079,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -3768,6 +4120,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -3801,6 +4157,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -3844,6 +4204,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -3921,6 +4285,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -3954,6 +4322,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -3991,6 +4363,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -4024,6 +4400,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -4069,6 +4449,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -4102,6 +4486,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -4139,6 +4527,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -4172,6 +4564,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -4209,6 +4605,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -4242,6 +4642,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -4279,6 +4683,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -4312,6 +4720,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -4349,6 +4761,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -4382,6 +4798,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -4419,6 +4839,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -4452,6 +4876,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -4489,6 +4917,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -4522,6 +4954,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -4559,6 +4995,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -4592,6 +5032,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -4629,6 +5073,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -4662,6 +5110,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -4699,6 +5151,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -4732,6 +5188,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -4769,6 +5229,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -4802,6 +5266,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -4839,6 +5307,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -4872,6 +5344,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -4909,6 +5385,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -4942,6 +5422,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -4979,6 +5463,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -5012,6 +5500,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "manual"
             },
             {
               "name": "baseline",
@@ -5049,6 +5541,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "manual"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -5082,6 +5578,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -5119,6 +5619,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -5152,6 +5656,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -5189,6 +5697,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "manual"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -5222,6 +5734,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -5259,6 +5775,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -5292,6 +5812,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -5329,6 +5853,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -5362,6 +5890,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -5399,6 +5931,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -5432,6 +5968,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -5469,6 +6009,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -5502,6 +6046,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -5539,6 +6087,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -5572,6 +6124,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -5609,6 +6165,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -5642,6 +6202,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "manual"
             },
             {
               "name": "baseline",
@@ -5679,6 +6243,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "manual"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -5712,6 +6280,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "manual"
             },
             {
               "name": "baseline",
@@ -5749,6 +6321,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "manual"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -5782,6 +6358,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "manual"
             },
             {
               "name": "baseline",
@@ -5819,6 +6399,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "manual"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -5852,6 +6436,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "manual"
             },
             {
               "name": "baseline",
@@ -5889,6 +6477,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "manual"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -5922,6 +6514,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "manual"
             },
             {
               "name": "baseline",
@@ -5959,6 +6555,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "manual"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -5992,6 +6592,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "manual"
             },
             {
               "name": "baseline",
@@ -6029,6 +6633,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "manual"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -6062,6 +6670,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "manual"
             },
             {
               "name": "baseline",
@@ -6099,6 +6711,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "manual"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -6132,6 +6748,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "manual"
             },
             {
               "name": "baseline",
@@ -6169,6 +6789,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "manual"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -6202,6 +6826,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -6239,6 +6867,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -6272,6 +6904,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -6309,6 +6945,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -6342,6 +6982,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -6379,6 +7023,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -6412,6 +7060,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -6449,6 +7101,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -6482,6 +7138,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -6519,6 +7179,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -6552,6 +7216,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -6589,6 +7257,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -6622,6 +7294,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -6659,6 +7335,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -6692,6 +7372,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -6729,6 +7413,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -6762,6 +7450,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -6799,6 +7491,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -6832,6 +7528,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -6869,6 +7569,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -6902,6 +7606,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -6939,6 +7647,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -6972,6 +7684,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -7009,6 +7725,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -7044,6 +7764,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -7077,6 +7801,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -7130,6 +7858,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -7181,6 +7913,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -7214,6 +7950,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -7251,6 +7991,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -7284,6 +8028,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -7321,6 +8069,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -7354,6 +8106,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -7399,6 +8155,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -7432,6 +8192,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -7475,6 +8239,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -7528,6 +8296,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -7561,6 +8333,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -7614,6 +8390,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -7647,6 +8427,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -7684,6 +8468,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -7717,6 +8505,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -7754,6 +8546,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -7787,6 +8583,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -7824,6 +8624,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -7857,6 +8661,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -7918,6 +8726,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -7969,6 +8781,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -8002,6 +8818,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -8039,6 +8859,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -8074,6 +8898,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -8107,6 +8935,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -8152,6 +8984,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -8185,6 +9021,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -8222,6 +9062,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -8255,6 +9099,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -8292,6 +9140,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -8325,6 +9177,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -8362,6 +9218,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -8397,6 +9257,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -8430,6 +9294,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -8475,6 +9343,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -8508,6 +9380,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -8545,6 +9421,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -8578,6 +9458,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -8615,6 +9499,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -8648,6 +9536,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -8685,6 +9577,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -8718,6 +9614,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -8755,6 +9655,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -8788,6 +9692,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -8825,6 +9733,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -8858,6 +9770,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -8895,6 +9811,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -8928,6 +9848,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -8965,6 +9889,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "moderate"
             }
@@ -8998,6 +9926,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -9035,6 +9967,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "high"
             }
@@ -9068,6 +10004,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -9105,6 +10045,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "high"
             }
@@ -9138,6 +10082,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -9175,6 +10123,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "high"
             }
@@ -9208,6 +10160,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -9245,6 +10201,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "high"
             }
@@ -9278,6 +10238,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -9315,6 +10279,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "high"
             }
@@ -9348,6 +10316,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
             },
             {
               "name": "baseline",
@@ -9385,6 +10357,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
               "name": "baseline",
               "value": "high"
             }
@@ -9418,6 +10394,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -9455,6 +10435,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "high"
             }
@@ -9488,6 +10472,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -9525,6 +10513,10 @@
               "value": "inherited"
             },
             {
+              "name": "evidence-tier",
+              "value": "manual"
+            },
+            {
               "name": "baseline",
               "value": "high"
             }
@@ -9558,6 +10550,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",
@@ -9595,6 +10591,10 @@
               "value": "implemented"
             },
             {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
               "name": "baseline",
               "value": "high"
             }
@@ -9628,6 +10628,10 @@
             {
               "name": "implementation-status",
               "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
             },
             {
               "name": "baseline",

@@ -5,13 +5,17 @@ on:
     branches: [main]
     paths:
       - '**.md'
+      - '**.go'
       - 'scripts/**'
       - 'package.json'
+      - 'oscal/**'
   pull_request:
     paths:
       - '**.md'
+      - '**.go'
       - 'scripts/**'
       - 'package.json'
+      - 'oscal/**'
   workflow_dispatch:
 
 jobs:
@@ -42,11 +46,38 @@ jobs:
           cache: npm
           cache-dependency-path: compliance/package-lock.json
 
-      - run: npm ci
-        working-directory: compliance
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache-dependency-path: compliance/go.sum
 
-      - name: Generate OSCAL SSP
-        run: npm run generate:oscal
+      - name: Run SSP generator tests
+        working-directory: compliance
+        run: go test ./cmd/generate-ssp/ -v -count=1
+
+      - name: Generate OSCAL SSP (Go)
+        if: hashFiles('infra') != '' && hashFiles('backend') != ''
+        working-directory: compliance
+        run: |
+          go run ./cmd/generate-ssp/ \
+            --infra-root "${{ github.workspace }}/infra" \
+            --backend-root "${{ github.workspace }}/backend" \
+            --baseline high \
+            --out oscal/ssp.json \
+            --evidence-dir evidence \
+            -v
+
+      - name: Generate OSCAL SSP (fallback)
+        if: hashFiles('infra') == '' || hashFiles('backend') == ''
+        working-directory: compliance
+        run: |
+          go run ./cmd/generate-ssp/ \
+            --baseline high \
+            --out oscal/ssp.json \
+            --evidence-dir evidence \
+            -v
+
+      - run: npm ci
         working-directory: compliance
 
       - name: Validate OSCAL SSP (JSON Schema)
@@ -60,10 +91,9 @@ jobs:
             validate /data/oscal/ssp.json
         continue-on-error: true
 
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-          cache-dependency-path: compliance/go.sum
+      - name: Policy Review Check
+        working-directory: compliance
+        run: go run ./cmd/policy-review/ --policies-dir policies --warn-only
 
       - name: SSP-IaC Drift Check
         if: hashFiles('infra') != '' && hashFiles('backend') != ''
@@ -79,4 +109,12 @@ jobs:
         with:
           name: oscal-ssp
           path: compliance/oscal/ssp.json
+          retention-days: 90
+
+      - name: Upload evidence artifacts
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-tiers
+          path: compliance/evidence/
           retention-days: 90

@@ -7,6 +7,8 @@ evidence/
 /classify-scn
 /verify-controls
 /check-ssp-iac-drift
+/generate-ssp
+/policy-review
 .cache/
 
 # Sensitive internal docs — defense in depth
