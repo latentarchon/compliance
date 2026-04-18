@@ -9,6 +9,45 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 
 **Responsibility Key**: `CSP` = Latent Archon, `Inherited` = GCP FedRAMP High, `Shared` = Joint, `Customer` = Agency
 
+### Assured Workloads Authorization Boundary
+
+The system is deployed across 7 Assured Workloads instances within GCP organization `latentarchon.com` (org ID `273751541032`). All workloads are located in `us-east4`. The authorization boundary is divided into two compliance regimes:
+
+**IL5 Assured Workloads** (4 instances — data plane, strictest controls):
+
+| AW Instance | Folder | Projects |
+|---|---|---|
+| Staging IL5 | `Staging/Staging IL5/` | `archon-fed-admin-staging`, `archon-fed-ops-staging`, `archon-fed-app-staging`, `archon-fed-kms-staging` |
+| Fed IL5 | `Fed/Fed IL5/` | `archon-fed-admin-prod`, `archon-fed-ops-prod`, `archon-fed-app-prod`, `archon-fed-kms-prod` |
+| Mgmt IL5 | `Management/Mgmt IL5 AW/` | `archon-mgmt-kms`, `latentarchon-redteam` |
+
+IL5 AW folders automatically enforce: (1) data residency — resources restricted to US locations; (2) personnel controls — Google support restricted to US-based personnel; (3) service restriction — only 46 IL5-authorized GCP services are permitted; (4) CMEK requirements — encryption keys restricted to the corresponding KMS project. All CUI is processed and stored exclusively within IL5 projects.
+
+**FedRAMP High Assured Workloads** (3 instances — services not yet IL5-supported by GCP):
+
+| AW Instance | Folder | Projects | Justification |
+|---|---|---|---|
+| Staging FedRAMP High | `Staging/Staging FedRAMP High/` | `archon-fed-auth-admin-stg`, `archon-fed-auth-app-stg` | Identity Platform (`identitytoolkit.googleapis.com`) is not IL5-supported |
+| Fed FedRAMP High | `Fed/Fed FedRAMP High/` | `archon-fed-auth-admin-prod`, `archon-fed-auth-app-prod` | Identity Platform is not IL5-supported |
+| Mgmt FedRAMP High | `Management/Mgmt FedRAMP High AW/` | `archon-mgmt-scheduler-stg`, `archon-mgmt-scheduler-prod`, `archon-mgmt-terraform-ci` | Cloud Scheduler (`cloudscheduler.googleapis.com`) and Cloud Build 2nd-gen connections are not IL5-supported |
+
+**Boundary isolation between IL5 and FedRAMP High projects**:
+
+- **Identity Platform (auth projects)**: Auth projects do not store CUI. They contain only Firebase Identity Platform tenant configurations and authentication state (email, MFA enrollment, JWT signing keys). The backend validates JWTs offline via JWKS public key verification — there is no runtime API call from IL5 projects to the auth projects for request authentication. CUI never traverses the IL5-to-FedRAMP-High boundary.
+- **Cloud Scheduler (management projects)**: Scheduler projects publish timer events to local Pub/Sub topics. IL5 ops projects subscribe to these topics cross-project via the `pubsub-scheduler-bridge` module with push delivery to Cloud Run. Messages contain only job identifiers (e.g., `embedding-refresh`), not CUI. The cross-project bridge is scoped via VPC Service Controls ingress/egress policies.
+- **VPC Service Controls** enforce this boundary — IL5 projects are inside the perimeter; auth projects are explicitly excluded. Egress policies permit only `identitytoolkit.googleapis.com` calls to auth projects and `pubsub.googleapis.com` for the scheduler bridge. All other cross-perimeter data movement is blocked with HTTP 403.
+
+**Projects outside the authorization boundary** (no AW, no CUI access):
+
+| Project | Folder | Justification |
+|---|---|---|
+| `archon-org-admin` | Management (bare) | Org-level IAM and billing administration only. BigQuery audit dataset is not AW-compatible. No CUI. |
+| `archon-devtools` | Common | Development tooling, out of FedRAMP scope |
+| `latentarchon-marketing` | Common | Public marketing site, out of FedRAMP scope |
+| `archon-fed-kms` | Archive | Legacy KMS project with WORM-locked keys (retention until ~2033). No active workloads. |
+
+All Assured Workloads configurations are defined in Terraform (`infra/gcp/modules/assured-workloads/`) and managed via Terragrunt. The AW module sets `enable_sovereign_controls = false` because CMEK policies and org-level restrictions are managed separately in Terraform for auditability. AW-enforced policies (data residency, service restriction, personnel controls) are automatic and cannot be overridden at the project level.
+
 ---
 
 ## AC — Access Control
@@ -1043,7 +1082,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The Moderate baseline has been tailored as follows: (1) Physical security controls (PE family) are inherited from GCP FedRAMP High authorization; (2) Maintenance controls (MA family) are largely inherited from GCP; (3) Controls are supplemented with CSP-specific implementations where the SaaS model provides additional protections beyond the baseline requirement (e.g., distroless containers for CM-7, fail-closed RLS for AC-3).
+**Implementation**: The High baseline has been tailored as follows: (1) Physical security controls (PE family) are inherited from GCP FedRAMP High authorization; (2) Maintenance controls (MA family) are largely inherited from GCP; (3) Controls are supplemented with CSP-specific implementations where the SaaS model provides additional protections beyond the baseline requirement (e.g., distroless containers for CM-7, fail-closed RLS for AC-3).
 
 ---
 
@@ -1480,6 +1519,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **External boundary**: Cloudflare Edge WAF (Managed + OWASP rulesets, rate limiting, threat score challenges, path probing protection, IP/ASN blocking, Zero Trust Access for admin endpoints) → Cloud Armor origin WAF (OWASP CRS, HTTP method enforcement, origin restriction, bot blocking, per-org IP allowlisting, Cloudflare-only origin restriction) → Regional HTTPS Load Balancer → Cloud Run (private IP only). Origin load balancers only accept traffic from Cloudflare IP ranges (auto-updated via `data.cloudflare_ip_ranges`); client IP identified via CF-Connecting-IP header. Internet NEGs are prohibited by org policy (`compute.disableInternetNetworkEndpointGroup`), preventing load balancer backends from routing traffic to external endpoints.
 - **Internal boundary**: VPC with no public IPs on any service (`compute.vmExternalIpAccess` deny-all). FQDN-based egress firewall with default-deny-all. Only Google API endpoints are reachable outbound. Cloud Run VPC egress is locked to `ALL_TRAFFIC` via org policy (`run.allowedVPCEgress`), ensuring all outbound traverses the VPC where VPC Service Controls and firewall rules apply. Protocol forwarding restricted to INTERNAL only (`compute.restrictProtocolForwardingCreationForTypes`).
 - **Cross-project boundary**: Scoped cross-project IAM grants: `archon-admin` SA receives `cloudtasks.enqueuer` and `storage.objectAdmin` on the ops project; `archon-app` SA receives `aiplatform.user` and `storage.objectViewer` on the ops project; Cloud SQL access via `cloudsql.client` and `cloudsql.instanceUser`. Each grant is minimum-necessary for the service's function.
+- **VPC Service Controls perimeter**: An Access Context Manager service perimeter (`infra/gcp/modules/vpc-service-controls/`) wraps all IL5 projects (admin, ops, app, KMS) per environment. The perimeter auto-discovers all ACTIVE projects in the IL5 Assured Workloads folder, ensuring new projects are automatically protected. 13 GCP services are restricted at the perimeter boundary: Vertex AI, Artifact Registry, BigQuery, Cloud Build, Cloud KMS, Cloud Tasks, Compute Engine, Cloud Logging, Pub/Sub, Cloud Run, Secret Manager, Cloud SQL Admin, and Cloud Storage. VPC-accessible services are additionally restricted — only 15 explicitly allowlisted services can be reached from within the VPC. Auth projects (Identity Platform) are explicitly excluded from the perimeter because they use global services incompatible with VPC-SC. Cross-perimeter access is controlled via: (a) egress policies permitting `identitytoolkit.googleapis.com` calls to auth projects and `serviceusage.googleapis.com` to the billing project; (b) ingress policies permitting Pub/Sub push delivery from the scheduler bridge and Terraform state access. VPC SC violation alerts are enabled with log-based metrics and Cloud Monitoring alert policies. The perimeter is enforced (`dry_run_mode = false`) — violations produce HTTP 403 errors, not just audit log entries.
 - **Org boundary**: 5-layer org isolation in auth interceptor prevents cross-org request routing via DB-backed subdomain validation. IAM policy members restricted to `latentarchon.com` domain via `iam.allowedPolicyMemberDomains`. Essential contacts restricted to `@latentarchon.com` via `essentialcontacts.allowedContactDomains`.
 
 ### SC-7(3): Access Points
@@ -2467,6 +2507,19 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Status**: Implemented
 
 **Implementation**: All boundary protection mechanisms fail secure (closed). Cloud Armor WAF defaults to `deny(403)` in production — if WAF policy evaluation fails, traffic is blocked rather than permitted. VPC FQDN egress firewall uses a default-deny rule — if egress rules fail to load, all outbound traffic is blocked. The auth interceptor (`backend/cmd/server/connect_interceptors.go`) is fail-closed — any exception during authentication or authorization processing results in request rejection. PostgreSQL RLS policies are fail-closed — missing session variables (org_id, workspace_id) cause queries to return zero rows rather than unscoped data.
+
+### SC-7(21): Isolation of System Components
+
+- **Responsibility**: Shared
+- **Status**: Implemented
+
+**Implementation**: System components are logically isolated through GCP Assured Workloads and a multi-project architecture with defense-in-depth separation:
+
+- **Assured Workloads isolation**: Seven distinct Assured Workloads instances provide compliance-enforced isolation. IL5 AW folders (Staging IL5, Fed IL5, Mgmt IL5) automatically enforce data residency (US-only), personnel controls (US-based Google support), service restriction (46 authorized services), and CMEK requirements. FedRAMP High AW folders isolate services not yet IL5-supported (Identity Platform, Cloud Scheduler) while maintaining FedRAMP High controls. Projects within an AW folder inherit all compliance constraints — these cannot be overridden at the project level.
+- **Project-level isolation**: Each environment uses 4+ dedicated GCP projects (admin, ops, app, KMS) with separate IAM boundaries. No project shares IAM principals with another except via explicitly scoped cross-project grants (e.g., `cloudtasks.enqueuer` from admin to ops). Service accounts use Workload Identity Federation — no service account keys exist.
+- **VPC Service Controls**: An enforced Access Context Manager service perimeter wraps all IL5 projects per environment, restricting 13 GCP API services at the perimeter boundary. Data cannot be copied, exported, or transferred to projects outside the perimeter. Auth projects are explicitly excluded and accessed only via scoped egress policies.
+- **Tenant isolation**: Within each project, PostgreSQL Row-Level Security enforces workspace-scoped data access at the database layer. Vector store token restrictions prevent cross-workspace semantic search. The auth interceptor enforces subdomain-to-organization binding via database-backed validation. These application-layer controls operate independently of the infrastructure isolation.
+- **Org policy enforcement**: 24 organization-level policies enforce security invariants across all projects: VM external IPs denied, public storage prevented, service account key creation blocked, VPC egress locked to ALL_TRAFFIC, shielded VMs required, OS Login required, default SA grants denied. These policies are defined in Terraform (`org/org-policy.tf`) and cannot be overridden by project-level administrators.
 
 ### SC-24: Fail in Known State
 
