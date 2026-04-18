@@ -118,6 +118,7 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 - **Org policy enforcement**: Cloud Run VPC egress is locked to `ALL_TRAFFIC` via `run.allowedVPCEgress` org policy, ensuring all outbound traffic traverses the VPC where firewall rules and VPC Service Controls apply. Internet NEGs are prohibited (`compute.disableInternetNetworkEndpointGroup`), preventing load balancer backends from routing to arbitrary external endpoints. Protocol forwarding is restricted to INTERNAL only (`compute.restrictProtocolForwardingCreationForTypes`).
 - **Application**: RLS enforces workspace-scoped data access. Vector store token restrictions prevent cross-workspace search. The auth interceptor prevents cross-org request routing via DB-backed subdomain validation.
 - **Per-Org IP Allowlisting**: Organization administrators configure CIDR-based IP allowlists via `UpdateOrganizationSettings`. Allowlists are synced to Cloud Armor WAF rules using CEL expressions matching org hostname + IP range. This enables agencies to restrict access to government/VPN IP ranges.
+- **Google Workspace Information Flow**: External Drive sharing is disabled (no sharing outside latentarchon.com). Third-party OAuth app access is blocked by default with allowlist-only access. Content distribution outside the organization is blocked. These controls prevent unauthorized data flows from corporate systems to external parties.
 
 **Customer Responsibility**: Customers are responsible for configuring IP allowlists appropriate for their network environment.
 
@@ -224,6 +225,8 @@ This appendix documents the implementation narrative for each NIST 800-53 Rev. 5
 
 Organization administrators configure timeouts via `UpdateOrganizationSettings` RPC. The timeouts are stored in the organization settings JSONB and loaded on each request. Expired sessions receive `Unauthenticated` responses. The client SPAs detect this and redirect to the login page.
 
+For corporate Google Cloud access, Google Workspace enforces 24-hour RAPT (Reauthentication Policy for Access Tokens) session control. All GCP Console and gcloud CLI sessions require reauthentication every 24 hours, limiting the window of access from stale sessions.
+
 ### AC-14: Permitted Actions Without Identification or Authentication
 
 - **Responsibility**: CSP
@@ -251,6 +254,13 @@ Organization administrators configure timeouts via `UpdateOrganizationSettings` 
 - **Status**: Implemented
 
 **Implementation**: TLS 1.2+ is enforced on all connections (Google Front End terminates TLS with FIPS 140-2 validated modules). HSTS headers with 2-year max-age prevent protocol downgrade. Private Service Connect (PSC) provides encrypted internal communication to Vertex AI. No unencrypted communication paths exist within or to the system.
+
+### AC-19: Access Control for Mobile Devices
+
+- **Responsibility**: CSP
+- **Status**: Implemented
+
+**Implementation**: The system minimizes the need for device-level controls by keeping sensitive data off endpoints entirely. CUI resides behind VPC Service Controls and is accessed only through the application — it is never stored on personnel devices. Google Workspace DLP rules prevent downloading, printing, or copying files from Google Drive, enforcing browser-only access to corporate documents. Device access is controlled through: (1) Google Workspace Context-Aware Access enforces device posture requirements at the access layer — devices without disk encryption (FileVault/BitLocker), with outdated OS versions, or without screen lock enabled are denied access to all Google services until the device is remediated; (2) Google Workspace Endpoint Verification provides the device posture data that Context-Aware Access evaluates on each access attempt; (3) Google Workspace 2-Step Verification is enforced for all users with no grace period; (4) 24-hour RAPT reauthentication limits the window of access from any single session; (5) Third-party OAuth app access is blocked by default (allowlist only). No MDM or remote wipe is deployed — the compensating control is that no CUI or corporate documents exist on devices to wipe.
 
 ### AC-20: Use of External Systems
 
@@ -564,7 +574,7 @@ At the infrastructure level, GCP Data Access audit logging is enabled for all cr
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Services are restricted to essential functions: (1) Cloud Run containers use distroless base images with no shell, package manager, or unnecessary utilities; (2) FQDN egress firewall blocks all outbound except Google APIs; (3) Only HTTP methods GET, POST, OPTIONS are permitted through Cloud Armor; (4) No SSH, FTP, or remote administration services are exposed; (5) Cloud Run services have `--no-allow-unauthenticated` set (except SPAs which serve the static app bundle); (6) Org policies enforce least functionality at the GCP organization level: default service accounts are denied automatic Editor grants (`iam.automaticIamGrantsForDefaultServiceAccounts`), VM guest attribute access is disabled (`compute.disableGuestAttributesAccess`), and internet NEGs are prohibited (`compute.disableInternetNetworkEndpointGroup`).
+**Implementation**: Services are restricted to essential functions: (1) Cloud Run containers use distroless base images with no shell, package manager, or unnecessary utilities; (2) FQDN egress firewall blocks all outbound except Google APIs; (3) Only HTTP methods GET, POST, OPTIONS are permitted through Cloud Armor; (4) No SSH, FTP, or remote administration services are exposed; (5) Cloud Run services have `--no-allow-unauthenticated` set (except SPAs which serve the static app bundle); (6) Org policies enforce least functionality at the GCP organization level: default service accounts are denied automatic Editor grants (`iam.automaticIamGrantsForDefaultServiceAccounts`), VM guest attribute access is disabled (`compute.disableGuestAttributesAccess`), and internet NEGs are prohibited (`compute.disableInternetNetworkEndpointGroup`); (7) Google Workspace third-party OAuth app access is blocked by default with all 18 Google services set to Restricted — only explicitly allowlisted applications (Google Auth Library for gcloud/Terraform) can access corporate data.
 
 ### CM-7(1): Periodic Review
 
@@ -606,7 +616,7 @@ At the infrastructure level, GCP Data Access audit logging is enabled for all cr
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: User-installed software is not applicable to the SaaS delivery model. Cloud Run containers are built exclusively via CI/CD from a known Dockerfile. There is no shell access to running containers. Container images use distroless base images that cannot execute arbitrary binaries.
+**Implementation**: User-installed software is not applicable to the SaaS delivery model. Cloud Run containers are built exclusively via CI/CD from a known Dockerfile. There is no shell access to running containers. Container images use distroless base images that cannot execute arbitrary binaries. For organizational personnel, Google Workspace third-party OAuth app access is blocked by default (all 18 Google services set to Restricted). Only explicitly allowlisted applications can access corporate Google services, preventing unauthorized software from integrating with organizational data.
 
 ---
 
@@ -697,7 +707,7 @@ At the infrastructure level, GCP Data Access audit logging is enabled for all cr
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: All users are uniquely identified via Firebase UID (unique per Identity Platform pool). Authentication requires a valid Firebase ID token (JWT) verified by the auth interceptor against Google's public keys. User identity is resolved from the database (`users` table) after token verification. No shared accounts are permitted.
+**Implementation**: All users are uniquely identified via Firebase UID (unique per Identity Platform pool). Authentication requires a valid Firebase ID token (JWT) verified by the auth interceptor against Google's public keys. User identity is resolved from the database (`users` table) after token verification. No shared accounts are permitted. For corporate administrative access, Google Workspace 2-Step Verification is enforced for all organizational users with no grace period, providing MFA on all Google services including GCP Console, Gmail, and Google Drive.
 
 ### IA-2(1): Multi-Factor Authentication to Privileged Accounts
 
@@ -971,10 +981,10 @@ Password complexity and rotation policies are enforced by Identity Platform for 
 
 ### MP-7: Media Use
 
-- **Responsibility**: Inherited (GCP)
+- **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: Restrictions on media use within GCP data centers are inherited from GCP's FedRAMP High authorization. The SaaS delivery model eliminates the need for portable media in the operational environment.
+**Implementation**: Restrictions on media use within GCP data centers are inherited from GCP's FedRAMP High authorization. The SaaS delivery model eliminates the need for portable media in the operational environment. For corporate data in Google Workspace: (1) External Drive sharing is disabled — no files can be shared outside the latentarchon.com domain; (2) Shared Drive creation is restricted to administrators; (3) General access default is set to "Private to the owner"; (4) Content distribution outside the organization is blocked; (5) DLP rules prevent download, print, and copy of files from Google Drive, enforcing browser-only access. CUI is further protected by VPC Service Controls — it resides only in cloud infrastructure and is never transferred to portable media or personnel devices.
 
 ---
 
@@ -987,7 +997,7 @@ Password complexity and rotation policies are enforced by Identity Platform for 
 
 **Implementation**: All physical and environmental protection controls (PE-1 through PE-18) are fully inherited from Google Cloud Platform's FedRAMP High authorization. GCP operates data centers with comprehensive physical security including: multi-layer access control, 24/7 security monitoring, biometric access, visitor management, environmental controls (HVAC, fire suppression, power redundancy), and geographic distribution.
 
-Supplementary controls for Latent Archon remote personnel are documented in the Physical Security Policy (POL-PE-001, `policies/physical-security.md`), covering: device encryption requirements (FileVault/BitLocker), screen lock requirements (5-minute timeout), device loss/theft procedures, and media disposal requirements for employee devices.
+Supplementary controls for Latent Archon remote personnel are documented in the Physical Security Policy (POL-PE-001, `policies/physical-security.md`), covering: device encryption requirements (FileVault/BitLocker), screen lock requirements (5-minute timeout), device loss/theft procedures, and media disposal requirements for employee devices. Device posture is monitored via Google Workspace Endpoint Verification, which reports encryption status, OS version, and screen lock configuration on all enrolled devices. CUI does not reside on personnel devices — it is accessed only through the application behind VPC Service Controls, and Google Workspace DLP rules prevent downloading files from Google Drive.
 
 ---
 
@@ -1167,7 +1177,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Upon personnel termination: (1) All system access is revoked within 4 hours (GCP IAM roles removed, GitHub access revoked); (2) Any active sessions are terminated; (3) Company devices are collected and wiped; (4) Exit interview includes security debriefing and NDA reminder; (5) Termination is audit-logged. For involuntary terminations, access revocation occurs immediately upon notification.
+**Implementation**: Upon personnel termination: (1) All system access is revoked within 4 hours (GCP IAM roles removed, GitHub access revoked); (2) Google Workspace account is suspended, immediately terminating all active Google sessions and blocking sign-in; (3) Company devices are collected and wiped; (4) Exit interview includes security debriefing and NDA reminder; (5) Termination is audit-logged. CUI does not reside on personnel devices — it is accessed only through the application behind VPC Service Controls. Google Workspace DLP rules prevent downloading files from Google Drive, so no corporate documents exist locally. The primary risk on device loss is source code in git repositories, mitigated by NDA enforcement and audit trails. For involuntary terminations, access revocation occurs immediately upon notification.
 
 ### PS-5: Personnel Transfer
 

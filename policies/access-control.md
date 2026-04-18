@@ -84,6 +84,7 @@ This policy applies to:
 - **Enforcement**: Server-side via `sign_in_second_factor` JWT claim in the auth interceptor chain
 - **Step-Up MFA**: High-risk operations (member management, document deletion) require recent MFA re-verification
 - **Admin MFA Management**: Org admins can reset member MFA; self-reset is blocked; all resets are audit-logged
+- **Corporate 2SV**: Google Workspace 2-Step Verification is enforced for all organizational users with no grace period, providing MFA on all corporate Google services (Gmail, Drive, Admin Console, GCP Console)
 
 ### 4.2 Session Management
 
@@ -211,6 +212,26 @@ Each pool's membership is established through that pool's own authentication, wi
 - GitHub organization with SSO enforcement (when available)
 - Branch protection on `main` (required reviews, CI checks)
 - Dependabot automated dependency scanning
+
+### 7.4 Google Workspace Administrative Controls
+
+Google Workspace is hardened via Admin Console with the following enforced configurations:
+
+| Setting | Configuration | NIST Control |
+|---------|--------------|-------------|
+| 2-Step Verification | Enforced for all users, no grace period | IA-2 |
+| Google Drive external sharing | Disabled — no sharing outside latentarchon.com | AC-4, MP-5 |
+| Drive receiving external files | Enabled (required for receiving RFPs/contracts) | — |
+| Drive general access default | Private to the owner | AC-3 |
+| Shared Drive creation | Blocked (admin-only) | AC-3 |
+| Third-party OAuth apps | Blocked by default, allowlist only (18 Google services set to Restricted) | CM-7, CM-11 |
+| Google Cloud session control | 24-hour RAPT reauthentication | AC-12 |
+| Endpoint Verification | Active on all personnel devices | CM-8 |
+| Context-Aware Access | Blocks devices without disk encryption, current OS, or screen lock | AC-19 |
+
+**DLP download blocking**: Google Workspace DLP rules prevent download, print, and copy of files from Google Drive, enforcing browser-only access to corporate documents. Combined with VPC Service Controls that keep CUI within the cloud boundary, this eliminates corporate data from personnel devices entirely.
+
+Workspace security settings are audited monthly via `org/scripts/audit-workspace-security.sh`, which checks 2SV enrollment, service account keys, admin security changes, OAuth app grants, and external Drive sharing events. Settings that lack API coverage are verified manually in the Admin Console.
 
 ---
 

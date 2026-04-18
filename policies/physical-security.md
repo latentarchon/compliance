@@ -96,17 +96,21 @@ Since Latent Archon personnel work remotely, the following requirements apply to
 | Antivirus / endpoint protection | Required on Windows; recommended on macOS/Linux |
 | Browser | Current version of Chrome, Firefox, Edge, or Safari |
 | MFA on all company accounts | Required (TOTP or IdP-provided MFA) |
+| Google Workspace Endpoint Verification | Required on all devices accessing corporate Google services |
+
+**Endpoint Verification and Context-Aware Access**: Google Workspace Endpoint Verification is deployed on all personnel devices. It reports device encryption status (FileVault/BitLocker), OS version, screen lock configuration, and password status. Context-Aware Access uses this data to enforce device posture requirements at the access layer — devices that do not meet requirements (missing disk encryption, outdated OS, no screen lock) are denied access to all Google services until remediated. This is self-enforcing: non-compliant devices cannot access corporate systems. No MDM is deployed — the combination of Context-Aware Access (blocks non-compliant devices) and DLP rules (prevent downloading from Google Drive) eliminates both the access risk and the data-at-rest risk on endpoints.
 
 ### 4.3 Device Loss or Theft
 
 If a device with access to Latent Archon systems is lost or stolen:
 
 1. **Report immediately** to CEO / ISSO
-2. **Revoke sessions**: All active sessions terminated via identity provider
-3. **Revoke tokens**: GitHub PATs, any API keys revoked
-4. **Assess exposure**: Determine what data/systems were accessible
-5. **Monitor**: Watch for unauthorized access in audit logs for 30 days
-6. **Document**: Log incident per Incident Response Policy
+2. **Suspend Google Workspace account**: Immediately suspend the user's Workspace account via Admin Console, which terminates all active Google sessions and blocks sign-in
+3. **Revoke sessions**: All active sessions terminated via identity provider (Firebase/Identity Platform)
+4. **Revoke tokens**: GitHub PATs, any API keys revoked
+5. **Assess exposure**: Determine what data/systems were accessible. Note: CUI is not stored on personnel devices — it resides behind VPC Service Controls and is accessed only through the application. Google Workspace DLP rules prevent downloading files from Google Drive. The primary local exposure is source code in git repositories.
+6. **Monitor**: Watch for unauthorized access in audit logs for 30 days
+7. **Document**: Log incident per Incident Response Policy
 
 ---
 
@@ -158,6 +162,8 @@ All infrastructure maintenance is performed by the cloud provider and inherited 
 | CSP FedRAMP status check | Quarterly | CEO / ISSO |
 | CSP SOC 2 report review | Annual (on availability) | CEO / ISSO |
 | Device compliance audit | Semi-annual | CEO / ISSO |
+| Endpoint Verification device status review | Monthly | CEO / ISSO |
+| Google Workspace security audit (audit-workspace-security.sh) | Monthly | CEO / ISSO |
 | Policy acknowledgment | Annual | All personnel (via Drata) |
 | Incident review (device loss) | On occurrence | CEO / ISSO |
 
