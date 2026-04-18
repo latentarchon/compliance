@@ -29,14 +29,18 @@ The system uses a repeatable per-deployment project structure within GCP organiz
 
 **Shared management tier**:
 
-| AW Instance | Projects | Function |
-|---|---|---|
-| Mgmt IL5 | `archon-mgmt-kms`, `latentarchon-redteam` | Root KMS keys, red team security testing |
-| Mgmt FedRAMP High | `archon-mgmt-scheduler-stg`, `archon-mgmt-scheduler-prod`, `archon-mgmt-terraform-ci` | Scheduled job triggers, CI/CD — no CUI |
+The management tier is shared across all deployments and is split between IL5 and FedRAMP High based on whether the project handles cryptographic material or security-sensitive operations (IL5) versus control-plane triggers with no CUI (FedRAMP High):
+
+| AW Instance | Projects | Function | Why this regime |
+|---|---|---|---|
+| Mgmt IL5 | `archon-mgmt-kms` | Root CMEK keys for the management tier | KMS keys encrypt data across both IL5 and FedRAMP High management projects — must be at the highest compliance level |
+| Mgmt IL5 | `latentarchon-redteam` | Adversarial security testing (99 attacks across 6 suites) | Targets staging IL5 endpoints, generates CA/RA control evidence (penetration test results, vulnerability findings), stores attack artifacts in Artifact Registry — kept at IL5 because it interacts directly with IL5 infrastructure |
+| Mgmt FedRAMP High | `archon-mgmt-scheduler-stg`, `archon-mgmt-scheduler-prod` | Scheduled job triggers (embedding refresh, stale doc cleanup, Cloud Armor reconcile, Atlas drift check) | No CUI — publishes only job identifiers to Pub/Sub; actual processing occurs in IL5 ops projects |
+| Mgmt FedRAMP High | `archon-mgmt-terraform-ci` | CI/CD apply-on-merge for infrastructure | No CUI — manages Terraform state and infrastructure configuration only |
 
 IL5 AW folders automatically enforce: (1) data residency — resources restricted to US locations; (2) personnel controls — Google support restricted to US-based personnel; (3) service restriction — only 46 IL5-authorized GCP services are permitted; (4) CMEK requirements — encryption keys restricted to the corresponding KMS project. All CUI is processed and stored exclusively within IL5 projects.
 
-**Why FedRAMP High (not IL5) for auth and management projects**: These projects do not process, store, or transmit CUI. They exist solely to trigger IL5 services that do:
+**Why FedRAMP High (not IL5) for auth and certain management projects**: These projects do not process, store, or transmit CUI. They exist solely to trigger IL5 services that do:
 
 - **Identity Platform (auth projects)**: Auth projects contain only Firebase Identity Platform tenant configurations and authentication state (email, MFA enrollment, JWT signing keys). No CUI enters these projects. The backend validates JWTs offline via JWKS public key verification — there is no runtime API call from IL5 projects to the auth projects for request authentication. Identity Platform (`identitytoolkit.googleapis.com`) is not IL5-supported by GCP, but this is immaterial because no CUI is present. FedRAMP High provides the appropriate compliance baseline for authentication-only workloads.
 - **Cloud Scheduler (management projects)**: Scheduler projects publish timer events to local Pub/Sub topics. Messages contain only job identifiers (e.g., `embedding-refresh`), not CUI. IL5 ops projects subscribe to these topics cross-project via the `pubsub-scheduler-bridge` module with push delivery to Cloud Run, where the actual CUI processing occurs within the IL5 boundary. Cloud Scheduler (`cloudscheduler.googleapis.com`) is not IL5-supported by GCP, but again, no CUI is present in these projects.
