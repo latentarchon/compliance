@@ -74,7 +74,7 @@ Latent Archon is a multi-tenant document intelligence platform that enables gove
 - Infrastructure as Code (Terragrunt/Terraform) with CI/CD via GitHub Actions
 - Keyless authentication (Workload Identity Federation — zero stored secrets)
 - OpenTelemetry distributed tracing and structured audit logging
-- 44-attack internal red team program with MITRE ATT&CK mapping
+- 99-attack internal red team program with MITRE ATT&CK mapping across 6 suites
 
 ---
 
@@ -85,7 +85,7 @@ Latent Archon is a multi-tenant document intelligence platform that enables gove
 | **Security-First Architecture** | Built from day one for CUI handling — not a commercial product retrofitted for government |
 | **Complete Data Isolation** | PostgreSQL RLS + vector store token restrictions + three-project isolation (auth + data tier) = zero cross-tenant leakage |
 | **IL5 Assured Workloads** | GCP IL5 Assured Workloads for data-plane; ~40% of NIST 800-53 High controls inherited |
-| **Internal Red Team** | 44 automated attack scenarios across auth bypass, privilege escalation, and data exfiltration |
+| **Internal Red Team** | 99 automated attack scenarios across 6 MITRE ATT&CK-mapped suites: auth bypass, privilege escalation, data exfiltration, lateral movement, persistence, and evasion |
 | **FIPS 140-2 Cryptography** | All server-side TLS, hashing, and encryption use FIPS-validated BoringSSL (NIST cert #4407) via GOEXPERIMENT=boringcrypto |
 | **FOIA-Ready Data Export** | Bulk export with chain-of-custody manifests for FOIA compliance and federal record-keeping |
 | **Multimodal AI** | Text RAG + inline image generation within conversations via Gemini 2.0 Flash |
@@ -116,7 +116,7 @@ Latent Archon is a multi-tenant document intelligence platform that enables gove
 | Framework | Status |
 |-----------|--------|
 | **CJIS Security Policy v5.9.5** | All 13 policy areas mapped and implemented; MCA template ready; awaiting first customer engagement for state CSA audit |
-| NIST 800-53 High | Full SSP complete; ~40% controls GCP-inherited |
+| NIST 800-53 High | 355/355 controls implemented; machine-readable OSCAL SSP |
 | NIST 800-171 / DFARS 252.204-7012 | Controls mapped and implemented; IL5 Assured Workloads enforced |
 | DoD IL5 | GCP IL5 Assured Workloads deployed (staging + production) |
 | FedRAMP High | Infrastructure ready; 3PAO engagement planned Q3 2026 |
@@ -152,4 +152,4 @@ latentarchon.com
 
 ---
 
-*This capability statement is updated quarterly. Last updated: March 2026.*
+*This capability statement is updated quarterly. Last updated: April 2026.*

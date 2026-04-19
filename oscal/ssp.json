@@ -185,13 +185,13 @@
         "remarks": "System is in pre-authorization status. Infrastructure-as-code validated in staging. Production deployment pending authorization boundary finalization and 3PAO engagement."
       },
       "authorization-boundary": {
-        "description": "The authorization boundary encompasses all components required to deliver the Latent Archon SaaS offering: application code (Go backend, React SPAs), GCP infrastructure (Cloud Run, Cloud SQL, Cloud Storage, Vertex AI, Cloud Armor, Cloud KMS, Identity Platform), Cloudflare edge services (DNS, Edge WAF, rate limiting, Zero Trust Access), CI/CD pipelines (Cloud Build with container signing), administrative interfaces, and supporting services (ClamAV malware scanning, Document AI OCR). The system uses a three-project architecture for blast-radius isolation: Admin Project (archon-fed-admin-staging), Ops Project (archon-fed-ops-staging), App Project (archon-fed-app-staging), with KMS in dedicated project (archon-fed-kms-staging)."
+        "description": "The authorization boundary encompasses all components required to deliver the Latent Archon SaaS offering: application code (Go backend, React SPAs), GCP infrastructure (Cloud Run, Cloud SQL, Cloud Storage, Vertex AI, Cloud Armor, Cloud KMS, Identity Platform), Cloudflare edge services (DNS, Edge WAF, rate limiting, Zero Trust Access), CI/CD pipelines (Cloud Build with container signing), administrative interfaces, and supporting services (ClamAV malware scanning, Document AI OCR). The system uses a three-project architecture for blast-radius isolation: Admin Project (archon-admin-staging), Ops Project (archon-ops-staging), App Project (archon-app-staging), with KMS in dedicated project (archon-kms-staging)."
       },
       "network-architecture": {
         "description": "All inbound traffic flows through Cloudflare Edge WAF (proxied mode — managed rulesets, OWASP, rate limiting, threat score challenges, path probing protection, IP/ASN blocking) → Cloud Armor Origin WAF (OWASP CRS, Cloudflare-only origin restriction) → Regional HTTPS Load Balancer. No services have public IP addresses. Cloud Armor enforces Cloudflare-only origin restriction using auto-updated Cloudflare IP ranges. Cloud Run services use ingress=internal-and-cloud-load-balancing. VPC egress firewall is deny-all by default with FQDN-based allowlist for GCP APIs only. Internal communication uses VPC-native networking with Cloud SQL via VPC peering and Vertex AI via Private Service Connect. Region: us-east4."
       },
       "data-flow": {
-        "description": "Document upload: Browser → Cloudflare Edge WAF → Cloud Armor → HTTPS LB → Admin API (auth, MFA, RBAC, malware scan) → Cloud Storage (archon-fed-ops-staging-documents, CMEK) → Cloud Tasks → Ops Service (OCR, chunking, embedding) → Vertex AI Vector Search. App query: Browser → Cloudflare Edge WAF → Cloud Armor → HTTPS LB → App API (auth, MFA, workspace check) → Vector Search → Gemini LLM (gemini-3.1-pro, streaming response) → Client. All data at rest encrypted with AES-256 (CMEK via Cloud KMS). All data in transit encrypted with TLS 1.2+."
+        "description": "Document upload: Browser → Cloudflare Edge WAF → Cloud Armor → HTTPS LB → Admin API (auth, MFA, RBAC, malware scan) → Cloud Storage (archon-ops-staging-documents, CMEK) → Cloud Tasks → Ops Service (OCR, chunking, embedding) → Vertex AI Vector Search. App query: Browser → Cloudflare Edge WAF → Cloud Armor → HTTPS LB → App API (auth, MFA, workspace check) → Vector Search → Gemini LLM (gemini-3.1-pro, streaming response) → Client. All data at rest encrypted with AES-256 (CMEK via Cloud KMS). All data in transit encrypted with TLS 1.2+."
       }
     },
     "system-implementation": {
@@ -1346,7 +1346,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "8d125ff9-02dc-4cd2-8ea6-f1c182db137f",
-                  "description": "Separation of duties is enforced through: (1) Three-project GCP architecture (archon-fed-admin-staging for admin, archon-fed-ops-staging for ops/data, archon-fed-app-staging for app) with separate IAM policies; (2) RBAC with four distinct roles — viewer cannot modify, editor cannot manage users, admin cannot change org settings, master_admin has full org scope; (3) CI/CD pipeline uses Workload Identity Federation with per-project service accounts — no single identity spans all projects; (4) KMS keys in dedicated project archon-fed-kms-staging with separate IAM grants; (5) 0 org-level IAM groups with role-based access (org policy: domain restricted=false, SA key creation disabled=false, default SA grants disabled=false).",
+                  "description": "Separation of duties is enforced through: (1) Three-project GCP architecture (archon-admin-staging for admin, archon-ops-staging for ops/data, archon-app-staging for app) with separate IAM policies; (2) RBAC with four distinct roles — viewer cannot modify, editor cannot manage users, admin cannot change org settings, master_admin has full org scope; (3) CI/CD pipeline uses Workload Identity Federation with per-project service accounts — no single identity spans all projects; (4) KMS keys in dedicated project archon-kms-staging with separate IAM grants; (5) 0 org-level IAM groups with role-based access (org policy: domain restricted=false, SA key creation disabled=false, default SA grants disabled=false).",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -3818,7 +3818,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "dab9e2ec-f994-4562-898d-dcdc182edde2",
-                  "description": "Audit information is protected from unauthorized access, modification, and deletion: (1) Cloud Logging logs are encrypted with CMEK (Cloud KMS in archon-fed-kms-staging); (2) GCS audit export bucket uses locked retention policy (WORM) preventing deletion; (3) IAM policies restrict log access to Security Lead and authorized personnel only; (4) No application code has permission to delete or modify audit logs; (5) Cloud Audit Logs for GCP admin activity cannot be disabled.",
+                  "description": "Audit information is protected from unauthorized access, modification, and deletion: (1) Cloud Logging logs are encrypted with CMEK (Cloud KMS in archon-kms-staging); (2) GCS audit export bucket uses locked retention policy (WORM) preventing deletion; (3) IAM policies restrict log access to Security Lead and authorized personnel only; (4) No application code has permission to delete or modify audit logs; (5) Cloud Audit Logs for GCP admin activity cannot be disabled.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -3959,7 +3959,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "ca81022d-6d61-40be-891d-94d37043a90f",
-                  "description": "Audit logs are written to a separate GCP project (archon-fed-ops-staging) from the application workloads, ensuring that compromise of the application tier does not provide access to modify audit records. The ops project service accounts do not have IAM permissions on the audit log sink or export bucket.",
+                  "description": "Audit logs are written to a separate GCP project (archon-ops-staging) from the application workloads, ensuring that compromise of the application tier does not provide access to modify audit records. The ops project service accounts do not have IAM permissions on the audit log sink or export bucket.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -6794,7 +6794,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "dd9a496c-7e0e-4cc3-80f7-be4f18a16044",
-                  "description": "Recovery time and consistency objectives for alternate storage: Cloud SQL automated backups provide RPO \u003c 24 hours. Cloud Storage objects replicated with versioning. Backup encryption uses same CMEK keys (Cloud KMS in archon-fed-kms-staging). RTO target: 4 hours for full service restoration.",
+                  "description": "Recovery time and consistency objectives for alternate storage: Cloud SQL automated backups provide RPO \u003c 24 hours. Cloud Storage objects replicated with versioning. Backup encryption uses same CMEK keys (Cloud KMS in archon-kms-staging). RTO target: 4 hours for full service restoration.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -7262,7 +7262,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "832eadca-24e0-4b8f-897a-6b5eefbc0c64",
-                  "description": "Backup strategy by component:\n- Cloud SQL (archon): Automated daily backups (14 retained) + point-in-time recovery (PITR) with 7-day transaction log retention. Backups encrypted with CMEK (Cloud KMS in archon-fed-kms-staging). Availability type: ZONAL.\n- Cloud Storage (archon-fed-ops-staging-documents): Object versioning enabled (all versions preserved indefinitely). Soft delete with 90-day recovery window. CMEK encryption.\n- Terraform State: Stored in GCS with versioning.\n- Vertex AI Indexes: Rebuilt from source documents via ops service.\n- Configuration: All configuration in Git with full version history.",
+                  "description": "Backup strategy by component:\n- Cloud SQL (archon): Automated daily backups (14 retained) + point-in-time recovery (PITR) with 7-day transaction log retention. Backups encrypted with CMEK (Cloud KMS in archon-kms-staging). Availability type: ZONAL.\n- Cloud Storage (archon-ops-staging-documents): Object versioning enabled (all versions preserved indefinitely). Soft delete with 90-day recovery window. CMEK encryption.\n- Terraform State: Stored in GCS with versioning.\n- Vertex AI Indexes: Rebuilt from source documents via ops service.\n- Configuration: All configuration in Git with full version history.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -7364,7 +7364,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "3c43c90d-b841-4ba8-80f7-a918c4d932ce",
-                  "description": "Transfer to alternate storage: Cloud SQL automated backups stored in GCP-managed backup infrastructure. Cloud Storage objects can be replicated to alternate regions via gsutil. All backups encrypted with CMEK from archon-fed-kms-staging.",
+                  "description": "Transfer to alternate storage: Cloud SQL automated backups stored in GCP-managed backup infrastructure. Cloud Storage objects can be replicated to alternate regions via gsutil. All backups encrypted with CMEK from archon-kms-staging.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -10277,7 +10277,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "a0670a70-db8a-4f46-8a48-06607e1a8d08",
-                  "description": "Access to digital media is restricted: (1) Cloud SQL data encrypted with CMEK via Cloud KMS (archon-fed-kms-staging); (2) GCS objects encrypted with CMEK; (3) IAM policies restrict access to authorized service accounts only; (4) No data is stored on removable media; (5) Laptop full-disk encryption required for all personnel.",
+                  "description": "Access to digital media is restricted: (1) Cloud SQL data encrypted with CMEK via Cloud KMS (archon-kms-staging); (2) GCS objects encrypted with CMEK; (3) IAM policies restrict access to authorized service accounts only; (4) No data is stored on removable media; (5) Laptop full-disk encryption required for all personnel.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -14934,7 +14934,7 @@
                 {
                   "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
                   "uuid": "5b8c0900-edef-4929-84fa-4486bf057f3a",
-                  "description": "Security function isolation is provided by GCP's infrastructure. Cloud Run uses gVisor kernel-level sandboxing for workload isolation. VPC Service Controls (archon_staging) isolate API access. Separate GCP projects provide blast-radius isolation between admin (archon-fed-admin-staging), ops (archon-fed-ops-staging), and app (archon-fed-app-staging) tiers.",
+                  "description": "Security function isolation is provided by GCP's infrastructure. Cloud Run uses gVisor kernel-level sandboxing for workload isolation. VPC Service Controls (archon_staging) isolate API access. Separate GCP projects provide blast-radius isolation between admin (archon-admin-staging), ops (archon-ops-staging), and app (archon-app-staging) tiers.",
                   "implementation-status": {
                     "state": "inherited"
                   }
@@ -15466,7 +15466,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "66ef3003-4218-48e8-87f6-15f00ec8f7cd",
-                  "description": "Isolation of security tools: security tools are deployed in separate GCP projects — admin project (archon-fed-admin-staging) for IAM and org policy management, ops project (archon-fed-ops-staging) for monitoring/logging/alerting, app project (archon-fed-app-staging) for workloads. Each project has independent IAM, VPC, and audit logging. No co-mingling of security tool and application workloads.",
+                  "description": "Isolation of security tools: security tools are deployed in separate GCP projects — admin project (archon-admin-staging) for IAM and org policy management, ops project (archon-ops-staging) for monitoring/logging/alerting, app project (archon-app-staging) for workloads. Each project has independent IAM, VPC, and audit logging. No co-mingling of security tool and application workloads.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -16061,7 +16061,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "1a8326e8-3880-45b5-8ccf-14b13ecd8367",
-                  "description": "Cryptographic key management: (1) Cloud KMS in dedicated project archon-fed-kms-staging provides centralized key management; (2) Key rotation every 90 days (automated); (3) HSM-backed keys (FIPS 140-2 Level 3); (4) Separate key rings for each data type (SQL, GCS, logging, secrets); (5) Key access controlled via IAM — only authorized service accounts can use keys.",
+                  "description": "Cryptographic key management: (1) Cloud KMS in dedicated project archon-kms-staging provides centralized key management; (2) Key rotation every 90 days (automated); (3) HSM-backed keys (FIPS 140-2 Level 3); (4) Separate key rings for each data type (SQL, GCS, logging, secrets); (5) Key access controlled via IAM — only authorized service accounts can use keys.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -16147,7 +16147,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "4be0b70c-b64f-4a39-85c3-16dd48c03eb1",
-                  "description": "Symmetric key management: Cloud KMS manages symmetric CMEK keys (AES-256-GCM) with 90-day automatic rotation, HSM-backed (FIPS 140-2 Level 3). Keys stored in dedicated project archon-fed-kms-staging with independent IAM. Key versions retained for decryption of historical data.",
+                  "description": "Symmetric key management: Cloud KMS manages symmetric CMEK keys (AES-256-GCM) with 90-day automatic rotation, HSM-backed (FIPS 140-2 Level 3). Keys stored in dedicated project archon-kms-staging with independent IAM. Key versions retained for decryption of historical data.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -16194,7 +16194,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "6e435ea1-2075-4cde-8b5b-6a42873d5ac1",
-                  "description": "Asymmetric key management: Cloud KMS manages asymmetric signing keys for Binary Authorization attestations. HSM-backed (FIPS 140-2 Level 3). Asymmetric keys do not rotate automatically (by design — attestation verification requires stable public keys). Keys in project archon-fed-kms-staging.",
+                  "description": "Asymmetric key management: Cloud KMS manages asymmetric signing keys for Binary Authorization attestations. HSM-backed (FIPS 140-2 Level 3). Asymmetric keys do not rotate automatically (by design — attestation verification requires stable public keys). Keys in project archon-kms-staging.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -17187,7 +17187,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "b99b2dac-b591-452b-80fa-5b53e2fcbb7c",
-                  "description": "Protection of information at rest: all data at rest is encrypted with AES-256-GCM using CMEK via Cloud KMS (archon-fed-kms-staging). Encrypted data stores: (1) Cloud SQL (archon) — CMEK; (2) Cloud Storage (archon-fed-ops-staging-documents) — CMEK; (3) Cloud Logging — CMEK; (4) Artifact Registry — CMEK; (5) Cloud Tasks — CMEK; (6) Vertex AI indexes — CMEK.",
+                  "description": "Protection of information at rest: all data at rest is encrypted with AES-256-GCM using CMEK via Cloud KMS (archon-kms-staging). Encrypted data stores: (1) Cloud SQL (archon) — CMEK; (2) Cloud Storage (archon-ops-staging-documents) — CMEK; (3) Cloud Logging — CMEK; (4) Artifact Registry — CMEK; (5) Cloud Tasks — CMEK; (6) Vertex AI indexes — CMEK.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -17258,7 +17258,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "23628f28-7504-41d8-83ab-326fd1957f72",
-                  "description": "CMEK encryption verified across data stores: Cloud SQL=true, GCS=true, BigQuery audit logs=true, Secrets Manager=true, Artifact Registry=true. All keys in dedicated project archon-fed-kms-staging with 90-day rotation, HSM-backed (FIPS 140-2 Level 3).",
+                  "description": "CMEK encryption verified across data stores: Cloud SQL=true, GCS=true, BigQuery audit logs=true, Secrets Manager=true, Artifact Registry=true. All keys in dedicated project archon-kms-staging with 90-day rotation, HSM-backed (FIPS 140-2 Level 3).",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -17321,7 +17321,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "f8b9a832-4951-4507-84a1-3fba8c988ba0",
-                  "description": "Offline storage encryption: all data at rest uses CMEK with 90-day automatic rotation via Cloud KMS (archon-fed-kms-staging). Offline backups (Cloud SQL automated backups=true, GCS versions=true) inherit CMEK encryption. Audit logs protected by WORM=true retention. No unencrypted data exists at rest.",
+                  "description": "Offline storage encryption: all data at rest uses CMEK with 90-day automatic rotation via Cloud KMS (archon-kms-staging). Offline backups (Cloud SQL automated backups=true, GCS versions=true) inherit CMEK encryption. Audit logs protected by WORM=true retention. No unencrypted data exists at rest.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -17368,7 +17368,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "00d715e5-4304-4355-8f94-eb133c65f152",
-                  "description": "Protected storage for cryptographic keys: (1) Cloud KMS HSM (FIPS 140-2 Level 3) stores all CMEK keys in dedicated project archon-fed-kms-staging; (2) key material never leaves the HSM boundary in plaintext; (3) algorithm=GOOGLE_SYMMETRIC_ENCRYPTION with 90-day automatic rotation; (4) IAM restricts key access to specific service accounts; (5) key usage is audit-logged.",
+                  "description": "Protected storage for cryptographic keys: (1) Cloud KMS HSM (FIPS 140-2 Level 3) stores all CMEK keys in dedicated project archon-kms-staging; (2) key material never leaves the HSM boundary in plaintext; (3) algorithm=GOOGLE_SYMMETRIC_ENCRYPTION with 90-day automatic rotation; (4) IAM restricts key access to specific service accounts; (5) key usage is audit-logged.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -18556,7 +18556,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "3cd2c564-1489-4313-8df1-ac2aad1acfc9",
-                  "description": "Cryptographic protection of integrity: (1) CMEK encryption (AES-256-GCM) provides authenticated encryption with integrity verification; (2) Binary Authorization uses KMS-signed attestations; (3) TLS provides integrity protection in transit; (4) all keys HSM-backed (FIPS 140-2 Level 3) in project archon-fed-kms-staging.",
+                  "description": "Cryptographic protection of integrity: (1) CMEK encryption (AES-256-GCM) provides authenticated encryption with integrity verification; (2) Binary Authorization uses KMS-signed attestations; (3) TLS provides integrity protection in transit; (4) all keys HSM-backed (FIPS 140-2 Level 3) in project archon-kms-staging.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -19550,7 +19550,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "8dbbcecd-1b73-4d28-886c-e3e3aa6918d9",
-                  "description": "Limitation of harm from supply chain compromise: (1) VPC Service Controls (enforced=true) limit blast radius of compromised components; (2) least-privilege IAM ensures compromised service accounts have minimal access; (3) separate GCP projects (archon-fed-admin-staging, archon-fed-ops-staging, archon-fed-app-staging) isolate supply chain impact; (4) Binary Authorization prevents deployment of tampered images.",
+                  "description": "Limitation of harm from supply chain compromise: (1) VPC Service Controls (enforced=true) limit blast radius of compromised components; (2) least-privilege IAM ensures compromised service accounts have minimal access; (3) separate GCP projects (archon-admin-staging, archon-ops-staging, archon-app-staging) isolate supply chain impact; (4) Binary Authorization prevents deployment of tampered images.",
                   "implementation-status": {
                     "state": "implemented"
                   }

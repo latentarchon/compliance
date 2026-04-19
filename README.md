@@ -1,11 +1,34 @@
 # Latent Archon — Compliance
 
-Security policies, compliance documentation, Drata integration tooling, and sales collateral for the Latent Archon Document Intelligence Platform.
+[![OSCAL Validation](https://github.com/latentarchon/compliance/actions/workflows/oscal-validate.yml/badge.svg)](https://github.com/latentarchon/compliance/actions/workflows/oscal-validate.yml)
+[![Publish Compliance PDFs](https://github.com/latentarchon/compliance/actions/workflows/publish-pdfs.yml/badge.svg)](https://github.com/latentarchon/compliance/actions/workflows/publish-pdfs.yml)
+[![Quarterly ConMon Report](https://github.com/latentarchon/compliance/actions/workflows/quarterly-conmon-report.yml/badge.svg)](https://github.com/latentarchon/compliance/actions/workflows/quarterly-conmon-report.yml)
+
+Security policies, compliance documentation, OSCAL SSP generation, automated compliance tooling, and sales collateral for the Latent Archon Document Intelligence Platform.
+
+| Metric | Value |
+|--------|-------|
+| **NIST 800-53 Baseline** | High — 355/355 controls implemented |
+| **DoD IL5 Overlay** | 42 additional controls (397 total) |
+| **FedRAMP Target** | High — full SSP complete, 3PAO engagement Q3 2026 |
+| **CJIS** | All 13 policy areas mapped |
+| **Red Team** | 99 automated attacks across 6 MITRE ATT&CK-mapped suites |
+| **OSCAL SSP** | [Machine-readable SSP](oscal/ssp.json) — generated from IaC via automated scanners |
+
+## OSCAL System Security Plan
+
+The [`oscal/ssp.json`](oscal/ssp.json) file is a machine-readable NIST OSCAL SSP covering the full FedRAMP High baseline plus DoD IL5 overlay controls. It is generated automatically from infrastructure-as-code using Go-based scanners that inspect Terraform configs, GCP org policies, Cloudflare configurations, and CI/CD pipelines.
+
+```bash
+npm run generate:oscal    # Regenerate from current IaC state
+npm run validate:oscal    # Validate against OSCAL schema
+npm run check:drift       # Detect SSP-to-IaC drift
+```
 
 ## Structure
 
 ```
-policies/                          # 11 governance policies (NIST 800-53 aligned)
+policies/                          # 13 governance policies (NIST 800-53 aligned)
   information-security.md          # POL-IS-001 — Overarching security program
   access-control.md                # POL-AC-001 — AuthN, AuthZ, data isolation
   change-management.md             # POL-CM-001 — Change control, CI/CD security
@@ -18,6 +41,7 @@ policies/                          # 11 governance policies (NIST 800-53 aligned
   acceptable-use.md                # POL-AU-001 — Acceptable/prohibited use
   security-awareness-training.md   # POL-AT-001 — Training requirements
   physical-security.md             # POL-PE-001 — Physical security (CSP inherited)
+  vulnerability-scanning.md        # DOC-VS-001 — Scanning strategy, SLA timelines
 cloud/                             # Cloud-specific supplements
   gcp.md                           # GCP service mapping and FedRAMP authorization
   aws.md                           # AWS supplement (commented out — GCP-only focus)
@@ -38,6 +62,13 @@ contingency-plan.md                # Contingency / disaster recovery plan
 privacy-impact-assessment.md       # Privacy impact assessment
 supply-chain-risk-management-plan.md # Supply chain risk management plan
 vulnerability-scanning-strategy.md # Vulnerability scanning strategy (DOC-VS-001)
+red-team-mitre-coverage.md         # Red team MITRE ATT&CK coverage matrix (public)
+cjis/                              # CJIS Security Policy v5.9.5 compliance
+  compliance-mapping.md            # 13 policy area mapping
+  management-control-agreement.md  # MCA template for state CSA engagement
+  readiness-checklist.md           # Pre-audit checklist
+oscal/                             # Machine-readable OSCAL artifacts
+  ssp.json                         # NIST OSCAL SSP (High + IL5)
 ```
 
 ## Policy Inventory
@@ -98,6 +129,34 @@ On push to `main`, the `publish-pdfs` workflow:
 2. Uploads them as a GitHub Actions artifact (90-day retention)
 
 The marketing site (`latentarchon/marketing`) checks out this repo at build time, builds PDFs, and copies them to `public/docs/` before deploying to Firebase Hosting. No PDFs are committed to either repo.
+
+## Technical Maturity Evidence
+
+This repository serves as feasibility evidence for government R&D programs (SBIR/STTR D2P2, OTAs). All work is self-funded — no prior government funding.
+
+| Evidence | Description |
+|----------|-------------|
+| [OSCAL SSP](oscal/ssp.json) | Machine-readable SSP with 397 controls, generated from IaC |
+| [FedRAMP SSP](fedramp-ssp.md) | Full narrative SSP at High baseline with IL5 overlay |
+| [Appendix A Controls](fedramp-ssp-appendix-a-controls.md) | 2,600-line control-by-control implementation details |
+| [Go Compliance Tooling](cmd/) | SSP generator, OSCAL scanner, access/audit review, POA&M reporting, drift checker |
+| [Automated ConMon](cloudbuild-monthly.yaml) | Monthly Cloud Build pipeline: scanning, evidence collection, KSI updates |
+| [13 Security Policies](policies/) | NIST-aligned governance policies with annual review cycle |
+| [Drata Integration](drata/) | Automated evidence sync to continuous compliance platform |
+| [CJIS Mapping](cjis/) | All 13 CJIS policy areas with MCA template |
+| [Red Team Program](../redteam/) | 99 automated attacks across 6 MITRE ATT&CK-mapped suites |
+
+## Compliance Automation Pipeline
+
+```
+IaC (Terraform/Terragrunt)
+  → Go OSCAL Scanner (VPC-SC, CMEK, CI/CD, DLP, RLS, IDP, WAF adapters)
+    → oscal/ssp.json (machine-readable)
+    → fedramp-ssp.md (human-readable)
+    → evidence/ (verified controls, tier summaries)
+      → Drata sync (weekly)
+      → Cloud Build monthly ConMon
+```
 
 ## Review Cycle
 

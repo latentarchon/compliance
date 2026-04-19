@@ -46,7 +46,7 @@
       "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091"
     ],
     "narrative-length": 578,
-    "narrative": "Separation of duties is enforced through: (1) Three-project GCP architecture (archon-fed-admin-staging for admin, archon-fed-ops-staging for ops/data, archon-fed-app-staging for app) with separate IAM policies; (2) RBAC with four distinct roles — viewer cannot modify, editor cannot manage users, admin cannot change org settings, master_admin has full org scope; (3) CI/CD pipeline uses Workload Identity Federation with per-project service accounts — no single identity spans all projects; (4) KMS keys in dedicated project archon-fed-kms-staging with separate IAM grants."
+    "narrative": "Separation of duties is enforced through: (1) Three-project GCP architecture (archon-admin-staging for admin, archon-ops-staging for ops/data, archon-app-staging for app) with separate IAM policies; (2) RBAC with four distinct roles — viewer cannot modify, editor cannot manage users, admin cannot change org settings, master_admin has full org scope; (3) CI/CD pipeline uses Workload Identity Federation with per-project service accounts — no single identity spans all projects; (4) KMS keys in dedicated project archon-kms-staging with separate IAM grants."
   },
   {
     "control-id": "ac-17",
@@ -94,7 +94,7 @@
       "f2a3b4c5-d6e7-4f80-9102-132435465768"
     ],
     "narrative-length": 475,
-    "narrative": "Audit information is protected from unauthorized access, modification, and deletion: (1) Cloud Logging logs are encrypted with CMEK (Cloud KMS in archon-fed-kms-staging); (2) GCS audit export bucket uses locked retention policy (WORM) preventing deletion; (3) IAM policies restrict log access to Security Lead and authorized personnel only; (4) No application code has permission to delete or modify audit logs; (5) Cloud Audit Logs for GCP admin activity cannot be disabled."
+    "narrative": "Audit information is protected from unauthorized access, modification, and deletion: (1) Cloud Logging logs are encrypted with CMEK (Cloud KMS in archon-kms-staging); (2) GCS audit export bucket uses locked retention policy (WORM) preventing deletion; (3) IAM policies restrict log access to Security Lead and authorized personnel only; (4) No application code has permission to delete or modify audit logs; (5) Cloud Audit Logs for GCP admin activity cannot be disabled."
   },
   {
     "control-id": "au-9.4",
@@ -105,7 +105,7 @@
       "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80"
     ],
     "narrative-length": 304,
-    "narrative": "Audit logs are written to a separate GCP project (archon-fed-ops-staging) from the application workloads, ensuring that compromise of the application tier does not provide access to modify audit records. The ops project service accounts do not have IAM permissions on the audit log sink or export bucket."
+    "narrative": "Audit logs are written to a separate GCP project (archon-ops-staging) from the application workloads, ensuring that compromise of the application tier does not provide access to modify audit records. The ops project service accounts do not have IAM permissions on the audit log sink or export bucket."
   },
   {
     "control-id": "au-11",
@@ -163,7 +163,7 @@
       "f2a3b4c5-d6e7-4f80-9102-132435465768"
     ],
     "narrative-length": 614,
-    "narrative": "Backup strategy by component:\n- Cloud SQL (archon): Automated daily backups (14 retained) + point-in-time recovery (PITR) with 7-day transaction log retention. Backups encrypted with CMEK (Cloud KMS in archon-fed-kms-staging). Availability type: ZONAL.\n- Cloud Storage (archon-fed-ops-staging-documents): Object versioning enabled (all versions preserved indefinitely). Soft delete with 90-day recovery window. CMEK encryption.\n- Terraform State: Stored in GCS with versioning.\n- Vertex AI Indexes: Rebuilt from source documents via ops service.\n- Configuration: All configuration in Git with full version history."
+    "narrative": "Backup strategy by component:\n- Cloud SQL (archon): Automated daily backups (14 retained) + point-in-time recovery (PITR) with 7-day transaction log retention. Backups encrypted with CMEK (Cloud KMS in archon-kms-staging). Availability type: ZONAL.\n- Cloud Storage (archon-ops-staging-documents): Object versioning enabled (all versions preserved indefinitely). Soft delete with 90-day recovery window. CMEK encryption.\n- Terraform State: Stored in GCS with versioning.\n- Vertex AI Indexes: Rebuilt from source documents via ops service.\n- Configuration: All configuration in Git with full version history."
   },
   {
     "control-id": "ia-2",
@@ -198,7 +198,7 @@
       "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80"
     ],
     "narrative-length": 326,
-    "narrative": "Access to digital media is restricted: (1) Cloud SQL data encrypted with CMEK via Cloud KMS (archon-fed-kms-staging); (2) GCS objects encrypted with CMEK; (3) IAM policies restrict access to authorized service accounts only; (4) No data is stored on removable media; (5) Laptop full-disk encryption required for all personnel."
+    "narrative": "Access to digital media is restricted: (1) Cloud SQL data encrypted with CMEK via Cloud KMS (archon-kms-staging); (2) GCS objects encrypted with CMEK; (3) IAM policies restrict access to authorized service accounts only; (4) No data is stored on removable media; (5) Laptop full-disk encryption required for all personnel."
   },
   {
     "control-id": "mp-4",
@@ -269,7 +269,7 @@
       "f2a3b4c5-d6e7-4f80-9102-132435465768"
     ],
     "narrative-length": 367,
-    "narrative": "Cryptographic key management: (1) Cloud KMS in dedicated project archon-fed-kms-staging provides centralized key management; (2) Key rotation every 90 days (automated); (3) HSM-backed keys (FIPS 140-2 Level 3); (4) Separate key rings for each data type (SQL, GCS, logging, secrets); (5) Key access controlled via IAM — only authorized service accounts can use keys."
+    "narrative": "Cryptographic key management: (1) Cloud KMS in dedicated project archon-kms-staging provides centralized key management; (2) Key rotation every 90 days (automated); (3) HSM-backed keys (FIPS 140-2 Level 3); (4) Separate key rings for each data type (SQL, GCS, logging, secrets); (5) Key access controlled via IAM — only authorized service accounts can use keys."
   },
   {
     "control-id": "sc-13",
@@ -295,7 +295,7 @@
       "f2a3b4c5-d6e7-4f80-9102-132435465768"
     ],
     "narrative-length": 369,
-    "narrative": "Protection of information at rest: all data at rest is encrypted with AES-256-GCM using CMEK via Cloud KMS (archon-fed-kms-staging). Encrypted data stores: (1) Cloud SQL (archon) — CMEK; (2) Cloud Storage (archon-fed-ops-staging-documents) — CMEK; (3) Cloud Logging — CMEK; (4) Artifact Registry — CMEK; (5) Cloud Tasks — CMEK; (6) Vertex AI indexes — CMEK."
+    "narrative": "Protection of information at rest: all data at rest is encrypted with AES-256-GCM using CMEK via Cloud KMS (archon-kms-staging). Encrypted data stores: (1) Cloud SQL (archon) — CMEK; (2) Cloud Storage (archon-ops-staging-documents) — CMEK; (3) Cloud Logging — CMEK; (4) Artifact Registry — CMEK; (5) Cloud Tasks — CMEK; (6) Vertex AI indexes — CMEK."
   },
   {
     "control-id": "sc-28.1",
@@ -307,7 +307,7 @@
       "f2a3b4c5-d6e7-4f80-9102-132435465768"
     ],
     "narrative-length": 291,
-    "narrative": "Cryptographic protection for data at rest uses CMEK (Customer-Managed Encryption Keys) via Cloud KMS with 90-day automatic rotation. Algorithm: GOOGLE_SYMMETRIC_ENCRYPTION. HSM-backed (FIPS 140-2 Level 3). Keys stored in dedicated project (archon-fed-kms-staging) with separate IAM policies."
+    "narrative": "Cryptographic protection for data at rest uses CMEK (Customer-Managed Encryption Keys) via Cloud KMS with 90-day automatic rotation. Algorithm: GOOGLE_SYMMETRIC_ENCRYPTION. HSM-backed (FIPS 140-2 Level 3). Keys stored in dedicated project (archon-kms-staging) with separate IAM policies."
   },
   {
     "control-id": "si-3",

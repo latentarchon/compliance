@@ -24,8 +24,8 @@ The system uses a repeatable per-deployment project structure within GCP organiz
 
 | Deployment | IL5 AW Folder | FedRAMP High AW Folder |
 |---|---|---|
-| Staging | `Staging/Staging IL5/` — `archon-fed-admin-staging`, `archon-fed-ops-staging`, `archon-fed-app-staging`, `archon-fed-kms-staging` | `Staging/Staging FedRAMP High/` — `archon-fed-auth-admin-stg`, `archon-fed-auth-app-stg` |
-| Fed (production) | `Fed/Fed IL5/` — `archon-fed-admin-prod`, `archon-fed-ops-prod`, `archon-fed-app-prod`, `archon-fed-kms-prod` | `Fed/Fed FedRAMP High/` — `archon-fed-auth-admin-prod`, `archon-fed-auth-app-prod` |
+| Staging | `Staging/Staging IL5/` — `archon-admin-staging`, `archon-ops-staging`, `archon-app-staging`, `archon-kms-staging` | `Staging/Staging FedRAMP High/` — `archon-auth-admin-stg`, `archon-auth-app-stg` |
+| Fed (production) | `Fed/Fed IL5/` — `archon-fed-admin`, `archon-fed-ops`, `archon-fed-app`, `archon-fed-kms-prod` | `Fed/Fed FedRAMP High/` — `archon-fed-auth-admin`, `archon-fed-auth-app` |
 
 **Shared management tier**:
 

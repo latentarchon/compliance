@@ -39,3 +39,12 @@ jobs:
           name: compliance-pdfs
           path: dist/*.pdf
           retention-days: 90
+
+      - name: Upload public PDFs to release (latest)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for pdf in dist/public/*.pdf; do
+            echo "Uploading $(basename "$pdf") to latest release..."
+            gh release upload v2.0.0 "$pdf" --clobber || true
+          done

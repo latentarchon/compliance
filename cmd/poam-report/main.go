@@ -93,7 +93,7 @@ type POAMReport struct {
 }
 
 func main() {
-	scanBucket := flag.String("scan-bucket", "", "GCS bucket with SARIF scan results (e.g., archon-fed-ops-staging-build-artifacts)")
+	scanBucket := flag.String("scan-bucket", "", "GCS bucket with SARIF scan results (e.g., archon-ops-staging-build-artifacts)")
 	scanPrefix := flag.String("scan-prefix", "security-scans/", "GCS prefix for scan results")
 	scanDir := flag.String("scan-dir", "", "Local directory with SARIF files (alternative to GCS)")
 	stateFile := flag.String("state-file", "poam-state.json", "Path to POA&M state file for tracking")

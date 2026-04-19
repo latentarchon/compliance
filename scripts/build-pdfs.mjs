@@ -10,6 +10,15 @@ const PUBLIC_DOCS = [
   'policies/change-management.md',
   'policies/incident-response.md',
   'policies/vendor-risk.md',
+  'policies/information-security.md',
+  'policies/encryption.md',
+  'policies/data-classification.md',
+  'policies/business-continuity.md',
+  'policies/risk-management.md',
+  'policies/acceptable-use.md',
+  'policies/security-awareness-training.md',
+  'policies/physical-security.md',
+  'policies/vulnerability-scanning.md',
 ];
 
 // INTERNAL — shared only with agency sponsors, 3PAO, and FedRAMP PMO under NDA
@@ -22,15 +31,6 @@ const INTERNAL_DOCS = [
   'continuous-monitoring-plan.md',
   'supply-chain-risk-management-plan.md',
   'privacy-impact-assessment.md',
-  'policies/information-security.md',
-  'policies/encryption.md',
-  'policies/data-classification.md',
-  'policies/business-continuity.md',
-  'policies/risk-management.md',
-  'policies/acceptable-use.md',
-  'policies/security-awareness-training.md',
-  'policies/physical-security.md',
-  'policies/vulnerability-scanning.md',
 ];
 
 const ALL_DOCS = [

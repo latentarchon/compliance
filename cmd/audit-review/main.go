@@ -30,9 +30,9 @@ func envConfig(env string) ProjectConfig {
 		}
 	}
 	return ProjectConfig{
-		AdminProject: "archon-fed-admin-staging",
-		OpsProject:   "archon-fed-ops-staging",
-		AppProject:   "archon-fed-app-staging",
+		AdminProject: "archon-admin-staging",
+		OpsProject:   "archon-ops-staging",
+		AppProject:   "archon-app-staging",
 	}
 }
 

@@ -71,11 +71,11 @@ func envConfig(env string) ProjectConfig {
 		}
 	}
 	return ProjectConfig{
-		AdminProject:     "archon-fed-admin-staging",
-		OpsProject:       "archon-fed-ops-staging",
-		AppProject:       "archon-fed-app-staging",
-		AuthAdminProject: "archon-fed-auth-admin-stg",
-		AuthAppProject:   "archon-fed-auth-app-stg",
+		AdminProject:     "archon-admin-staging",
+		OpsProject:       "archon-ops-staging",
+		AppProject:       "archon-app-staging",
+		AuthAdminProject: "archon-auth-admin-stg",
+		AuthAppProject:   "archon-auth-app-stg",
 		Region:           "us-east4",
 	}
 }
