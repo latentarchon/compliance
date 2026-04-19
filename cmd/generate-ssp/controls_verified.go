@@ -223,25 +223,27 @@ func verifiedControls() []ControlDef {
 					or(f.Region, "us-east4"))
 			}},
 
-		// IL5 verified
-		{ID: "sc-7.24", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "il5",
+		{ID: "sc-7.24", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "high",
+			ComponentUUIDs: []string{thisSystem, gcpPlatform},
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Data residency enforcement for IL5: (1) Assured Workloads %s constrains all data and processing to US territory; (2) GCP region restricted to %s (CONUS); (3) Cloudflare Zero Trust Access enforces identity-based access controls on admin endpoints; (4) GCS data location enforced by Assured Workloads.",
+				return fmt.Sprintf("Personally identifiable information — data residency: (1) Assured Workloads %s constrains all data and processing to US territory; (2) GCP region restricted to %s (CONUS); (3) DLP inspect template detects %d PII info types; (4) RLS prevents cross-tenant PII disclosure; (5) Cloudflare TLS %s+ protects PII in transit.",
 					boolStr(f.AWSComplianceRegime != "", "("+f.AWSComplianceRegime+" regime)", ""),
-					or(f.Region, "us-east4"))
+					or(f.Region, "us-east4"), f.DLPPIIInfoTypes, or(f.CFMinTLS, "1.2"))
 			}},
-		{ID: "sc-28.2", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "il5",
+		{ID: "sc-28.2", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "high",
+			ComponentUUIDs: []string{thisSystem, cloudKMS},
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Offline storage encryption for IL5: all data at rest uses CMEK with %d-day automatic rotation via Cloud KMS (%s). Offline backups (Cloud SQL automated backups, GCS versions) inherit CMEK encryption. No unencrypted data exists at rest.",
-					f.KMSRotationDays,
-					or(f.KMSProjectID))
+				return fmt.Sprintf("Offline storage encryption: all data at rest uses CMEK with %d-day automatic rotation via Cloud KMS (%s). Offline backups (Cloud SQL automated backups=%v, GCS versions=%v) inherit CMEK encryption. Audit logs protected by WORM=%v retention. No unencrypted data exists at rest.",
+					f.KMSRotationDays, or(f.KMSProjectID), f.CMEKCloudSQL, f.CMEKGCS, f.AuditLogWORM)
 			}},
-		{ID: "ac-4.21", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "il5",
+		{ID: "ac-4.21", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "high",
+			ComponentUUIDs: []string{thisSystem, gcpPlatform},
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Physical/logical separation of information flows for IL5: (1) Assured Workloads %s provides logical separation of IL5 workloads from commercial GCP; (2) VPC Service Controls restrict API access to authorized perimeters; (3) CMEK keys in dedicated KMS project ensure cryptographic separation; (4) Data never leaves the assured workload boundary.",
-					boolStr(f.AWSComplianceRegime != "", "("+f.AWSComplianceRegime+")", ""))
+				return fmt.Sprintf("Physical/logical separation of information flows: (1) Assured Workloads %s provides logical separation from commercial GCP; (2) VPC Service Controls perimeter %q restricts API access to %d authorized projects; (3) CMEK keys in dedicated KMS project ensure cryptographic separation; (4) three-project architecture provides blast-radius isolation.",
+					boolStr(f.AWSComplianceRegime != "", "("+f.AWSComplianceRegime+")", ""),
+					or(f.VPCSCPerimeterName), f.VPCSCProtectedProjects)
 			}},
-		{ID: "sc-13.1", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "il5",
+		{ID: "sc-13.1", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "high",
 			NarrativeFn: func(f *InfraFacts) string {
 				return fmt.Sprintf("FIPS 140-2 validated cryptography for IL5: (1) %s provides FIPS 140-2 validated TLS in Go backend; (2) Cloud KMS HSMs are FIPS 140-2 Level 3 certified; (3) All cryptographic operations (encryption, hashing, signing) use FIPS-approved algorithms; (4) Non-FIPS cryptographic modules are not used.",
 					boolStr(f.BoringCrypto, "GOEXPERIMENT=boringcrypto (BoringSSL)", "BoringCrypto"))

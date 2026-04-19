@@ -68,9 +68,24 @@ var manualControlIDs = map[string]bool{
 	"pt-5": true, "pt-6": true, "pt-7": true, "pt-8": true,
 }
 
+var inheritedControlIDs = map[string]bool{
+	"pe-1": true, "pe-2": true, "pe-3.1": true, "pe-4": true, "pe-5": true,
+	"pe-6": true, "pe-6.1": true, "pe-8": true, "pe-9": true, "pe-10": true,
+	"pe-11": true, "pe-12": true, "pe-13": true, "pe-13.1": true, "pe-13.2": true,
+	"pe-14": true, "pe-15": true, "pe-16": true, "pe-17": true, "pe-18": true,
+	"cp-7.2": true, "cp-7.3": true,
+	"cp-8.1": true, "cp-8.2": true, "cp-8.3": true, "cp-8.4": true, "cp-8.5": true,
+	"ma-3.1": true, "ma-3.2": true, "ma-4.3": true, "ma-5.1": true,
+	"mp-6.1": true, "mp-6.2": true, "mp-6.3": true,
+	"sc-3": true,
+}
+
 func classifyTier(id string) string {
 	if verifiedControlIDs[id] {
 		return "verified"
+	}
+	if inheritedControlIDs[id] {
+		return "inherited"
 	}
 	if manualControlIDs[id] {
 		return "manual"
@@ -83,6 +98,8 @@ func allControls() []ControlDef {
 	all = append(all, verifiedControls()...)
 	all = append(all, templatedControls()...)
 	all = append(all, manualControls()...)
+	all = append(all, inheritedControls()...)
+	all = append(all, gapControls()...)
 
 	for i := range all {
 		all[i].EvidenceTier = classifyTier(all[i].ID)

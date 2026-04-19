@@ -3,8 +3,8 @@
     "uuid": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
     "metadata": {
       "title": "Latent Archon Document Intelligence Platform — System Security Plan",
-      "last-modified": "2026-04-19T03:28:44.901737Z",
-      "version": "1.0.9",
+      "last-modified": "2026-04-19T03:53:04.989684Z",
+      "version": "1.0.10",
       "oscal-version": "1.1.3",
       "props": [
         {
@@ -13,7 +13,7 @@
         },
         {
           "name": "build-sha-compliance",
-          "value": "1c5154df7d1726b1c9e7813119959e6460fc8bf7",
+          "value": "bcabab7111529b4e829b2c63a670c09bf9682e1d",
           "ns": "https://latentarchon.com/ns/oscal/build"
         },
         {
@@ -23,7 +23,7 @@
         },
         {
           "name": "build-sha-infra",
-          "value": "aff8681ab7b246f5222a87793d8b7f917543b825",
+          "value": "b4d008d703341c13e58d4d1693f3fbd575c27dfc",
           "ns": "https://latentarchon.com/ns/oscal/build"
         },
         {
@@ -53,7 +53,7 @@
         },
         {
           "name": "build-timestamp",
-          "value": "2026-04-19T03:28:44Z",
+          "value": "2026-04-19T03:53:05Z",
           "ns": "https://latentarchon.com/ns/oscal/build"
         }
       ],
@@ -1148,6 +1148,53 @@
           ]
         },
         {
+          "uuid": "970b796c-c532-4cae-8ac7-679829194bf3",
+          "control-id": "ac-4.21",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ac-4.21_smt",
+              "uuid": "acab6fdf-26f9-4491-8ada-2cd490e5ab69",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "0ea365e5-d806-4482-8ca4-e1d04f463819",
+                  "description": "Physical/logical separation of information flows: (1) Assured Workloads (IL5) provides logical separation from commercial GCP; (2) VPC Service Controls perimeter \"archon_staging\" restricts API access to 4 authorized projects; (3) CMEK keys in dedicated KMS project ensure cryptographic separation; (4) three-project architecture provides blast-radius isolation.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                },
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "c0935826-1bbc-4b82-85ec-d9267ee276ea",
+                  "description": "See ac-4.21 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "2f496e5e-3656-47c4-8193-316461bf2273",
           "control-id": "ac-5",
           "props": [
@@ -1312,6 +1359,45 @@
           ]
         },
         {
+          "uuid": "c0fa6cbd-ee31-4fd3-8c3f-60eda88cc25c",
+          "control-id": "ac-6.3",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ac-6.3_smt",
+              "uuid": "b8931cee-e181-4b94-8816-11c701bc492e",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "b9638127-0253-4164-882b-1445a9ce9b12",
+                  "description": "Network access to privileged commands is restricted: (1) GCP IAM restricts administrative API access to authorized service accounts and break-glass personnel; (2) Cloudflare Access enforces identity-based access to admin endpoints; (3) no SSH/RDP access to production — Cloud Run is serverless; (4) database access restricted to VPC-peered service accounts only.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "f684d162-ee19-4cec-8231-6a8aaf84ae3f",
           "control-id": "ac-6.5",
           "props": [
@@ -1342,6 +1428,45 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "73a62ec1-e491-41c9-87d2-018e856c308c",
                   "description": "Privileged accounts are restricted to authorized personnel: (1) GCP organization-level roles limited to CEO/CTO; (2) Project Owner roles not assigned — Terraform SA uses custom roles; (3) `master_admin` application role assigned only to designated org administrators; (4) SCIM token management restricted to `master_admin` role.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "067e51cb-77f5-4862-88e9-23ddccfa05b6",
+          "control-id": "ac-6.7",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ac-6.7_smt",
+              "uuid": "8b0058a6-89b6-4333-811f-34fcf6784bf7",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "49258032-e262-4fc0-8887-663081002611",
+                  "description": "Review of user privileges: (1) quarterly access reviews via automated access-review tool; (2) GCP IAM Recommender identifies excess permissions; (3) application RBAC roles reviewed by org master_admin; (4) SCIM-managed accounts automatically reflect IdP group changes.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -1645,6 +1770,45 @@
           ]
         },
         {
+          "uuid": "09d4ff89-c9c1-4d8d-8022-f58b2d2e617d",
+          "control-id": "ac-11.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ac-11.1_smt",
+              "uuid": "9cf53d89-3749-4e4f-8c15-0537abba3534",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "8ac903d9-6cce-42c8-856b-b78f347b3bc2",
+                  "description": "Session lock — pattern-hiding displays: the SPA renders a full-screen re-authentication overlay when a session times out, hiding all previously displayed CUI content. The session state is cleared client-side; resumption requires full re-authentication including MFA.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "51a441b3-0af6-4ee5-8661-852359dfae30",
           "control-id": "ac-12",
           "props": [
@@ -1854,6 +2018,84 @@
           ]
         },
         {
+          "uuid": "8ef99d91-7446-4dd9-8483-9e6c37de062b",
+          "control-id": "ac-18",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ac-18_smt",
+              "uuid": "08c0c426-fb7e-4ece-83b8-9d96e84235f3",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "0143fadc-7c60-4f99-88a6-418cb5b3ba3c",
+                  "description": "Wireless access: not applicable — Latent Archon is a SaaS platform hosted entirely on GCP Cloud Run (serverless). There are no organization-controlled wireless access points. End-user wireless connectivity is the responsibility of the customer agency. GCP data center wireless controls are inherited.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "bd6779f7-98ce-4735-8b9c-138cd7825732",
+          "control-id": "ac-19",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ac-19_smt",
+              "uuid": "cf2076e1-f050-4401-894c-50b3e6f28351",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "4dcc4a41-f82f-488f-8467-e2ae02f1afb9",
+                  "description": "Access control for mobile devices: (1) Cloudflare Access device posture checks enforce OS version, disk encryption, and screen lock for admin access; (2) application enforces session timeouts and re-authentication on all devices; (3) no organization-issued mobile devices — access is via standard web browser with MFA required.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "eb5e4899-ce2d-43af-8f6b-772619e59ced",
           "control-id": "ac-20",
           "props": [
@@ -1884,6 +2126,45 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "8d6ae81d-e573-4237-8979-b70f49bb5b08",
                   "description": "External information systems connecting to Latent Archon are limited to: (1) Customer IdPs via SAML 2.0 SSO and SCIM 2.0 — connections require explicit configuration by org admin; (2) Customer browsers via HTTPS. No direct system-to-system API access is provided to external systems without explicit authorization. All external connections traverse the full WAF stack.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "061eabfb-2f84-4fbc-84b2-2578a7efaeac",
+          "control-id": "ac-20.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ac-20.1_smt",
+              "uuid": "b0bd4181-a0fa-46a0-8aa6-f70d6c479869",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "3abe3567-7769-4d62-8772-17bd8375981a",
+                  "description": "Limits on authorized use of external systems: (1) the system does not permit connections from external information systems to process, store, or transmit CUI; (2) external system access is limited to API integrations authenticated via SCIM tokens or SAML/OIDC federation; (3) all external integrations documented and reviewed quarterly.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -2580,6 +2861,84 @@
           ]
         },
         {
+          "uuid": "df36067b-57ec-44b6-8f75-5b67355b821e",
+          "control-id": "au-6.5",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "au-6.5_smt",
+              "uuid": "e807a3c8-3549-4f28-8a45-dfe7046b4c05",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "49b356b0-d492-4e54-8d23-5fa3eaab1ed4",
+                  "description": "Integrated analysis of audit records: audit logs from application (15 alert policies), GCP Cloud Audit Logs, and Cloudflare security events are aggregated in Cloud Logging (8 log sinks/project). Cross-source correlation uses request IDs and timestamps for unified analysis.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "c0bd6ec5-d5c5-42cb-824b-f9bdd97c2dc6",
+          "control-id": "au-6.6",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "au-6.6_smt",
+              "uuid": "cf9c7c29-6fc2-4d28-8cc5-b32561c47c90",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "3e5062c2-6b44-45eb-8029-76e660e06d8b",
+                  "description": "Correlation with physical monitoring: not applicable for SaaS — physical monitoring is inherited from GCP. Application-level correlation integrates: (1) authentication events with IP geolocation; (2) Cloudflare threat scores with access patterns; (3) rate limiting triggers with user accounts.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "ee0ee444-2ad1-4a5b-8356-57617a7d6a01",
           "control-id": "au-7",
           "props": [
@@ -2704,6 +3063,92 @@
                   "component-uuid": "f2a3b4c5-d6e7-4f80-9102-132435465768",
                   "uuid": "25bfde2e-f3ca-4f8d-8481-601fe341ca82",
                   "description": "See au-9 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "085ee253-d0bc-4e19-877f-28d5439337f1",
+          "control-id": "au-9.2",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "au-9.2_smt",
+              "uuid": "6af05fa4-84e4-41b0-8d6b-37cd19e76364",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "364ff298-a3ca-4e38-8ff1-b2ed5206a1b5",
+                  "description": "Audit logs stored in separate system: audit logs are exported to a dedicated logging project via 8 log sinks per project. Log buckets use CMEK encryption and are in a separate GCP project from the application workloads, with independent IAM policies preventing application service accounts from modifying audit records.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                },
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "6736c9fa-789b-41bd-805f-ed673de87052",
+                  "description": "See au-9.2 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "d5388eab-a599-44f2-8aaa-1d96db37c1ef",
+          "control-id": "au-9.3",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "au-9.3_smt",
+              "uuid": "24c15c71-a4fa-4ce1-8bc8-db7f4399fe96",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "ac280328-d5be-4cad-8d3b-d5b79bde92a2",
+                  "description": "Cryptographic protection of audit information: (1) audit logs encrypted at rest with CMEK via Cloud KMS; (2) audit logs encrypted in transit with TLS 1.2+; (3) WORM (Write Once Read Many) retention prevents deletion or modification of audit records.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -2868,6 +3313,123 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "ff3005c7-7312-46bd-868d-c22b160b28e5",
                   "description": "Audit record generation is provided at: (1) Application layer via `internal/audit/logger.go` for all business logic events; (2) GCP Cloud Audit Logs for all infrastructure API calls; (3) Cloudflare audit logs for edge configuration changes; (4) Cloud Build logs for CI/CD pipeline execution. Audit generation is enabled by default and cannot be disabled by non-privileged users.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "6fb47ed6-fc09-447d-8f18-57fab4c2963b",
+          "control-id": "au-12.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "au-12.1_smt",
+              "uuid": "a19cd7af-caaf-4cf0-8c35-a6c3190d8f17",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "02f49fbe-c4da-48fb-86c0-e53c76bfd55a",
+                  "description": "System-wide audit trail compiled from individual records: Cloud Logging aggregates audit records from all Cloud Run services, Cloud SQL, Cloud Storage, Identity Platform, and application audit logs into a unified, time-ordered trail queryable via Cloud Logging API and BigQuery.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "21db1847-0665-4b16-877f-9b86c3e740d6",
+          "control-id": "au-12.3",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "au-12.3_smt",
+              "uuid": "a5264003-7932-4502-8fcb-9476d22151d6",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "1d768441-53ef-4640-88d5-0021d2a0ac8d",
+                  "description": "Changes to logging configuration require privileged access and are logged: (1) Cloud Logging sink configuration managed exclusively via Terragrunt; (2) changes require PR approval; (3) GCP Admin Activity audit logs capture all logging configuration changes; (4) org policies prevent service accounts from modifying org-level sinks.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "a833e462-6509-4a5d-88ac-81dc87764ce1",
+          "control-id": "au-16",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "au-16_smt",
+              "uuid": "97f7021b-6447-46cd-875c-f137f635dc6d",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "8dfd5b9c-aaf5-4d06-83f1-d860c142c0f6",
+                  "description": "Cross-organizational audit logging: (1) Cloudflare provides edge-layer audit events (WAF, rate limiting, Access) via Logpush; (2) GCP Cloud Audit Logs provide infrastructure events; (3) application audit logs provide business-logic events. All three sources are aggregated in Cloud Logging for cross-organizational audit trail.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -3150,6 +3712,45 @@
           ]
         },
         {
+          "uuid": "bba743d7-df4b-444d-8e88-320134d31ef6",
+          "control-id": "ca-7.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ca-7.1_smt",
+              "uuid": "a35af104-e6f3-4783-8603-ba759713cb6f",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "4bf0897a-3877-4f2d-8325-52ea36a41d3b",
+                  "description": "Independent assessor for continuous monitoring: automated monitoring tools (Cloud Monitoring, Cloudflare analytics, OSCAL SSP-IaC drift detection) provide independent assessment data. 3PAO engagement planned for initial authorization assessment.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "04854850-0a91-45cb-8bd0-38396437f0a2",
           "control-id": "ca-8",
           "props": [
@@ -3392,6 +3993,45 @@
           ]
         },
         {
+          "uuid": "a0196f30-1563-4b90-81b4-a05ba774b0e1",
+          "control-id": "cm-3.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cm-3.1_smt",
+              "uuid": "42ab3781-4317-40a1-80da-7340fc68644f",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "94369762-9102-4c26-89e0-a321bd80200d",
+                  "description": "Automated change control: (1) GitHub PR-based workflow with required approvals; (2) CI/CD pipeline automatically runs tests, security scans, and Terragrunt plan; (3) 2 Cloud Build triggers enforce automated build/deploy pipeline; (4) FedRAMP SCN classifier labels PRs by security impact.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "5cfbf42e-21f9-4d96-8b72-7dba158a16a2",
           "control-id": "cm-3.2",
           "props": [
@@ -3431,6 +4071,45 @@
           ]
         },
         {
+          "uuid": "96ae2d3b-5229-4861-89d9-49a9872bed0e",
+          "control-id": "cm-3.3",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cm-3.3_smt",
+              "uuid": "c4f0822d-7a09-4f7b-8278-b500771585b4",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "8009c71b-713f-491f-8e79-b3dc6113e2b0",
+                  "description": "Security representative for change control: FedRAMP SCN classifier automatically flags security-impacting changes. Critical/significant changes require explicit security review documented in PR comments.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "09563d58-8a85-4970-8b72-e271d0c4f511",
           "control-id": "cm-3.4",
           "props": [
@@ -3461,6 +4140,123 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "a7396e06-7f15-40c7-83a8-24f3b3c44cec",
                   "description": "Automated security impact analysis via FedRAMP SCN (Significant Change Notification) classifier integrated into CI/CD. The classifier automatically analyzes PRs and labels them by impact level (routine, significant, critical) based on files changed, security control implications, and architecture impact.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "2b00b198-74af-4a13-8887-191149edd8b2",
+          "control-id": "cm-3.6",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cm-3.6_smt",
+              "uuid": "07c77cff-5f3f-4e23-80bd-2cd08743b035",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "402e7aff-3d91-4b2f-8e22-6f57a35a2a39",
+                  "description": "Cryptographic integrity verification: (1) Go module checksums verified via go.sum; (2) container image digests ensure immutable references; (3) Binary Authorization verifies cryptographic attestations before deployment; (4) Terraform provider checksums verified by HashiCorp's registry.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "ad1bfbeb-d1bf-46bf-85d6-0539e90a11b0",
+          "control-id": "cm-3.7",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cm-3.7_smt",
+              "uuid": "8c7de40e-5fc1-443d-8451-e8cbf4539d99",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "ebb75c8c-a17d-454c-8a7f-232933659e28",
+                  "description": "Changes reviewed and approved before implementation: (1) Terragrunt plan output must be reviewed before apply; (2) GitHub branch protection enforces PR approvals; (3) CI pipeline must pass before merge is allowed; (4) no direct pushes to staging or main branches.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "dcd9ba06-33d3-4c01-8e8b-4653cff99b93",
+          "control-id": "cm-3.8",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cm-3.8_smt",
+              "uuid": "1f711ead-74b0-494a-8114-c5ac1a16774b",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "ec1d6bb1-46cf-456a-8d9b-07bf98661da5",
+                  "description": "Prevent or restrict unverified changes: (1) branch protection prevents direct commits; (2) all changes must pass CI pipeline; (3) Terragrunt apply requires prior plan approval; (4) org policies prevent console-based infrastructure changes for restricted resources.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -3743,6 +4539,53 @@
           ]
         },
         {
+          "uuid": "fda45123-cc15-4ad8-89a4-4c708645b785",
+          "control-id": "cm-7.5",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cm-7.5_smt",
+              "uuid": "16e33327-a057-4570-8b57-a84e530c799a",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "5b2cd457-c85a-4025-8e97-06172d19ea5b",
+                  "description": "Authorized software allowlisting: (1) 25 org policies restrict which GCP services can be used; (2) Cloud Run only executes container images from authorized Artifact Registry repositories; (3) Binary Authorization (binauthz=true) enforces attestation-based image allowlisting; (4) Go module proxy and checksum database verify authorized packages.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                },
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "9ca4423d-ece4-4093-871f-234281a7d55b",
+                  "description": "See cm-7.5 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "7364a2ff-caac-427f-8a80-9a84c34f0dfb",
           "control-id": "cm-8",
           "props": [
@@ -3938,6 +4781,84 @@
           ]
         },
         {
+          "uuid": "9269aa49-8366-4322-8df4-b9e2bb6d55b8",
+          "control-id": "cm-12",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cm-12_smt",
+              "uuid": "82b97484-3678-4701-8847-df4cd965dfc3",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "122aad83-3204-4611-8fe2-1b71fcaf4bf2",
+                  "description": "Information location: CUI is stored exclusively within: (1) Cloud SQL PostgreSQL (structured data, CMEK-encrypted); (2) Cloud Storage (documents, CMEK-encrypted); (3) Vertex AI Vector Search (embeddings, no raw CUI). All storage within US regions enforced by Assured Workloads location constraints.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "9593e724-48c2-49f8-8472-f495cb567fc7",
+          "control-id": "cm-14",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cm-14_smt",
+              "uuid": "95b366ba-1d6f-4986-8fc7-b7ab895bfe75",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "1da14939-03bf-427f-89ad-29cec30d1a3f",
+                  "description": "Signed components: (1) container images signed via Binary Authorization attestation; (2) Go binaries built with verified module checksums; (3) Terraform providers verified via HashiCorp GPG signatures; (4) SBOMs generated for component provenance.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "260b33bb-5132-43a4-8df5-e16092f7afa5",
           "control-id": "cp-1",
           "props": [
@@ -4094,6 +5015,84 @@
           ]
         },
         {
+          "uuid": "96c60708-aef2-4209-8dd1-78057c04916f",
+          "control-id": "cp-2.5",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cp-2.5_smt",
+              "uuid": "4d7f75a0-f3fc-4963-83eb-b2358843b426",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "904a646a-b9cb-446d-82e0-e8455b621105",
+                  "description": "Contingency plan continues essential missions: Terragrunt IaC enables full environment rebuild in an alternate GCP region within hours. Assured Workloads constraints apply to all US regions. Cloud SQL automated backups and Cloud Storage multi-region replication ensure data availability.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "a3afc127-5755-4eb9-857b-89f91ff820eb",
+          "control-id": "cp-2.8",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cp-2.8_smt",
+              "uuid": "ef318020-7b09-41e5-8752-e70bdfcfb1b7",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "d9811378-efcd-4e81-84cc-cb3679c9c90d",
+                  "description": "Identify critical assets: critical assets documented in SSP authorization boundary: Cloud SQL (CUI data), Cloud Storage (CUI documents), Cloud KMS (encryption keys), Identity Platform (authentication). Recovery priority: (1) auth, (2) database, (3) storage, (4) application services.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "6566a69d-6a59-4543-8fff-e92404050e20",
           "control-id": "cp-3",
           "props": [
@@ -4163,6 +5162,84 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "2b536298-2e47-48c9-88ba-86a7832ad26c",
                   "description": "Contingency plan testing is conducted monthly via automated Cloud Build exercises (`cloudbuild-monthly.yaml`). Tests include: (1) Cloud SQL backup restoration; (2) Cloud Run service redeploy from Artifact Registry; (3) GCS object recovery from versions; (4) Terragrunt plan validation for disaster recovery. Results uploaded to Drata.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "c6b3962a-1c86-40b0-8a05-8ec285f8142d",
+          "control-id": "cp-4.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cp-4.1_smt",
+              "uuid": "76ddcefb-7699-4bfd-818d-4ee8448c6b8a",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "fd39411d-4f76-4846-8b95-139e04eb9ad9",
+                  "description": "Contingency plan testing coordination: monthly automated CP-4 exercises run via Cloud Build cron. Tests coordinate recovery of Cloud SQL, Cloud Storage, and Cloud Run services. Results uploaded to Drata as evidence.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "8c665ddb-5d8e-4a19-80f6-5d1c5e3766bf",
+          "control-id": "cp-4.2",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cp-4.2_smt",
+              "uuid": "24c57ab6-9b2a-4865-8b4b-e073d242208a",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "1599e64d-6c93-45af-89b9-0999a8790060",
+                  "description": "Alternate processing site testing: Terragrunt IaC supports deployment to any US GCP region. Contingency plan testing includes validation that IaC applies cleanly to alternate regions with Assured Workloads compliance constraints.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -4250,6 +5327,84 @@
           ]
         },
         {
+          "uuid": "ca199190-e80b-4e2d-82b2-7a246f276a2a",
+          "control-id": "cp-6.2",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cp-6.2_smt",
+              "uuid": "a6ee33c3-e0e4-4308-88a8-4cf67a2fc6cd",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "62480755-391c-40a2-8b63-db9c3458f41c",
+                  "description": "Recovery time and consistency objectives for alternate storage: Cloud SQL automated backups provide RPO \u003c 24 hours. Cloud Storage objects replicated with versioning. Backup encryption uses same CMEK keys (Cloud KMS in archon-fed-kms-staging). RTO target: 4 hours for full service restoration.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "c137fd89-96fb-4136-801b-45fb5eb50cfc",
+          "control-id": "cp-6.3",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cp-6.3_smt",
+              "uuid": "1df2fc91-d50b-43da-88a6-a790fbc5c520",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "129d6511-01f4-4bbc-8d20-305d29ca1482",
+                  "description": "Accessibility of alternate storage site: Cloud SQL backups and Cloud Storage objects accessible from any authorized GCP region via IAM. No physical access required. Assured Workloads ensures alternate storage remains within US boundaries.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "c22f4e53-bc49-47bb-8108-3b5f94564620",
           "control-id": "cp-7",
           "props": [
@@ -4328,6 +5483,84 @@
           ]
         },
         {
+          "uuid": "00a37379-6cff-4c22-8245-54bd8ed05547",
+          "control-id": "cp-7.2",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cp-7.2_smt",
+              "uuid": "4cda9983-3703-49ba-8a2e-269f20019daa",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "a3979264-9eea-4ea4-8118-84033e29363c",
+                  "description": "Alternate processing site accessibility is inherited from GCP. Google Cloud regions provide geographically diverse processing sites accessible during disruptions. Terraform IaC enables rapid redeployment to alternate regions.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "bc7f43bd-c5bb-49b5-88c3-5cc470148517",
+          "control-id": "cp-7.3",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cp-7.3_smt",
+              "uuid": "0eef7241-31d4-46fa-840a-e64a830d50d3",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "dfcb724b-1ace-41cf-8928-493d2b7696c3",
+                  "description": "Priority of service at alternate processing site is inherited from GCP. Google Cloud maintains capacity commitments and SLAs that provide priority service provisions.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "402009e7-e102-4c7b-882b-b3201008b07c",
           "control-id": "cp-8",
           "props": [
@@ -4360,6 +5593,201 @@
                   "description": "Telecommunications services for the system are provided by: (1) Google Cloud's global network (redundant fiber, peering); (2) Cloudflare's edge network (300+ cities, anycast routing); (3) Multiple ISP paths to GCP regions. No single telecommunications provider failure affects system availability.",
                   "implementation-status": {
                     "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "737591c2-01ac-438d-8832-3d0fffdb4ab3",
+          "control-id": "cp-8.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cp-8.1_smt",
+              "uuid": "084fabc5-7e58-48c1-808b-c288e2221f56",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "f99a49ca-a241-41dd-8a84-555f80a078a3",
+                  "description": "Priority of service for telecommunications is inherited from GCP. Google Cloud maintains diverse telecommunications infrastructure with redundant connectivity providers.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "885545e4-906c-4c77-8a70-d03e897f9c6b",
+          "control-id": "cp-8.2",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cp-8.2_smt",
+              "uuid": "f236799d-e6f8-41fb-8c0f-f7cf6ed85335",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "703fec43-aea6-4834-815a-f1699a872dc3",
+                  "description": "Single points of failure in telecommunications are mitigated by GCP. Google Cloud provides multiple independent network paths to all data center facilities.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "17c3ba1c-78ce-498b-807f-b681f2614c63",
+          "control-id": "cp-8.3",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cp-8.3_smt",
+              "uuid": "8b9662db-af7e-4459-833d-84398d86fa1c",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "faf00693-7da8-4598-8d65-a3e2242bb0d8",
+                  "description": "Separation of primary and alternate telecommunications services is inherited from GCP. Google maintains physically separated network paths for primary and backup connectivity.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "ce30eb76-af50-4b3b-8377-39445be51764",
+          "control-id": "cp-8.4",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cp-8.4_smt",
+              "uuid": "484cd26c-f82a-438e-8291-990ebe0fa2f5",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "e4e04bd3-9b6b-45fc-8ca9-19fe57e3a5e8",
+                  "description": "Provider contingency plan is inherited from GCP. Google maintains telecommunications service provider contingency plans as part of their FedRAMP authorization.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "c02c7cb5-c5cf-4877-83e3-43ea1e4cc81f",
+          "control-id": "cp-8.5",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cp-8.5_smt",
+              "uuid": "30cde170-f295-4a47-82d9-d50ed8814122",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "9b7f9f9c-0e36-4e90-8d1b-f4cddce4e5e7",
+                  "description": "Alternate telecommunication service testing is inherited from GCP. Google tests alternate telecommunications services as part of their contingency plan testing.",
+                  "implementation-status": {
+                    "state": "inherited"
                   }
                 }
               ]
@@ -4430,6 +5858,123 @@
           ]
         },
         {
+          "uuid": "cefa329d-e42a-4c2a-87e1-9f0495fb32d3",
+          "control-id": "cp-9.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cp-9.1_smt",
+              "uuid": "f10c6296-7f1a-4389-8882-35962828c82e",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "f24f36ba-e191-493b-8f54-87cb85c948c8",
+                  "description": "Testing backups: monthly CP-4 exercises include backup restoration verification: (1) Cloud SQL backup restored to test instance; (2) Cloud Storage objects verified for integrity; (3) results documented and uploaded to Drata.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "60007ccd-c2ed-4903-8056-9ea712c749c1",
+          "control-id": "cp-9.5",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cp-9.5_smt",
+              "uuid": "b83f40e8-e348-4124-8177-e71689341c45",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "5a5ebc35-05dd-4f58-8595-e6c47fa57f21",
+                  "description": "Transfer to alternate storage: Cloud SQL automated backups stored in GCP-managed backup infrastructure. Cloud Storage objects can be replicated to alternate regions via gsutil. All backups encrypted with CMEK from archon-fed-kms-staging.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "4fa59af3-cf69-4545-8b2f-7500b09efe5e",
+          "control-id": "cp-9.8",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cp-9.8_smt",
+              "uuid": "9c2a1de7-8291-4bb1-86ae-5c2e1c1e22c3",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "6301b721-776b-4f90-80ca-98cf81507869",
+                  "description": "Cryptographic protection of backup information: all backups encrypted at rest with AES-256 via CMEK (Cloud KMS). Backup transmission encrypted with TLS 1.2+. KMS keys for backup encryption stored in dedicated project with independent IAM.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "b79d5b7a-b3eb-4c30-84b6-e5a1e84813f0",
           "control-id": "cp-10",
           "props": [
@@ -4460,6 +6005,84 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "e8cbcfd5-cfa6-433b-8420-fde0109578de",
                   "description": "Recovery procedures documented for five failure scenarios: (1) Database failure → Cloud SQL PITR; (2) Cloud Run failure → redeploy from Artifact Registry; (3) GCS failure → restore from versioned objects; (4) Vector Search failure → rebuild from source documents; (5) Regional failure → redeploy to alternate US region via Terragrunt. Target RTOs: Tier 1 \u003c 1 hour, Tier 2 \u003c 4 hours.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "da240194-b620-4896-8158-c761c7c5f404",
+          "control-id": "cp-10.2",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cp-10.2_smt",
+              "uuid": "1dd4fac2-9cab-410d-8526-bbe79f5c5b99",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "fad41fd2-70af-4781-88ce-157fda27190f",
+                  "description": "Transaction recovery: Cloud SQL supports point-in-time recovery (PITR) using write-ahead logs. Application uses database transactions with rollback on failure. No partial transaction commits reach persistent state.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "eed643cd-87be-4abc-8500-3e5f33ce918f",
+          "control-id": "cp-10.4",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cp-10.4_smt",
+              "uuid": "e3697c27-69c3-4113-8543-4b7c9b0ac907",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "f1205bcc-d009-4837-8659-d110b2813212",
+                  "description": "Restore within time period: RTO target is 4 hours. Terragrunt IaC enables infrastructure rebuild. Cloud SQL PITR enables database recovery to any point within the backup window. Cloud Storage versioning enables document recovery. Monthly CP-4 exercises validate recovery time.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -4640,6 +6263,100 @@
                   "component-uuid": "a3b4c5d6-e7f8-4091-8213-243546576879",
                   "uuid": "4dc3e988-86d0-4514-8802-4b3413b56459",
                   "description": "See ia-2.2 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "79673c73-5efc-42b9-8bbb-ff071f3968dd",
+          "control-id": "ia-2.5",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ia-2.5_smt",
+              "uuid": "135171ca-9e69-4a8d-829e-963846893331",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "3f9a789f-1886-48c3-8f58-5833f60a08a0",
+                  "description": "Group authentication — individual identification first: all authentication is individual (no shared accounts). Firebase Identity Platform issues per-user JWTs with unique UID. TOTP MFA bound to individual user accounts. MFA state: ENABLED across 14 tenants.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                },
+                {
+                  "component-uuid": "a3b4c5d6-e7f8-4091-8213-243546576879",
+                  "uuid": "bf9adf45-f231-44f0-8c72-1d8cad41634b",
+                  "description": "See ia-2.5 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "5ce92da3-8589-4d73-8af3-cabe54057315",
+          "control-id": "ia-2.6",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ia-2.6_smt",
+              "uuid": "b7bc796f-fd56-484e-89fd-d1cd68652116",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "4938e12f-4095-4a8e-8938-6f726ab014f1",
+                  "description": "Multi-factor authentication for network access to privileged accounts: (1) all admin API access requires MFA (magic link + TOTP); (2) GCP console access requires Google MFA; (3) Cloudflare Access enforces MFA for admin dashboard; (4) GitHub requires 2FA for repository access.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                },
+                {
+                  "component-uuid": "a3b4c5d6-e7f8-4091-8213-243546576879",
+                  "uuid": "36db14f6-927a-4911-8650-905115eeb064",
+                  "description": "See ia-2.6 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -5251,6 +6968,123 @@
           ]
         },
         {
+          "uuid": "24c99d16-5c7c-41f8-8e00-53b663647bf8",
+          "control-id": "ia-8.4",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ia-8.4_smt",
+              "uuid": "3198c314-deec-4c7d-858a-2e3551fa88b1",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "6e69ad74-9453-4a48-8378-12055883c014",
+                  "description": "Use of defined profiles for identity verification: customer agencies use SAML/OIDC federation with their authoritative IdP (Okta, Azure AD, ADFS, PingFederate). Identity assertions conform to SAML 2.0 and OpenID Connect profiles. Latent Archon does not issue credentials — relies on customer IdP assertions.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "85dfe230-4c0e-4c00-832c-2373ee15842b",
+          "control-id": "ia-9",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ia-9_smt",
+              "uuid": "a0746dd6-3a90-4c62-8fcb-0004c4c25986",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "9d0a2994-a393-4d79-85cc-5c717b3c3665",
+                  "description": "Service identification and authentication: (1) Cloud Run services authenticate to each other via GCP service account identity tokens; (2) SCIM clients authenticate via SHA-256 hashed bearer tokens; (3) Cloudflare Workers authenticate to origin via CF Access JWT; (4) Cloud Build authenticates via Workload Identity Federation (keyless).",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "0003e70b-338a-45f4-8f62-60c57c59984d",
+          "control-id": "ia-10",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ia-10_smt",
+              "uuid": "d494d6b2-293c-4e0c-8198-5fa7b1977317",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "c39711c1-f59e-46ed-8565-287f94cf3423",
+                  "description": "Adaptive authentication: the system adjusts authentication requirements based on context: (1) new device/IP triggers additional logging and security notification; (2) admin operations require step-up MFA re-verification; (3) account closure requires explicit MFA confirmation; (4) Cloudflare Access enforces device posture checks for admin endpoints.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "f3470033-eb38-4462-8fc1-3dfbb696d851",
           "control-id": "ia-11",
           "props": [
@@ -5281,6 +7115,201 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "16377b97-53f7-4de5-851a-76a8ff89d605",
                   "description": "Re-authentication is required for: (1) session timeout (15 minutes inactivity); (2) privilege escalation (step-up MFA for sensitive operations like account closure, SSO configuration changes); (3) maximum session duration (12 hours); (4) accessing admin endpoints protected by Cloudflare Zero Trust Access.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "b0cab13b-3616-4969-85db-5307e67167a8",
+          "control-id": "ia-12",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ia-12_smt",
+              "uuid": "8308e01d-7d41-41ae-84c0-e98b4fa2bf07",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "230a06b9-139c-43de-8527-26c1f79184ed",
+                  "description": "Identity proofing: for federated users, identity proofing is delegated to the customer agency's IdP which performs initial identity verification. For direct users, identity is established through organizational email verification (magic link to verified domain email) and admin-approved invitations.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "18399e16-93d9-4d63-8f75-37d067ef8795",
+          "control-id": "ia-12.2",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ia-12.2_smt",
+              "uuid": "78a309f3-e6c2-47b3-84f9-e945f166d723",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "98016f47-29dc-4cc8-8562-1757ba0f0b63",
+                  "description": "Identity evidence validation: identity evidence is validated through: (1) SAML/OIDC assertions from trusted customer IdPs with verified metadata; (2) email domain verification via magic link; (3) SCIM provisioning from authoritative HR/IdP systems with pre-established trust.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "932a072e-3476-45b2-869c-0e62268d7650",
+          "control-id": "ia-12.3",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ia-12.3_smt",
+              "uuid": "fedcd839-bda3-4334-874c-be38ebc81816",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "bbc86b04-8251-4b81-8355-a7edd0115523",
+                  "description": "Identity evidence verification: for federated authentication, the customer IdP serves as the authoritative identity source. SAML assertions and OIDC tokens are cryptographically verified against the IdP's published certificates/JWKS. For direct accounts, email link verification serves as identity evidence.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "5abddc80-5d21-4ab7-8106-ae7457837eb6",
+          "control-id": "ia-12.4",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ia-12.4_smt",
+              "uuid": "5aa9c378-20f8-4102-8b3c-3ad306dd9e1e",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "eecacf2a-eef0-4c60-8feb-d1ca12dc2488",
+                  "description": "In-person identity proofing: not applicable — Latent Archon is a SaaS platform. In-person identity proofing is performed by the customer agency as part of their personnel security process before users are provisioned via SCIM or admin invite.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "f1bd0190-de1d-42de-80f7-1617fc4b8c31",
+          "control-id": "ia-12.5",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ia-12.5_smt",
+              "uuid": "12d5e6b8-33f5-484a-8576-2c1809aac578",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "83007b36-85ed-4bf4-832e-dafe94532a0e",
+                  "description": "Address confirmation: identity address confirmation is delegated to the customer agency's personnel security process. The system confirms organizational email addresses via magic link verification to the registered email domain.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -5485,6 +7514,45 @@
           ]
         },
         {
+          "uuid": "12394a23-c73f-4721-8f9b-dd00a2014857",
+          "control-id": "ir-4.11",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ir-4.11_smt",
+              "uuid": "53ca72d0-7466-4acd-8750-c69508e6ead3",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "498cdef8-b703-4cbf-8154-0d1a4bc3b9f2",
+                  "description": "Integrated incident response team: the same engineering team handles development, operations, and security incident response. Incident handling procedures include coordination with GCP support (infrastructure), Cloudflare support (edge-layer), and customer agency POCs (data breach).",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "1e5a7caf-234c-4eb5-8091-3554e347784c",
           "control-id": "ir-5",
           "props": [
@@ -5554,6 +7622,84 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "5e60131d-435e-49e3-86b2-1e9fdf91abf8",
                   "description": "Incident reporting follows: (1) internal escalation within 1 hour of detection; (2) US-CERT notification within 1 hour for significant incidents per FedRAMP requirements; (3) customer notification within 24 hours; (4) FedRAMP PMO notification within 72 hours; (5) monthly incident summary in continuous monitoring deliverables.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "883e90f9-a631-4ad8-85e7-986e914eb54f",
+          "control-id": "ir-6.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ir-6.1_smt",
+              "uuid": "e3a100af-22ab-4349-8773-a22e235c1b25",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "37bfc495-008a-49ee-8b8d-6af70d62af97",
+                  "description": "Automated incident reporting: (1) Cloud Monitoring alerts automatically page on-call via PagerDuty; (2) Cloudflare security events trigger notifications; (3) application security events (auth failures, rate limit triggers) generate automated alerts; (4) FedRAMP incident reporting to CISA within required timeframes.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "a948d269-6592-47c3-83fc-f6c87c9b6df8",
+          "control-id": "ir-6.2",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ir-6.2_smt",
+              "uuid": "791e76b7-a992-4008-8187-2585dfabc739",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "33b73afd-3212-41f5-8fc6-a6d001f46cde",
+                  "description": "Vulnerabilities related to incidents: security vulnerabilities discovered during incident investigation are documented, tracked, and remediated. Post-incident reviews identify root causes and drive security improvements documented in incident response reports.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -5758,6 +7904,84 @@
           ]
         },
         {
+          "uuid": "669ac47f-14e1-4708-8432-45ef2034efb7",
+          "control-id": "ma-3.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ma-3.1_smt",
+              "uuid": "1d3d75d2-02cf-4e5e-84f0-f550e6652ce5",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "4b145840-34ba-4d9b-8cdd-e94b2096dace",
+                  "description": "Maintenance tools — inspect tools. Inherited from GCP. Google inspects maintenance tools brought into data center facilities for improper or unauthorized modifications.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "7e71a159-4c0e-4986-8cdf-04e46857bbd9",
+          "control-id": "ma-3.2",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ma-3.2_smt",
+              "uuid": "75be8f43-c8ea-42b2-83d0-52622ceaf98b",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "b3a37d66-c8a7-42ec-84d8-c0c8f85eb16f",
+                  "description": "Maintenance tools — inspect media. Inherited from GCP. Google inspects media containing diagnostic and test programs for malicious code before use in data center facilities.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "51027853-5925-4d28-8557-8e833a64e73c",
           "control-id": "ma-4",
           "props": [
@@ -5797,6 +8021,45 @@
           ]
         },
         {
+          "uuid": "cd79fbd9-5238-4f9c-8bff-73f8f2fbf2e8",
+          "control-id": "ma-4.3",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ma-4.3_smt",
+              "uuid": "54ae4d34-3a7d-4782-898a-73c795d2809d",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "065bfce7-d049-48df-83b7-2afdde00e604",
+                  "description": "Comparable security for nonlocal maintenance is inherited from GCP. Google provides comparable security for nonlocal maintenance sessions as established for local maintenance.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "fe6efc5c-787a-4b4f-83eb-94a573f23b09",
           "control-id": "ma-5",
           "props": [
@@ -5829,6 +8092,45 @@
                   "description": "Maintenance personnel are authorized before access: (1) engineers require PR approval for IaC changes; (2) break-glass production access requires CEO/CTO approval with documented justification; (3) GCP support cases require explicit consent before Google personnel access any resources. Non-escorted maintenance is not applicable (no physical access).",
                   "implementation-status": {
                     "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "4a894387-e75c-4af8-8a5f-eb1740ca34ef",
+          "control-id": "ma-5.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ma-5.1_smt",
+              "uuid": "d89a2208-0625-463b-898d-6a32d73fa4af",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "c8078220-a012-4934-8e80-4b09cbd812b9",
+                  "description": "Individuals without required access authorizations are escorted during maintenance. Inherited from GCP. Google escorts all non-authorized maintenance personnel within data center facilities.",
+                  "implementation-status": {
+                    "state": "inherited"
                   }
                 }
               ]
@@ -6109,6 +8411,123 @@
           ]
         },
         {
+          "uuid": "438c585b-3067-44c2-8f87-ee7c9e0f1da9",
+          "control-id": "mp-6.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "mp-6.1_smt",
+              "uuid": "7c2ae5fd-9281-4d74-8290-ab692403bda7",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "bcc40cc8-cd81-4a29-8b88-aff088cd62a8",
+                  "description": "Media sanitization — review, approve, track, document, verify. Inherited from GCP. Google reviews, approves, tracks, documents, and verifies media sanitization and disposal actions for data center equipment.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "950b5123-61b4-4692-867c-e00af9a8dd32",
+          "control-id": "mp-6.2",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "mp-6.2_smt",
+              "uuid": "0ea4312a-d9e5-41bc-862b-aaee97857e96",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "4f16485b-f2cf-469e-8f0b-357f39fce1c8",
+                  "description": "Equipment testing for media sanitization is inherited from GCP. Google tests sanitization equipment and procedures to verify correct performance.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "d89ca394-c4ef-4a85-8b89-954e9a688592",
+          "control-id": "mp-6.3",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "mp-6.3_smt",
+              "uuid": "c6ddf181-aaa1-4380-86a9-bf666ea9ea84",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "a12b4a77-d966-474e-8846-aded67102b8e",
+                  "description": "Nondestructive techniques for portable storage devices: not applicable — Latent Archon does not use portable storage devices. All data resides within GCP managed storage (Cloud SQL, Cloud Storage, Cloud Logging).",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "179474fb-9e40-401a-8eaf-2bddaf4f17af",
           "control-id": "mp-7",
           "props": [
@@ -6148,6 +8567,84 @@
           ]
         },
         {
+          "uuid": "260b3a98-c771-42fc-8ab7-6942cfd53067",
+          "control-id": "pe-1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-1_smt",
+              "uuid": "b81bc4c5-4276-4f9f-8b5a-177fcb527b69",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "82a9235c-68a5-4062-8ba7-ea16ec26a1c0",
+                  "description": "Physical and environmental protection policy and procedures are fully inherited from Google Cloud Platform's FedRAMP High authorization. GCP maintains comprehensive physical security policies covering all data center facilities. Assured Workloads regime: IL5.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "7668967f-8f42-4895-8db5-28ae8bf1ac12",
+          "control-id": "pe-2",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-2_smt",
+              "uuid": "a201ddf1-23ba-4c74-8280-99c4c81d6ec3",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "fa5e45a9-4caa-4d6e-8d31-439a398dc05c",
+                  "description": "Physical access authorizations are fully inherited from GCP. Google maintains authorized personnel lists for all data center facilities with approval from data center management.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "d74f2118-8a82-4e25-811e-ea5d33ec7885",
           "control-id": "pe-3",
           "props": [
@@ -6178,6 +8675,708 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "298620a1-a1f0-4b2c-8b1a-78a96c1f91a2",
                   "description": "Physical access control is fully inherited from Google Cloud Platform's FedRAMP High authorization. GCP data centers implement multi-layer physical security including badge access, biometric verification, security guards, video surveillance, and mantrap entry systems.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "83b80d62-a4d8-4bdd-819c-2126f4b1eb6f",
+          "control-id": "pe-3.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-3.1_smt",
+              "uuid": "0a9318a9-27a9-42f8-819a-0e8d53fdae44",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "0d2f1842-dc92-42f8-8b64-97ba840defaa",
+                  "description": "Physical access control — guard all entry points. Inherited from GCP. Google data centers employ 24/7 security guards at all facility entry points with badge-based access control.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "30d630fb-b210-4e3f-8781-336be8f37214",
+          "control-id": "pe-4",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-4_smt",
+              "uuid": "0653b1a0-2350-4fcf-8f2a-4f5b82b60f94",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "99507cca-8daa-4d28-8111-459067720b87",
+                  "description": "Access control for transmission is fully inherited from GCP. Google controls physical access to information system distribution and transmission lines within data center facilities.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "8aa993c5-3e12-42d8-843b-166053435514",
+          "control-id": "pe-5",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-5_smt",
+              "uuid": "a24e045a-befe-43fe-883c-2d591824d26d",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "1a7fe343-9d01-4f38-88b0-963f226d5384",
+                  "description": "Access control for output devices is fully inherited from GCP. Google controls physical access to output devices (monitors, printers) in data center facilities.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "c1deda5a-4e59-4488-83ba-d5938ba91f90",
+          "control-id": "pe-6",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-6_smt",
+              "uuid": "eb072c07-9fdf-40fc-81b5-18c69b89c6f6",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "59af2715-beb6-47a5-8cae-fd8a2de4bd0a",
+                  "description": "Physical access monitoring is fully inherited from GCP. Google monitors physical access to data center facilities using CCTV, badge readers, and intrusion detection systems. Access logs reviewed continuously.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "1d4c1a6a-8ff4-414f-8350-cd5adf294665",
+          "control-id": "pe-6.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-6.1_smt",
+              "uuid": "29a2c3fa-2b0c-418d-842d-e1ed2a8b802d",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "941975af-d53a-4379-8425-0085b8999a7a",
+                  "description": "Intrusion alarms and surveillance equipment monitoring is inherited from GCP. Google maintains 24/7 monitoring of intrusion detection systems and surveillance cameras at all data center facilities.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "ea69fbe2-c7a3-4245-8b76-826c38cd77a0",
+          "control-id": "pe-8",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-8_smt",
+              "uuid": "793598cb-25f9-40da-8630-f1088eb03290",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "ca4489f0-5ac9-4796-877d-3d0cb710e23f",
+                  "description": "Visitor access records are fully inherited from GCP. Google maintains visitor logs for all data center facilities including name, organization, date/time, escort, and purpose of visit.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "64bd01d9-a2f0-4d21-8dde-7c5c4731b137",
+          "control-id": "pe-9",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-9_smt",
+              "uuid": "86334f42-fcc7-442f-8308-439414aea3f5",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "bac7f132-1d27-4cad-8cd1-722bfa1abfae",
+                  "description": "Power equipment and cabling protection is fully inherited from GCP. Google protects power equipment and cabling from damage and destruction in all data center facilities.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "6b6973c2-e1a9-4ff8-8d94-ea3b814b7dc4",
+          "control-id": "pe-10",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-10_smt",
+              "uuid": "87eb5d0f-2d6f-4bd1-8e40-a7762e3a50d6",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "876aa03d-9d38-410b-83f3-b1662fb23d99",
+                  "description": "Emergency shutoff capability is fully inherited from GCP. Google provides emergency shutoff switches for power in data center facilities.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "45ef7291-26bd-4914-80e4-8341da13b06a",
+          "control-id": "pe-11",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-11_smt",
+              "uuid": "bf4de545-5909-4cd5-8d4a-34257d109c07",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "312112c4-4937-49e6-83d8-493d3b70684a",
+                  "description": "Emergency power is fully inherited from GCP. Google provides UPS and diesel generators at all data center facilities with automatic failover to maintain operations during power outages.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "64821358-994b-41bc-8ddf-bf25014fb811",
+          "control-id": "pe-12",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-12_smt",
+              "uuid": "fdaead42-92b6-426a-8479-c4716c66173e",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "65a09cdb-ffa8-448b-85c1-b495dc2e3663",
+                  "description": "Emergency lighting is fully inherited from GCP. Google provides automatic emergency lighting in all data center facilities.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "2232e0a1-7e5b-42ac-825c-6d4445033a69",
+          "control-id": "pe-13",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-13_smt",
+              "uuid": "523b789b-5a2d-4c24-8e96-67dd9d94d1c4",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "6b16f3d1-9867-4dcc-84db-9b8465e2cb77",
+                  "description": "Fire protection is fully inherited from GCP. Google employs fire detection and suppression systems in all data center facilities.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "990edfc7-87a4-4d79-8360-75ccfa807e52",
+          "control-id": "pe-13.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-13.1_smt",
+              "uuid": "8c7d1d4e-9cfc-4382-8354-9d733a4bff51",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "99651cf5-1608-4dcf-8dcb-5e5be659a4e4",
+                  "description": "Fire detection — automatic notification. Inherited from GCP. Fire detection systems automatically notify local fire departments and Google security operations.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "e84130be-daa9-4c45-88ba-c1e57ac17dff",
+          "control-id": "pe-13.2",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-13.2_smt",
+              "uuid": "b9c0eb31-cb7c-4d89-8ccd-3f16774925b8",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "3cb6a07d-e344-4d77-8c21-1aea552cb949",
+                  "description": "Fire suppression — automatic activation. Inherited from GCP. Google data centers use automatic fire suppression systems that activate without manual intervention.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "ea99eafc-169d-4003-87e4-abcae85a9892",
+          "control-id": "pe-14",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-14_smt",
+              "uuid": "32e99ded-db90-40ad-8f92-26c3e29b80bb",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "a3f43bb0-73cc-4f1c-8f94-20529d058407",
+                  "description": "Environmental controls (temperature and humidity) are fully inherited from GCP. Google maintains temperature and humidity controls within acceptable ranges in all data center facilities with continuous monitoring.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "303dbae8-3e14-4276-8a46-c052c46f4c81",
+          "control-id": "pe-15",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-15_smt",
+              "uuid": "fe6c1408-be39-448e-86d7-b17d3f5cc790",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "731813f1-f97b-45a7-83cd-5d4438d78256",
+                  "description": "Water damage protection is fully inherited from GCP. Google protects data center facilities from water damage using leak detection sensors and raised flooring.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "31a29b10-d1aa-4c27-827b-492c9306bada",
+          "control-id": "pe-16",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-16_smt",
+              "uuid": "48516ead-fd00-4a69-84a9-dc89963b9ff5",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "eb8a8b14-214e-4860-8504-54f0539971a6",
+                  "description": "Delivery and removal of equipment is fully inherited from GCP. Google authorizes, monitors, and controls delivery and removal of information system components at data center facilities.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "f593a8b8-8b10-47c1-826b-8fa9678ffb97",
+          "control-id": "pe-17",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-17_smt",
+              "uuid": "f3f0bc2d-037d-4093-8445-4f6c04448aec",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "4be11ba4-e8f5-4c4e-8a60-474ec0dcdf24",
+                  "description": "Alternate work site security controls are not applicable — Latent Archon is a SaaS platform with no alternate work sites processing CUI. All data processing occurs within GCP data centers.",
+                  "implementation-status": {
+                    "state": "inherited"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "19e8eb2f-fcb7-4ba9-8bbe-adc741c81c74",
+          "control-id": "pe-18",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pe-18_smt",
+              "uuid": "87bf91d2-6db6-41db-8585-80e4eaf40016",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "9977ef71-0357-45dc-8e91-56cc228f95b3",
+                  "description": "Location of system components — positioning to minimize damage. Inherited from GCP. Google positions data center equipment to minimize potential damage from physical and environmental hazards and to reduce unauthorized access opportunities.",
                   "implementation-status": {
                     "state": "inherited"
                   }
@@ -6334,6 +9533,45 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "5f74e226-9b21-4460-86d6-7bed8354b560",
                   "description": "Rules of behavior include social media and networking restrictions: personnel are prohibited from posting CUI, system architecture details, security configurations, or vulnerability information on social media or public forums.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "38297978-3e19-4cb6-8aa4-deaff4c0f067",
+          "control-id": "pl-8",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pl-8_smt",
+              "uuid": "7f57d3f0-ad6d-4659-8a17-2113634db34e",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "91936ab2-3074-4ea6-8a66-2443344fbf17",
+                  "description": "Security and privacy architecture: the system follows a zero-trust architecture with defense-in-depth: (1) edge WAF (Cloudflare) → origin WAF (Cloud Armor) → application auth → RBAC → RLS; (2) CMEK encryption at rest; (3) TLS 1.2+ in transit; (4) VPC Service Controls for API isolation; (5) separate GCP projects for blast-radius containment.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -6850,6 +10088,84 @@
           ]
         },
         {
+          "uuid": "855856eb-4d64-41ab-8ac7-7ab4416b7605",
+          "control-id": "pm-12",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pm-12_smt",
+              "uuid": "23ca5d51-2115-41bd-8a5b-667f73ae3d9c",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "c9f0fb3d-e10a-4de9-8260-9a36c8011f70",
+                  "description": "Insider threat program: (1) principle of least privilege limits blast radius of insider actions; (2) comprehensive audit logging tracks all privileged operations; (3) no standing production access — break-glass only; (4) code changes require PR review; (5) infrastructure changes require Terragrunt plan review.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "926607ba-476f-455b-8fa8-61caa1762ab6",
+          "control-id": "pm-13",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pm-13_smt",
+              "uuid": "0df3856e-4a3b-482c-8d10-f0a957dc2241",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "a6bf854c-b85e-4444-877d-c236541df286",
+                  "description": "Security and privacy workforce: engineering team maintains security skills through: (1) annual security awareness training; (2) secure coding training (OWASP Top 10); (3) hands-on incident response exercises (monthly automated CP-4/IR-3/AT-2); (4) FedRAMP-specific training for compliance personnel.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "7b154b0c-2e72-441b-8a7a-58ee0e425898",
           "control-id": "pm-14",
           "props": [
@@ -6958,6 +10274,552 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "505b5a81-634d-417e-8ad9-e0d4f52e2e8e",
                   "description": "Threat awareness program includes: (1) subscription to US-CERT advisories; (2) monitoring NIST NVD for relevant CVEs; (3) automated govulncheck for Go vulnerability detection; (4) Trivy container scanning for OS-level vulnerabilities; (5) threat intelligence from Cloudflare threat analytics.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "74f83d09-3a61-4fd5-80d0-31941f153f40",
+          "control-id": "pm-17",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pm-17_smt",
+              "uuid": "9d2077b7-36bf-43b3-8325-73f5d7e6ece2",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "e8396f81-192a-458c-89f1-10d1a0ad7002",
+                  "description": "Protecting CUI on external systems: CUI is not permitted on external systems. All CUI processing occurs within the FedRAMP-authorized boundary (GCP + Cloudflare). External system access is limited to authenticated API integrations that do not transfer CUI outside the boundary.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "c99981ff-bf80-43d8-8f13-5b20b44b9b64",
+          "control-id": "pm-18",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pm-18_smt",
+              "uuid": "9747a055-4b3d-4003-8c00-27984f8bf778",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "5026614e-6280-4a70-8a74-d144c6d86ddc",
+                  "description": "Privacy program plan: Latent Archon maintains a privacy program including: (1) Privacy Policy published and reviewed annually; (2) Privacy Impact Assessment (PIA) for CUI handling; (3) data minimization practices; (4) DLP scanning for PII detection; (5) automated data retention and purge policies.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "92ed76ef-6b99-4e0b-83fb-8673780acaac",
+          "control-id": "pm-20",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pm-20_smt",
+              "uuid": "850904a4-eb2c-400b-8334-2f59a30c175a",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "90e43fdc-14d4-4e2d-8907-4d3fd2e84bcb",
+                  "description": "Dissemination of privacy program information: privacy program information disseminated through: (1) published Privacy Policy; (2) system use notification banner; (3) personnel onboarding materials; (4) privacy training integrated into security awareness training.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "992021d1-b28d-4af5-8244-0b18f6826a59",
+          "control-id": "pm-21",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pm-21_smt",
+              "uuid": "321cc5de-5b6f-43c9-89ae-58eb45baf20e",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "4e7043f7-f475-475d-82ec-3da31c45c251",
+                  "description": "Accounting of disclosures: the system maintains records of CUI disclosures through: (1) comprehensive audit logging of all data access; (2) RLS-enforced workspace isolation prevents unauthorized cross-tenant disclosure; (3) API access logs track all data retrieval with user identity and timestamp.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "4ffe284c-1b9f-4299-87de-278c2415cea9",
+          "control-id": "pm-22",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pm-22_smt",
+              "uuid": "8a58bd1e-abb3-4f7d-8ed0-4910afc5bc90",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "b54d1ac1-0e84-4ae8-8620-25e10e4bf7e9",
+                  "description": "Personally identifiable information quality: (1) SCIM 2.0 synchronization ensures user attributes reflect authoritative IdP data; (2) email verification via magic link validates contact information; (3) users can update their own profile attributes; (4) stale accounts flagged after 90 days of inactivity.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "5503152c-de07-4af5-806c-af0c7d2f0c9d",
+          "control-id": "pm-23",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pm-23_smt",
+              "uuid": "6cfb778e-4a84-4e62-8970-7e71fd27cfd8",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "79ba2550-3ea2-4625-84eb-a5629982b9fa",
+                  "description": "Data governance body: the CEO serves as data governance authority responsible for PII handling decisions, privacy policy approval, and data retention decisions. Security Lead serves as operational privacy officer.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "ce99a16d-838d-4c73-8e1b-49dab8d410e3",
+          "control-id": "pm-24",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pm-24_smt",
+              "uuid": "1f023231-5769-4941-821c-ba0254b426f4",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "351f2e66-24e5-4308-812b-f20990e3270a",
+                  "description": "Data integrity board: data integrity is maintained through: (1) PostgreSQL ACID transactions; (2) Cloud SQL automated consistency checks; (3) application-level validation on all inputs; (4) CMEK encryption prevents tampering; (5) audit log integrity protected by WORM retention.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "18e39fb4-e904-43e4-8621-48b26e147260",
+          "control-id": "pm-25",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pm-25_smt",
+              "uuid": "a12d538e-1d0c-4af7-823e-cc83a59abe2e",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "24107fd4-950b-4b04-8a3a-431dfd3d4a20",
+                  "description": "Minimization of PII: the system collects minimum necessary PII: email address (authentication), display name (UI), IP address (security logging). No SSN, date of birth, or demographic data collected. Customer documents (CUI) are the customer's data — the platform processes but does not extract PII from documents except for DLP scanning.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "5d6e1b18-554e-413e-8dd9-98fddd5964a5",
+          "control-id": "pm-26",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pm-26_smt",
+              "uuid": "e9ae89c5-5822-4247-8fca-75b54798129a",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "93e530ae-f94b-493d-8f00-2257490211e7",
+                  "description": "Complaint management: privacy complaints are handled through: (1) support email published in Privacy Policy; (2) complaints logged and tracked; (3) response within 30 days; (4) escalation path to CEO for unresolved complaints.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "645a402c-02ce-4768-8ed6-a2ac168861ca",
+          "control-id": "pm-27",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pm-27_smt",
+              "uuid": "505a478f-4d6d-4949-8684-bfe5f63b66c5",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "a02f1d38-59ad-44cd-8428-69d9baf07f9f",
+                  "description": "Privacy reporting: privacy metrics reported quarterly including: (1) number of privacy incidents; (2) PII breach notifications issued; (3) privacy complaints received and resolved; (4) DLP scan results summary; (5) data retention compliance status.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "00c5469f-c83a-4b83-81fe-1bb47d343a71",
+          "control-id": "pm-28",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pm-28_smt",
+              "uuid": "65166fa3-ed60-43fb-82d1-5afe39508b9d",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "d23304c5-542d-4043-88d4-12196a7902cf",
+                  "description": "Risk framing: risk management approach aligned with NIST RMF. Risk assessment considers: (1) CUI confidentiality (high impact); (2) system availability for mission-critical operations; (3) supply chain risks (mitigated by FedRAMP-authorized providers). 25 org policies enforce risk boundaries.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "d197fbd8-beb5-4dc7-8790-837cb18a6abc",
+          "control-id": "pm-30",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pm-30_smt",
+              "uuid": "d09e02f2-2d1d-4ef5-8290-8fbf7d4965fd",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "b8fe13ba-4244-4355-8a89-77305258353c",
+                  "description": "Supply chain risk management plan: documented in SCRMP (supply-chain-risk-management-plan.md). Key elements: (1) use only FedRAMP-authorized IaaS; (2) open-source dependency scanning; (3) SBOM generation for supply chain transparency; (4) container image provenance verification.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "f5b16b3e-8f6a-4a72-80c0-ef0d93aacb6a",
+          "control-id": "pm-31",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pm-31_smt",
+              "uuid": "8d0afb28-bee7-4d49-800e-0721fa04e2a6",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "0ab585df-5eff-40ab-8375-a34eb12e4ccc",
+                  "description": "Continuous monitoring strategy: documented in ConMon plan. Automated monitoring includes: (1) daily vulnerability scans; (2) OSCAL SSP-IaC drift detection; (3) Cloud Monitoring infrastructure alerts; (4) Cloudflare security event monitoring; (5) monthly compliance exercises. Results reported to AO monthly.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "ceee07cb-198e-481f-8989-9ece0bab236a",
+          "control-id": "pm-32",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pm-32_smt",
+              "uuid": "d81511e6-c17f-438a-8875-49df59323f4f",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "de505be9-1d91-48af-841a-839d30351244",
+                  "description": "Purposing: all system components are dedicated to their authorized purpose. GCP projects scoped to specific functions (admin, ops, app, KMS). No shared-purpose infrastructure. Assured Workloads enforces compliance regime on all resources within the boundary.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -7279,6 +11141,45 @@
           ]
         },
         {
+          "uuid": "dcc9749e-69c6-44cb-8848-d56189f4e1e2",
+          "control-id": "ps-9",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ps-9_smt",
+              "uuid": "9b949874-b4f1-4113-8f90-18f99884b149",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "535208a8-3ad2-477d-82d6-29e8f900cf66",
+                  "description": "Position descriptions: all positions with system access have documented security responsibilities: (1) engineers responsible for secure coding, PR review, incident response; (2) CEO/CTO responsible for authorization decisions, risk acceptance; (3) Security Lead responsible for control implementation and assessment.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "b40b95de-badd-4bc9-8742-61d89706aca9",
           "control-id": "pt-1",
           "props": [
@@ -7465,6 +11366,45 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "ada1cac8-8e73-4354-86f7-83636dcfec65",
                   "description": "Privacy notice: users are provided with clear, accessible information about: (1) what PII is collected; (2) why it is collected; (3) how it is used; (4) with whom it may be shared; (5) how long it is retained; (6) how to exercise privacy rights.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "a33951e1-982f-4477-869b-999d62adf4b2",
+          "control-id": "pt-5.2",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "pt-5.2_smt",
+              "uuid": "bdf8a82f-ef5f-4d42-8e54-820f33f1e639",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "94659636-bbf1-418a-8737-3c96f1ede7b8",
+                  "description": "Privacy Act statements: system use notification banner includes privacy notice informing users of: (1) authority for data collection; (2) purpose of collection; (3) routine uses; (4) consequences of not providing information. Published in Privacy Policy and displayed at login.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -7825,6 +11765,45 @@
           ]
         },
         {
+          "uuid": "89410777-e2ce-4f1e-81eb-7485620a1c4a",
+          "control-id": "ra-5.4",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ra-5.4_smt",
+              "uuid": "8112aa9d-b697-4154-8e09-9ef589040f54",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "4070487e-e495-4626-8e82-de8ae9352209",
+                  "description": "Discoverable information: (1) Cloudflare proxying hides origin IP addresses; (2) Cloud Run services have no public IP; (3) server headers stripped by Cloud Run; (4) error messages return generic responses (no stack traces); (5) security scanning tools (GoSec=true, Semgrep=true) identify information leakage in source code.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "d10f9f82-1f62-4ab5-8cc4-5c921410707c",
           "control-id": "ra-5.5",
           "props": [
@@ -7933,6 +11912,45 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "d2f19424-3c1d-46ea-8866-c6a6a54eac8c",
                   "description": "Criticality analysis: system components are classified by criticality: (1) Tier 1 (critical) — authentication, database, encryption; (2) Tier 2 (important) — document processing, search, AI services; (3) Tier 3 (supporting) — monitoring, logging, admin UI. Recovery priorities follow tier classification.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "9bdafb30-e588-4f86-83f2-5342dea92139",
+          "control-id": "ra-10",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ra-10_smt",
+              "uuid": "95245a65-3a59-425c-8ef3-202078c0d4c7",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "4005f2ba-0eaa-4d58-8f93-12326be4baa7",
+                  "description": "Threat hunting: (1) Cloud Logging aggregates all security events for proactive analysis; (2) audit log alert policies detect anomalous patterns; (3) Cloudflare threat intelligence provides real-time threat data; (4) monthly security review includes threat hunting across audit logs and WAF events.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -8465,6 +12483,240 @@
           ]
         },
         {
+          "uuid": "6829342a-49f2-4509-87c7-46c4a277c08f",
+          "control-id": "sa-15",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sa-15_smt",
+              "uuid": "72be37e2-f249-4257-845b-810202d50ddd",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "3d6f448c-6ffb-4ded-838b-08e641b0f462",
+                  "description": "Development process, standards, and tools: (1) Go backend built with BoringCrypto=true (FIPS 140-2 validated); (2) security scanning integrated into CI/CD (GoSec=true, Semgrep=true, Trivy=true, govulncheck=true, Gitleaks=true); (3) SBOM generation=true for provenance; (4) PR-based development workflow with required reviews.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "1ff68889-ea6e-4592-8c1d-e892dea98d3b",
+          "control-id": "sa-16",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sa-16_smt",
+              "uuid": "ac9eba73-65cf-47de-8101-d4f5a6256d6f",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "a307442e-b883-4db2-83dc-600f09ed3853",
+                  "description": "Developer-provided training resources: (1) Go official documentation and security guidelines; (2) OWASP Top 10 reference in secure coding training; (3) internal CLAUDE.md files document security requirements and patterns; (4) PR review process provides ongoing peer training.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "51ca0325-e442-49a7-80a3-746174fda2b2",
+          "control-id": "sa-17",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sa-17_smt",
+              "uuid": "6cebb742-1501-4d22-86bc-8ee00c81ee0b",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "b149493d-6d58-432e-8499-55eacb00185d",
+                  "description": "Developer security and privacy architecture and design: (1) zero-trust architecture documented in SSP; (2) defense-in-depth with multiple WAF layers; (3) multi-tenant isolation via RLS and per-tenant auth pools; (4) CMEK encryption for all data stores; (5) VPC Service Controls for API isolation.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "c57a408e-bc89-4343-8f30-d8360855bc85",
+          "control-id": "sa-20",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sa-20_smt",
+              "uuid": "a35b3130-fa90-434a-801e-e5ab8233c475",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "c3bd6db8-ba94-424d-805f-b0bf4d9e7323",
+                  "description": "Customized development of critical components: all application code is custom-developed by Latent Archon. No COTS components process CUI. Open-source dependencies (Go modules, npm packages) are scanned for vulnerabilities and license compliance before inclusion.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "4c0dc04d-441f-4df4-8337-ae66d82dfbaa",
+          "control-id": "sa-21",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sa-21_smt",
+              "uuid": "03dc4445-3961-499a-8c20-c69a59f964d7",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "ad0ec216-da3a-4d16-8951-7b73fadeb20e",
+                  "description": "Developer screening: all developers undergo background screening per PS-3 requirements before receiving repository or infrastructure access. Access to production systems requires additional authorization. SBOM=true provides transparency into developer-selected components.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "c3c63c73-5c24-4660-824c-25364954ff33",
+          "control-id": "sa-22",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sa-22_smt",
+              "uuid": "5e30143d-dbe6-41fa-86a0-fc9f1bd7714b",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "bd5f5879-0a13-477a-82f8-c31f45f9517b",
+                  "description": "Unsupported system components: (1) Go version tracked and updated regularly; (2) container base images use Google's distroless (minimal, maintained); (3) npm dependencies audited for end-of-life status; (4) GCP services used are all Generally Available and fully supported; (5) govulncheck identifies components with known vulnerabilities.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "ef1c7046-df69-4737-8b9e-8b0e9c8885b0",
           "control-id": "sc-1",
           "props": [
@@ -8536,6 +12788,45 @@
                   "description": "Application partitioning separates user functionality from management functionality: (1) separate Cloud Run services for app API, admin API, and ops service; (2) separate GCP projects for app and admin workloads; (3) separate Cloudflare Access policies for admin endpoints; (4) RBAC enforces functional separation within the application.",
                   "implementation-status": {
                     "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "21da6733-6bac-4ef6-8594-f9213e186241",
+          "control-id": "sc-3",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "inherited"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "inherited"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sc-3_smt",
+              "uuid": "7ec362e3-3468-4ab8-8379-4c3cb534ce45",
+              "by-components": [
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "153561fd-3171-4418-873f-bd1d479260a4",
+                  "description": "Security function isolation is provided by GCP's infrastructure. Cloud Run uses gVisor kernel-level sandboxing for workload isolation. VPC Service Controls (archon_staging) isolate API access. Separate GCP projects provide blast-radius isolation between admin (archon-fed-admin-staging), ops (archon-fed-ops-staging), and app (archon-fed-app-staging) tiers.",
+                  "implementation-status": {
+                    "state": "inherited"
                   }
                 }
               ]
@@ -8973,6 +13264,92 @@
           ]
         },
         {
+          "uuid": "3ad942af-6a6b-46d1-8b95-097dd720a827",
+          "control-id": "sc-7.24",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sc-7.24_smt",
+              "uuid": "1b02f7cf-1c99-4413-88df-5b1bbdea545b",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "e747a898-92cf-402f-876d-27cbd13e847e",
+                  "description": "Personally identifiable information — data residency: (1) Assured Workloads (IL5 regime) constrains all data and processing to US territory; (2) GCP region restricted to us-east4 (CONUS); (3) DLP inspect template detects 9 PII info types; (4) RLS prevents cross-tenant PII disclosure; (5) Cloudflare TLS 1.2+ protects PII in transit.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                },
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "ef83a494-ec3b-40b1-81fb-202e5738c564",
+                  "description": "See sc-7.24 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "551a88b2-6e9e-4310-8ee6-945c4652f780",
+          "control-id": "sc-7.29",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sc-7.29_smt",
+              "uuid": "42bebbc7-547e-436a-88f2-6a8d3b1e0c53",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "ecd11a4f-b5aa-4e1e-854f-894645716778",
+                  "description": "Separate subnets for connecting to different security domains: (1) three-project GCP architecture separates admin, ops, and app tiers; (2) VPC peering with restricted routes limits cross-project connectivity; (3) Private Service Connect endpoints for Vertex AI eliminate public network traversal.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "2023b98d-d77c-457e-82bd-5294930f98cc",
           "control-id": "sc-8",
           "props": [
@@ -9255,6 +13632,45 @@
           ]
         },
         {
+          "uuid": "d493b76a-a155-4c4c-8046-c63aa4a7c1a5",
+          "control-id": "sc-13.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sc-13.1_smt",
+              "uuid": "df62a06f-48b5-4528-8b88-da1fda8b1511",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "49c617f1-5778-4640-8ad2-0f84ebabe845",
+                  "description": "FIPS 140-2 validated cryptography for IL5: (1) GOEXPERIMENT=boringcrypto (BoringSSL) provides FIPS 140-2 validated TLS in Go backend; (2) Cloud KMS HSMs are FIPS 140-2 Level 3 certified; (3) All cryptographic operations (encryption, hashing, signing) use FIPS-approved algorithms; (4) Non-FIPS cryptographic modules are not used.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "12df281f-aa13-4c5f-8b7e-32ba4df08c7a",
           "control-id": "sc-15",
           "props": [
@@ -9285,6 +13701,45 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "6102aa09-b7ea-4cdc-821b-a27a06171add",
                   "description": "Collaborative computing devices: not applicable. The system is a web-based SaaS application. No collaborative computing devices (video conferencing, audio) are part of the system. User sessions are independent.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "1b16b9f7-72d0-46af-8587-b8fbe1700de6",
+          "control-id": "sc-16",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sc-16_smt",
+              "uuid": "da84209c-cfbf-41f5-8579-c96c2adfefc9",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "8d23943b-65a6-4dd9-866d-108ed7edb3ee",
+                  "description": "Transmission of security and privacy attributes: (1) Firebase JWTs carry user identity, tenant, MFA status, and custom claims; (2) Cloudflare Access JWTs carry identity and device posture; (3) GCP service account tokens carry IAM identity and scopes; (4) all security attributes transmitted via cryptographically signed tokens.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -9528,6 +13983,84 @@
           ]
         },
         {
+          "uuid": "9418f434-8b17-40dc-8150-19501005d7f9",
+          "control-id": "sc-24",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sc-24_smt",
+              "uuid": "7bc1c16b-6a45-478e-878a-c9d60160fced",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "c920d8fb-2116-406c-854b-0f7602460bba",
+                  "description": "Fail in known state: (1) Cloud Run services restart automatically on failure in a known-good state from the immutable container image; (2) Cloud SQL maintains ACID consistency through crash recovery; (3) auth middleware fails closed (rejects requests on error); (4) ClamAV fails closed (rejects uploads on scan failure).",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "920d7dd1-5672-42cc-8043-6f37decb2397",
+          "control-id": "sc-25",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sc-25_smt",
+              "uuid": "9755f75d-b140-4abb-82b6-52f2b72bbbf5",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "719f0d00-591f-4a44-81c8-b7077d088f69",
+                  "description": "Thin nodes: Cloud Run containers are stateless thin nodes — all persistent state in Cloud SQL and Cloud Storage. Containers rebuilt from scratch on each deployment. No local persistent storage. Container images use distroless base (minimal OS surface).",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "d2251ab4-a136-48ae-8c14-380309d38327",
           "control-id": "sc-28",
           "props": [
@@ -9653,6 +14186,92 @@
                   "component-uuid": "d0e1f2a3-b4c5-4d6e-8f80-910213243546",
                   "uuid": "9ebfcf2f-dccc-42c9-8f40-944660224c58",
                   "description": "See sc-28.1 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "cf5d927e-0eb3-4a78-88f5-3b4b667e3722",
+          "control-id": "sc-28.2",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sc-28.2_smt",
+              "uuid": "85080d10-18ec-4f2b-8f52-693ae44e72e5",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "aea3724d-d856-4bcb-8588-7d8d39a74c23",
+                  "description": "Offline storage encryption: all data at rest uses CMEK with 90-day automatic rotation via Cloud KMS (archon-fed-kms-staging). Offline backups (Cloud SQL automated backups=true, GCS versions=true) inherit CMEK encryption. Audit logs protected by WORM=true retention. No unencrypted data exists at rest.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                },
+                {
+                  "component-uuid": "f2a3b4c5-d6e7-4f80-9102-132435465768",
+                  "uuid": "c1b10e7c-257f-4a50-81f0-893b5daa04bb",
+                  "description": "See sc-28.2 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "83d6bd41-087d-481f-82eb-02d8e0e632ba",
+          "control-id": "sc-38",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sc-38_smt",
+              "uuid": "58a4352c-4fa0-4a32-86e6-56e8511b8820",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "64c7fc1c-6823-4999-8834-4fed2cc2ed7b",
+                  "description": "Operations security: (1) infrastructure-as-code prevents configuration knowledge from being a single point of failure; (2) Terragrunt modules are version-controlled and auditable; (3) no undocumented production changes — all changes via PR; (4) security configurations are deterministic and reproducible.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -10099,6 +14718,45 @@
           ]
         },
         {
+          "uuid": "4bbedab3-83c5-4106-8554-60be60a2d848",
+          "control-id": "si-4.10",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "si-4.10_smt",
+              "uuid": "52eda05e-6f06-4493-836d-5cfb6bb0ab06",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "18770249-2a6d-484b-8abc-e52250adfbac",
+                  "description": "Visibility of encrypted communications: (1) TLS terminated at Cloudflare edge and GCP load balancer — application sees decrypted traffic for inspection; (2) Cloud Armor WAF inspects decrypted HTTP traffic; (3) application-level audit logging captures business-logic events from decrypted request content.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "6cf860a0-4735-4a71-8482-d420b26252ff",
           "control-id": "si-4.12",
           "props": [
@@ -10129,6 +14787,45 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "b71091dc-7785-4194-8641-5cd12e9d86fe",
                   "description": "Automated organization-generated alerts: security events from Cloud Monitoring, Cloudflare, and application audit logs generate automated alerts to security personnel via email and PagerDuty.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "937a608d-e7ce-49e6-8ba5-3b64513f7d23",
+          "control-id": "si-4.22",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "si-4.22_smt",
+              "uuid": "e06c9126-4948-4060-83fd-b021628690d6",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "4dca4dbf-87a4-42fc-8c13-b7c36ebee943",
+                  "description": "Unauthorized network services: (1) Cloud Run only exposes configured ports (8080 for HTTP); (2) VPC firewall deny-all default prevents unauthorized network services; (3) org policies restrict which GCP services can be enabled; (4) Cloud Run ingress restricted to internal + load balancer only.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -10575,6 +15272,45 @@
           ]
         },
         {
+          "uuid": "0a45c097-95d8-4bc8-8934-aef446d756f9",
+          "control-id": "sr-2.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sr-2.1_smt",
+              "uuid": "64af2f5f-7e6d-452e-8392-52db76778be5",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "4fc182bb-8818-4fe7-80df-f9c38a66e7d8",
+                  "description": "Establish SCRM team: supply chain risk management responsibilities assigned to the engineering team. CEO provides oversight. Security Lead evaluates new dependencies and infrastructure providers for supply chain risk.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "uuid": "fc11b300-34d2-49b5-89d5-526144cc7c83",
           "control-id": "sr-3",
           "props": [
@@ -10800,6 +15536,84 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "0e6a1d87-3928-443f-85ca-eee9f3a55244",
                   "description": "Component authenticity: (1) SBOM generated daily (CycloneDX + SPDX) capturing all component versions and sources; (2) Go module checksums verified against Go checksum database; (3) container image digests immutably reference specific builds.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "83be1e60-bd77-480c-8582-bc25fa0a99a4",
+          "control-id": "sr-11.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sr-11.1_smt",
+              "uuid": "b59bd868-2d99-4581-84bb-365d6415fefe",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "98052274-586f-46ec-8c3b-0671b1bbc339",
+                  "description": "Component authenticity — public registry verification: (1) Go modules verified against Go checksum database (sum.golang.org); (2) npm packages verified via package-lock.json integrity hashes; (3) container base images from Google's Artifact Registry; (4) SBOM generation=true captures component provenance.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "7c1748bb-6dfe-4b74-85d9-c9acac65651d",
+          "control-id": "sr-11.2",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "templated"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sr-11.2_smt",
+              "uuid": "1eb1ca31-7dd0-435a-8220-a1877383abad",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "888f4e4a-9336-4c64-86fc-bb928d566702",
+                  "description": "Component authenticity — component disposal: deprecated or vulnerable components are removed through: (1) `go mod tidy` removes unused modules; (2) npm audit identifies deprecated packages; (3) Trivy=true flags vulnerable container layers; (4) Artifact Registry lifecycle policies remove old image versions.",
                   "implementation-status": {
                     "state": "implemented"
                   }
