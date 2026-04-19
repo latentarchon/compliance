@@ -100,6 +100,7 @@ func allControls() []ControlDef {
 	all = append(all, manualControls()...)
 	all = append(all, inheritedControls()...)
 	all = append(all, gapControls()...)
+	all = append(all, il5Controls()...)
 
 	for i := range all {
 		all[i].EvidenceTier = classifyTier(all[i].ID)
@@ -114,6 +115,13 @@ func or(vals ...string) string {
 		}
 	}
 	return "[not configured]"
+}
+
+func joinOr(vals []string) string {
+	if len(vals) == 0 {
+		return "[none]"
+	}
+	return strings.Join(vals, ", ")
 }
 
 func boolStr(b bool, yes, no string) string {
