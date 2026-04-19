@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -101,7 +103,7 @@ func main() {
 	if data, err := os.ReadFile(*existingSSP); err == nil {
 		if err := json.Unmarshal(data, &doc); err != nil {
 			log.Printf("warning: could not parse existing SSP, generating fresh: %v", err)
-			doc = freshSSP(facts, roster)
+			doc = freshSSP(facts, roster, root)
 		} else {
 			if len(doc.SystemSecurityPlan.SystemCharacteristics.SystemIDs) > 0 {
 				uuidNamespace = doc.SystemSecurityPlan.SystemCharacteristics.SystemIDs[0].ID
@@ -110,7 +112,7 @@ func main() {
 			doc.SystemSecurityPlan.Metadata.Version = bumpPatch(doc.SystemSecurityPlan.Metadata.Version)
 		}
 	} else {
-		doc = freshSSP(facts, roster)
+		doc = freshSSP(facts, roster, root)
 	}
 
 	reqs := buildImplementedRequirements(facts)
@@ -120,6 +122,9 @@ func main() {
 		Description:             fmt.Sprintf("Auto-generated from infrastructure-as-code on %s. Baseline: NIST 800-53 Rev. 5 %s. Controls derived from Terragrunt configs in %s, backend source in %s, and org policies in %s.", time.Now().UTC().Format("2006-01-02"), *baseline, *infraRoot, *backendRoot, *orgRoot),
 		ImplementedRequirements: filtered,
 	}
+
+	buildProps := collectBuildMetadata(root)
+	doc.SystemSecurityPlan.Metadata.Props = appendBuildProps(doc.SystemSecurityPlan.Metadata.Props, buildProps)
 
 	doc.SystemSecurityPlan.ImportProfile.Href = profileHref(*baseline)
 
@@ -225,7 +230,7 @@ func bumpPatch(version string) string {
 	return fmt.Sprintf("%d.%d.%d", major, minor, patch+1)
 }
 
-func freshSSP(facts *InfraFacts, roster *PersonnelRoster) SSPDocument {
+func freshSSP(facts *InfraFacts, roster *PersonnelRoster, root string) SSPDocument {
 	owner := roster.findByRole("system-owner")
 	if owner == nil {
 		log.Fatal("personnel.json: no person with system-owner role")
@@ -235,6 +240,9 @@ func freshSSP(facts *InfraFacts, roster *PersonnelRoster) SSPDocument {
 	gcpLevAuthUUID := "e7f80910-2132-4435-8657-687989abbbcd"
 	gcpComponentUUID := "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091"
 
+	buildProps := collectBuildMetadata(root)
+	metaProps := append([]Prop{{Name: "marking", Value: "CUI"}}, buildProps...)
+
 	return SSPDocument{
 		SystemSecurityPlan: SSP{
 			UUID: deterministicUUID("ssp-root"),
@@ -243,9 +251,7 @@ func freshSSP(facts *InfraFacts, roster *PersonnelRoster) SSPDocument {
 				LastModified: time.Now().UTC().Format(time.RFC3339Nano),
 				Version:      "1.0.0",
 				OscalVersion: "1.1.3",
-				Props: []Prop{
-					{Name: "marking", Value: "CUI"},
-				},
+				Props:        metaProps,
 				Roles: []Role{
 					{ID: "system-owner", Title: "System Owner"},
 					{ID: "information-system-security-officer", Title: "Information System Security Officer"},
@@ -427,4 +433,54 @@ func freshSSP(facts *InfraFacts, roster *PersonnelRoster) SSPDocument {
 			},
 		},
 	}
+}
+
+func gitCmd(dir string, args ...string) string {
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+func collectBuildMetadata(root string) []Prop {
+	const ns = "https://latentarchon.com/ns/oscal/build"
+	var props []Prop
+
+	add := func(name, val string) {
+		if val != "" {
+			props = append(props, Prop{Name: name, Value: val, NS: ns})
+		}
+	}
+
+	for _, repo := range []struct{ name, rel string }{
+		{"compliance", "compliance"},
+		{"infra", "infra"},
+		{"backend", "backend"},
+		{"org", "org"},
+	} {
+		dir := filepath.Join(root, repo.rel)
+		if _, err := os.Stat(filepath.Join(dir, ".git")); err != nil {
+			continue
+		}
+		sha := gitCmd(dir, "rev-parse", "HEAD")
+		branch := gitCmd(dir, "rev-parse", "--abbrev-ref", "HEAD")
+		add("build-sha-"+repo.name, sha)
+		add("build-branch-"+repo.name, branch)
+	}
+
+	add("build-timestamp", time.Now().UTC().Format(time.RFC3339))
+	return props
+}
+
+func appendBuildProps(existing []Prop, build []Prop) []Prop {
+	filtered := make([]Prop, 0, len(existing))
+	for _, p := range existing {
+		if !strings.HasPrefix(p.Name, "build-") {
+			filtered = append(filtered, p)
+		}
+	}
+	return append(filtered, build...)
 }

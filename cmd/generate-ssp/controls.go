@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -172,7 +174,39 @@ func buildImplementedRequirements(facts *InfraFacts) []ImplementedRequirement {
 		reqs = append(reqs, req)
 	}
 
+	sort.Slice(reqs, func(i, j int) bool {
+		return compareControlIDs(reqs[i].ControlID, reqs[j].ControlID) < 0
+	})
+
 	return reqs
+}
+
+func compareControlIDs(a, b string) int {
+	af, an, ae := parseControlID(a)
+	bf, bn, be := parseControlID(b)
+	if af != bf {
+		return strings.Compare(af, bf)
+	}
+	if an != bn {
+		return an - bn
+	}
+	return ae - be
+}
+
+func parseControlID(id string) (family string, num int, enh int) {
+	parts := strings.SplitN(id, "-", 2)
+	if len(parts) < 2 {
+		return id, 0, 0
+	}
+	family = parts[0]
+	rest := parts[1]
+	if dot := strings.IndexByte(rest, '.'); dot >= 0 {
+		num, _ = strconv.Atoi(rest[:dot])
+		enh, _ = strconv.Atoi(rest[dot+1:])
+	} else {
+		num, _ = strconv.Atoi(rest)
+	}
+	return
 }
 
 func formatFactsSummary(facts *InfraFacts) string {
