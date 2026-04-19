@@ -433,7 +433,7 @@ func (c *Checker) checkGCSSoftDelete() {
 
 func (c *Checker) checkAuditLogWORM() {
 	// Production
-	prodFile := filepath.Join(c.infraRoot, "gcp/environments/fed/production/ops/audit-logs/terragrunt.hcl")
+	prodFile := filepath.Join(c.infraRoot, "gcp/environments/fed/ops/audit-logs/terragrunt.hcl")
 	if retDays, ok := hclInputValue(prodFile, "gcs_audit_retention_days"); ok {
 		days, err := strconv.ParseInt(retDays, 10, 64)
 		if err == nil {
@@ -451,7 +451,7 @@ func (c *Checker) checkAuditLogWORM() {
 	}
 
 	// Staging
-	stagingFile := filepath.Join(c.infraRoot, "gcp/environments/fed/staging/ops/audit-logs/terragrunt.hcl")
+	stagingFile := filepath.Join(c.infraRoot, "gcp/environments/staging/ops/audit-logs/terragrunt.hcl")
 	if retDays, ok := hclInputValue(stagingFile, "gcs_audit_retention_days"); ok {
 		c.check("AU-11", "Staging WORM retention (days)", "365", retDays)
 	}
@@ -461,7 +461,7 @@ func (c *Checker) checkAuditLogWORM() {
 }
 
 func (c *Checker) checkTerraformSARoles() {
-	saFile := filepath.Join(c.infraRoot, "gcp/environments/fed/staging/ops/service-accounts/terragrunt.hcl")
+	saFile := filepath.Join(c.infraRoot, "gcp/environments/staging/ops/service-accounts/terragrunt.hcl")
 
 	roleCount, ok := countRolesInBlock(saFile, "terraform-sa")
 	if !ok {

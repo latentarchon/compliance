@@ -12,8 +12,8 @@ func TestHclLocalValue(t *testing.T) {
   environment    = "staging"
   deployment     = "staging"
   tier           = "fed"
-  admin_project_id = "archon-fed-admin-staging"
-  ops_project_id   = "archon-fed-ops-staging"
+  admin_project_id = "archon-admin-staging"
+  ops_project_id   = "archon-ops-staging"
   cloud_sql_enable_public_ip  = false  # org policy enforces this
   cloud_sql_disk_size         = 10
   cloud_run_min_scale = 0
@@ -26,8 +26,8 @@ func TestHclLocalValue(t *testing.T) {
 		{"region", "us-east4"},
 		{"environment", "staging"},
 		{"tier", "fed"},
-		{"admin_project_id", "archon-fed-admin-staging"},
-		{"ops_project_id", "archon-fed-ops-staging"},
+		{"admin_project_id", "archon-admin-staging"},
+		{"ops_project_id", "archon-ops-staging"},
 		{"cloud_sql_enable_public_ip", "false"},
 		{"cloud_sql_disk_size", "10"},
 		{"cloud_run_min_scale", "0"},
@@ -45,13 +45,13 @@ func TestHclLocalValue(t *testing.T) {
 func TestHclLocalValueWithComments(t *testing.T) {
 	content := `locals {
   public_ip = false  # enforced by org policy
-  domain    = "app.fed.staging.latentarchon.com" # cloud-neutral
+  domain    = "app.staging.latentarchon.com" # cloud-neutral
 }`
 	if got := hclLocalValue(content, "public_ip"); got != "false" {
 		t.Errorf("got %q, want %q", got, "false")
 	}
-	if got := hclLocalValue(content, "domain"); got != "app.fed.staging.latentarchon.com" {
-		t.Errorf("got %q, want %q", got, "app.fed.staging.latentarchon.com")
+	if got := hclLocalValue(content, "domain"); got != "app.staging.latentarchon.com" {
+		t.Errorf("got %q, want %q", got, "app.staging.latentarchon.com")
 	}
 }
 
