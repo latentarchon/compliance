@@ -26,8 +26,8 @@ type ProjectConfig struct {
 func envConfig(env string) ProjectConfig {
 	if env == "production" {
 		return ProjectConfig{
-			AdminProject: "archon-fed-admin-prod",
-			AppProject:   "archon-fed-app-prod",
+			AdminProject: "archon-fed-admin",
+			AppProject:   "archon-fed-app",
 			Region:       "us-east4",
 		}
 	}
