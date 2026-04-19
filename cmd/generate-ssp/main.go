@@ -60,6 +60,7 @@ func (r *PersonnelRoster) findByRole(role string) *struct {
 func main() {
 	infraRoot := flag.String("infra-root", "", "path to infra/ directory")
 	backendRoot := flag.String("backend-root", "", "path to backend/ directory")
+	orgRoot := flag.String("org-root", "", "path to org/ directory")
 	existingSSP := flag.String("existing-ssp", "", "path to existing ssp.json (preserves metadata/characteristics)")
 	outFile := flag.String("out", "", "output file (default: stdout)")
 	baseline := flag.String("baseline", "high", "baseline level: moderate, high, il5")
@@ -75,6 +76,9 @@ func main() {
 	if *backendRoot == "" {
 		*backendRoot = filepath.Join(root, "backend")
 	}
+	if *orgRoot == "" {
+		*orgRoot = filepath.Join(root, "org")
+	}
 	if *existingSSP == "" {
 		*existingSSP = filepath.Join(root, "compliance", "oscal", "ssp.json")
 	}
@@ -84,7 +88,7 @@ func main() {
 		log.Fatalf("roster error: %v", err)
 	}
 
-	facts, err := scanInfrastructure(*infraRoot, *backendRoot)
+	facts, err := scanInfrastructure(*infraRoot, *backendRoot, *orgRoot)
 	if err != nil {
 		log.Fatalf("scan error: %v", err)
 	}
@@ -113,7 +117,7 @@ func main() {
 	filtered := filterByBaseline(reqs, *baseline)
 
 	doc.SystemSecurityPlan.ControlImplementation = ControlImplementation{
-		Description:             fmt.Sprintf("Auto-generated from infrastructure-as-code on %s. Baseline: NIST 800-53 Rev. 5 %s. Controls derived from Terragrunt configs in %s and backend source in %s.", time.Now().UTC().Format("2006-01-02"), *baseline, *infraRoot, *backendRoot),
+		Description:             fmt.Sprintf("Auto-generated from infrastructure-as-code on %s. Baseline: NIST 800-53 Rev. 5 %s. Controls derived from Terragrunt configs in %s, backend source in %s, and org policies in %s.", time.Now().UTC().Format("2006-01-02"), *baseline, *infraRoot, *backendRoot, *orgRoot),
 		ImplementedRequirements: filtered,
 	}
 

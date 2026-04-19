@@ -19,17 +19,20 @@ func verifiedControls() []ControlDef {
 		{ID: "ac-4", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			ComponentUUIDs: []string{thisSystem, edgeWAF, cloudArmor},
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Information flow is controlled at multiple layers: (1) Cloudflare Edge WAF with managed rulesets, OWASP CRS, threat score challenges, path probing protection, and IP/ASN blocking %s; (2) Cloud Armor origin WAF restricts traffic to Cloudflare IPs only %s; (3) VPC egress firewall is deny-all by default with FQDN allowlist for GCP APIs only; (4) Cloud Run services configured with ingress=%s restricting to internal + load-balancer traffic; (5) Cloud SQL has no public IP (public_ip=%v, enforced by org policy sql.restrictPublicIp); (6) Vertex AI accessed via Private Service Connect (PSC) within the VPC.",
+				return fmt.Sprintf("Information flow is controlled at multiple layers: (1) Cloudflare Edge WAF with managed rulesets, OWASP CRS, threat score challenges (threshold=%d), path probing protection (%d paths blocked), and IP/ASN blocking %s; (2) Cloud Armor origin WAF restricts traffic to Cloudflare IPs only %s; (3) VPC egress firewall is deny-all by default with FQDN allowlist for GCP APIs only (org policy enforces ALL_TRAFFIC egress=%v); (4) Cloud Run services configured with ingress=%s restricting to internal + load-balancer traffic; (5) Cloud SQL has no public IP (public_ip=%v, org policy sql.restrictPublicIp=%v); (6) Vertex AI accessed via Private Service Connect (PSC) within the VPC.",
+					f.CFThreatScoreThreshold, len(f.CFBlockedPaths),
 					boolStr(f.CFFirewallRulesEnabled, "(active)", "(module exists)"),
 					boolStr(f.CloudArmorCFRestriction, "(Cloudflare-only rule active)", ""),
+					f.OrgPolicyRunEgressAllTraffic,
 					or(f.CloudRunIngress, "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"),
-					f.CloudSQLPublicIP)
+					f.CloudSQLPublicIP, f.OrgPolicySQLPublicIPDeny)
 			}},
 		{ID: "ac-5", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			ComponentUUIDs: []string{thisSystem, gcpPlatform},
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Separation of duties is enforced through: (1) Three-project GCP architecture (%s for admin, %s for ops/data, %s for app) with separate IAM policies; (2) RBAC with four distinct roles — viewer cannot modify, editor cannot manage users, admin cannot change org settings, master_admin has full org scope; (3) CI/CD pipeline uses Workload Identity Federation with per-project service accounts — no single identity spans all projects; (4) KMS keys in dedicated project %s with separate IAM grants.",
-					or(f.AdminProjectID), or(f.OpsProjectID), or(f.AppProjectID), or(f.KMSProjectID))
+				return fmt.Sprintf("Separation of duties is enforced through: (1) Three-project GCP architecture (%s for admin, %s for ops/data, %s for app) with separate IAM policies; (2) RBAC with four distinct roles — viewer cannot modify, editor cannot manage users, admin cannot change org settings, master_admin has full org scope; (3) CI/CD pipeline uses Workload Identity Federation with per-project service accounts — no single identity spans all projects; (4) KMS keys in dedicated project %s with separate IAM grants; (5) %d org-level IAM groups with role-based access (org policy: domain restricted=%v, SA key creation disabled=%v, default SA grants disabled=%v).",
+					or(f.AdminProjectID), or(f.OpsProjectID), or(f.AppProjectID), or(f.KMSProjectID),
+					f.OrgIAMGroupCount, f.OrgPolicyDomainRestricted, f.OrgPolicySAKeyCreationDeny, f.OrgPolicyDefaultSAGrantDeny)
 			}},
 		{ID: "ac-17", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			NarrativeFn: func(f *InfraFacts) string {
@@ -144,16 +147,21 @@ func verifiedControls() []ControlDef {
 		{ID: "sc-5", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			ComponentUUIDs: []string{thisSystem, edgeWAF, cloudArmor},
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Denial-of-service protection is provided at multiple layers: (1) Cloudflare DDoS protection (automatic L3/L4/L7 mitigation); (2) %s; (3) Cloud Armor rate-based bans and OWASP rules; (4) Cloud Run auto-scaling (max %d instances) with request timeouts; (5) Application-level rate limiting for sensitive endpoints.",
-					boolStr(f.CFRateLimitingEnabled, "Cloudflare tiered rate limiting (auth, login, admin, global API)", "Cloudflare rate limiting"),
-					f.CloudRunMaxScale)
+				return fmt.Sprintf("Denial-of-service protection is provided at multiple layers: (1) Cloudflare DDoS protection (automatic L3/L4/L7 mitigation); (2) %s; (3) Cloud Armor rate-based bans and OWASP rules; (4) Cloud Run auto-scaling (max %d instances) with request timeouts; (5) Application-level rate limiting for sensitive endpoints.%s",
+					boolStr(f.CFRateLimitingEnabled, "Cloudflare tiered rate limiting", "Cloudflare rate limiting"),
+					f.CloudRunMaxScale,
+					boolStr(f.CFLoginRateLimitEnabled, fmt.Sprintf(" Login brute-force protection: %d requests per %d seconds at the edge.", f.CFLoginRateLimit, f.CFLoginRatePeriod), ""))
 			}},
 		{ID: "sc-7", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			ComponentUUIDs: []string{thisSystem, edgeWAF, cloudArmor},
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Boundary protection is implemented at: (1) Cloudflare Edge WAF — first-layer defense with managed rulesets, OWASP CRS, rate limiting, threat score challenges, path probing protection, IP/ASN blocking; (2) Cloud Armor Origin WAF — Cloudflare-only origin restriction (%s), OWASP CRS, rate-based bans; (3) Regional HTTPS Load Balancer; (4) VPC egress firewall — deny-all with FQDN allowlist; (5) Cloud Run ingress restricted to %s; (6) No public IP addresses on any service.",
+				return fmt.Sprintf("Boundary protection is implemented at: (1) Cloudflare Edge WAF — managed ruleset=%v, OWASP CRS=%v, threat score challenges (threshold=%d), path probing protection (%d blocked paths), %s; (2) Cloud Armor Origin WAF — Cloudflare-only origin restriction (%s), OWASP CRS, rate-based bans; (3) Regional HTTPS Load Balancer; (4) VPC egress firewall — deny-all with FQDN allowlist; (5) Cloud Run ingress restricted to %s (org policy enforced=%v); (6) No public IP addresses on any service (org policy: VM external IP deny=%v, SQL public IP deny=%v).",
+					f.CFWAFManagedRuleset, f.CFWAFOWASPRuleset, f.CFThreatScoreThreshold, len(f.CFBlockedPaths),
+					boolStr(f.CFWorkerProxyEnabled, "Worker proxy for same-origin API gateway", ""),
 					boolStr(f.CloudArmorCFRestriction, "active", "configured"),
-					or(f.CloudRunIngress, "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"))
+					or(f.CloudRunIngress, "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"),
+					f.OrgPolicyRunIngressRestrict,
+					f.OrgPolicyVMExternalIPDeny, f.OrgPolicySQLPublicIPDeny)
 			}},
 		{ID: "sc-7.4", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			NarrativeFn: func(f *InfraFacts) string {
@@ -162,8 +170,9 @@ func verifiedControls() []ControlDef {
 			}},
 		{ID: "sc-8.1", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Cryptographic protection for transmission: (1) TLS 1.2+ with FIPS-approved cipher suites; (2) %s for FIPS 140-2 validated TLS; (3) Cloudflare enforces minimum TLS 1.2 with modern cipher suites; (4) GCP internal networking uses Google's ALTS protocol.",
-					boolStr(f.BoringCrypto, "GOEXPERIMENT=boringcrypto (BoringSSL)", "BoringCrypto for Go"))
+				return fmt.Sprintf("Cryptographic protection for transmission: (1) TLS 1.2+ with FIPS-approved cipher suites; (2) %s for FIPS 140-2 validated TLS; (3) Cloudflare enforces minimum TLS %s, SSL mode=%s, always HTTPS=%v, TLS 1.3=%v; (4) GCP internal networking uses Google's ALTS protocol.",
+					boolStr(f.BoringCrypto, "GOEXPERIMENT=boringcrypto (BoringSSL)", "BoringCrypto for Go"),
+					or(f.CFMinTLS, "1.2"), or(f.CFSSLMode, "strict"), f.CFAlwaysHTTPS, f.CFTLS13)
 			}},
 		{ID: "sc-12", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			ComponentUUIDs: []string{thisSystem, cloudKMS},

@@ -58,7 +58,7 @@ type InfraFacts struct {
 	EmbeddingDimensions int
 	EmbeddingRegion     string
 
-	// Cloudflare
+	// Cloudflare — presence
 	CFAccessTeamDomain     string
 	CFWAFEnabled           bool
 	CFRateLimitingEnabled  bool
@@ -66,6 +66,36 @@ type InfraFacts struct {
 	CFLogpushEnabled       bool
 	CFFirewallRulesEnabled bool
 	CFIPRangesConfigured   bool
+
+	// Cloudflare — WAF details
+	CFWAFManagedRuleset bool
+	CFWAFOWASPRuleset   bool
+	CFWAFAction         string
+
+	// Cloudflare — rate limiting details
+	CFLoginRateLimitEnabled bool
+	CFLoginRateLimit        int
+	CFLoginRatePeriod       int
+
+	// Cloudflare — firewall rules details
+	CFThreatScoreEnabled   bool
+	CFThreatScoreThreshold int
+	CFPathProtectionEnabled bool
+	CFBlockedPaths          []string
+
+	// Cloudflare — Access details
+	CFAccessApps         int
+	CFAccessServiceTokens int
+
+	// Cloudflare — zone settings
+	CFSSLMode       string
+	CFMinTLS        string
+	CFTLS13         bool
+	CFAlwaysHTTPS   bool
+	CFSecurityLevel string
+
+	// Cloudflare — Worker proxy
+	CFWorkerProxyEnabled bool
 
 	// Cloud Armor
 	CloudArmorCFRestriction bool
@@ -103,9 +133,26 @@ type InfraFacts struct {
 	RLSEnabled           bool
 	SCIMEnabled          bool
 	DLPEnabled           bool
+
+	// Org policies (from org repo)
+	OrgPolicyCount              int
+	OrgPolicySAKeyCreationDeny  bool
+	OrgPolicySAKeyUploadDeny    bool
+	OrgPolicyVMExternalIPDeny   bool
+	OrgPolicySQLPublicIPDeny    bool
+	OrgPolicyRunIngressRestrict bool
+	OrgPolicyRunEgressAllTraffic bool
+	OrgPolicyResourceLocations  []string
+	OrgPolicyShieldedVM         bool
+	OrgPolicyUniformBucketAccess bool
+	OrgPolicyStoragePublicDeny  bool
+	OrgPolicyDefaultSAGrantDeny bool
+	OrgPolicyDomainRestricted   bool
+	OrgAccessApprovalEnabled    bool
+	OrgIAMGroupCount            int
 }
 
-func scanInfrastructure(infraRoot, backendRoot string) (*InfraFacts, error) {
+func scanInfrastructure(infraRoot, backendRoot, orgRoot string) (*InfraFacts, error) {
 	facts := &InfraFacts{}
 
 	scanDeploymentHCL(infraRoot, facts)
@@ -117,11 +164,16 @@ func scanInfrastructure(infraRoot, backendRoot string) (*InfraFacts, error) {
 	scanCloudArmorModule(infraRoot, facts)
 	scanAssuredWorkloads(infraRoot, facts)
 	scanCloudflareModules(infraRoot, facts)
+	scanCloudflareConfigs(infraRoot, facts)
 	scanAuditLogs(infraRoot, facts)
 	scanClamAV(infraRoot, facts)
 
 	if backendRoot != "" {
 		scanBackendCode(backendRoot, facts)
+	}
+
+	if orgRoot != "" {
+		scanOrgPolicies(orgRoot, facts)
 	}
 
 	return facts, nil
@@ -407,6 +459,131 @@ func containsPattern(root, subdir string, patterns ...string) bool {
 		}
 	}
 	return false
+}
+
+func scanCloudflareConfigs(infraRoot string, facts *InfraFacts) {
+	// Scan WAF terragrunt configs for detailed settings
+	for _, env := range []string{"staging", "fed"} {
+		path := filepath.Join(infraRoot, "cloudflare/environments", env, "waf/terragrunt.hcl")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		content := string(data)
+		if hclInputValueFromContent(content, "enable_managed_ruleset") == "true" {
+			facts.CFWAFManagedRuleset = true
+		}
+		if hclInputValueFromContent(content, "enable_owasp_ruleset") == "true" {
+			facts.CFWAFOWASPRuleset = true
+		}
+		facts.CFWAFAction = hclInputValueFromContent(content, "waf_action")
+		break
+	}
+
+	// Scan rate limiting configs
+	for _, env := range []string{"staging", "fed"} {
+		path := filepath.Join(infraRoot, "cloudflare/environments", env, "rate-limiting/terragrunt.hcl")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		content := string(data)
+		if hclInputValueFromContent(content, "enable_login_rate_limit") == "true" {
+			facts.CFLoginRateLimitEnabled = true
+			facts.CFLoginRateLimit, _ = strconv.Atoi(hclInputValueFromContent(content, "login_requests_per_period"))
+			facts.CFLoginRatePeriod, _ = strconv.Atoi(hclInputValueFromContent(content, "login_period"))
+		}
+		break
+	}
+
+	// Scan firewall rules configs
+	for _, env := range []string{"staging", "fed"} {
+		path := filepath.Join(infraRoot, "cloudflare/environments", env, "firewall-rules/terragrunt.hcl")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		content := string(data)
+		if hclInputValueFromContent(content, "enable_threat_score_challenge") == "true" {
+			facts.CFThreatScoreEnabled = true
+			facts.CFThreatScoreThreshold, _ = strconv.Atoi(hclInputValueFromContent(content, "threat_score_threshold"))
+		}
+		if hclInputValueFromContent(content, "enable_path_protection") == "true" {
+			facts.CFPathProtectionEnabled = true
+			facts.CFBlockedPaths = extractHCLList(content, "blocked_paths")
+		}
+		break
+	}
+
+	// Scan Access configs
+	for _, env := range []string{"staging", "fed"} {
+		path := filepath.Join(infraRoot, "cloudflare/environments", env, "access/terragrunt.hcl")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		content := string(data)
+		facts.CFAccessApps = strings.Count(content, "name                      =")
+		facts.CFAccessServiceTokens = strings.Count(content, "min_days_for_renewal")
+		break
+	}
+
+	// Scan zone settings
+	path := filepath.Join(infraRoot, "cloudflare/environments/zone/zone-settings/terragrunt.hcl")
+	if data, err := os.ReadFile(path); err == nil {
+		content := string(data)
+		facts.CFSSLMode = hclInputValueFromContent(content, "ssl_mode")
+		facts.CFMinTLS = hclInputValueFromContent(content, "min_tls_version")
+		facts.CFTLS13 = hclInputValueFromContent(content, "tls_1_3") != ""
+		facts.CFAlwaysHTTPS = hclInputValueFromContent(content, "always_use_https") == "on"
+		facts.CFSecurityLevel = hclInputValueFromContent(content, "security_level")
+	}
+
+	// Check for Worker proxy
+	for _, env := range []string{"staging", "fed"} {
+		path := filepath.Join(infraRoot, "cloudflare/environments", env, "worker-proxy/terragrunt.hcl")
+		if _, err := os.Stat(path); err == nil {
+			facts.CFWorkerProxyEnabled = true
+			break
+		}
+	}
+}
+
+func scanOrgPolicies(orgRoot string, facts *InfraFacts) {
+	path := filepath.Join(orgRoot, "org-policy.tf")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	content := string(data)
+
+	facts.OrgPolicyCount = strings.Count(content, "resource \"google_org_policy_policy\"")
+
+	facts.OrgPolicySAKeyCreationDeny = strings.Contains(content, "iam.disableServiceAccountKeyCreation")
+	facts.OrgPolicySAKeyUploadDeny = strings.Contains(content, "iam.disableServiceAccountKeyUpload")
+	facts.OrgPolicyVMExternalIPDeny = strings.Contains(content, "compute.vmExternalIpAccess")
+	facts.OrgPolicySQLPublicIPDeny = strings.Contains(content, "sql.restrictPublicIp")
+	facts.OrgPolicyRunIngressRestrict = strings.Contains(content, "run.allowedIngress")
+	facts.OrgPolicyRunEgressAllTraffic = strings.Contains(content, "run.allowedVPCEgress")
+	facts.OrgPolicyShieldedVM = strings.Contains(content, "compute.requireShieldedVm")
+	facts.OrgPolicyUniformBucketAccess = strings.Contains(content, "storage.uniformBucketLevelAccess")
+	facts.OrgPolicyStoragePublicDeny = strings.Contains(content, "storage.publicAccessPrevention")
+	facts.OrgPolicyDefaultSAGrantDeny = strings.Contains(content, "iam.automaticIamGrantsForDefaultServiceAccounts")
+	facts.OrgPolicyDomainRestricted = strings.Contains(content, "iam.allowedPolicyMemberDomains")
+
+	facts.OrgPolicyResourceLocations = extractHCLList(content, "allowed_values")
+
+	// Access Approval
+	aaPath := filepath.Join(orgRoot, "access-approval.tf")
+	if _, err := os.Stat(aaPath); err == nil {
+		facts.OrgAccessApprovalEnabled = true
+	}
+
+	// IAM groups
+	groupsPath := filepath.Join(orgRoot, "groups.tf")
+	if gdata, err := os.ReadFile(groupsPath); err == nil {
+		facts.OrgIAMGroupCount = strings.Count(string(gdata), "@${local.domain}")
+	}
 }
 
 // --- HCL parsing helpers ---
