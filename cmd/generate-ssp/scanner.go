@@ -110,6 +110,10 @@ type InfraFacts struct {
 	MFAEnabled       bool
 	SAMLOnly         bool
 	RequireIDPPool   bool
+	IDPTenantCount   int
+	IDPMFAState      string
+	IDPAppCheckEnabled bool
+	IDPEmailLinkEnabled bool
 
 	// ClamAV
 	ClamAVEnabled bool
@@ -117,12 +121,57 @@ type InfraFacts struct {
 	// VPC
 	VPCEgressPolicy string
 
+	// VPC-SC
+	VPCSCEnabled        bool
+	VPCSCEnforced       bool
+	VPCSCPerimeterName  string
+	VPCSCProtectedProjects int
+	VPCSCIngressPolicies int
+	VPCSCEgressPolicies  int
+	VPCSCViolationAlerts bool
+
 	// Audit Logs
 	AuditLogRetentionDays int
 	AuditLogWORM          bool
+	AuditLogSinksPerProject int
+	AuditLogAlertPolicies int
+
+	// Monitoring
+	MonitoringUptimeChecks int
+	MonitoringAlertPolicies int
+	MonitoringNotificationChannels int
 
 	// Cloud Build
-	CloudBuildEnabled bool
+	CloudBuildEnabled         bool
+	CloudBuildTriggers        int
+	CloudBuildBinauthzEnabled bool
+	CloudBuildTrivyEnabled    bool
+	CloudBuildGovulncheck     bool
+	CloudBuildSBOMEnabled     bool
+	CloudBuildGosecEnabled    bool
+	CloudBuildSemgrepEnabled  bool
+	CloudBuildGitleaksEnabled bool
+
+	// DLP
+	DLPTemplateEnabled   bool
+	DLPPIIInfoTypes      int
+	DLPCredentialTypes   int
+
+	// CMEK
+	CMEKCloudSQL  bool
+	CMEKGCS       bool
+	CMEKBigQuery  bool
+	CMEKLogging   bool
+	CMEKSecrets   bool
+	CMEKArtifactRegistry bool
+
+	// Cloud Run per-service
+	CloudRunServices []CloudRunServiceFacts
+
+	// RLS
+	RLSTableCount  int
+	RLSPolicyCount int
+	RLSRoles       []string
 
 	// Backend code
 	BoringCrypto         bool
@@ -152,24 +201,45 @@ type InfraFacts struct {
 	OrgIAMGroupCount            int
 }
 
+type CloudRunServiceFacts struct {
+	Name                string
+	Project             string
+	Ingress             string
+	AllowUnauthenticated bool
+	UseSharedVPC        bool
+	ServerMode          string
+	RequireIDPPool      bool
+	RequireMFA          bool
+	SAMLOnly            bool
+}
+
 func scanInfrastructure(infraRoot, backendRoot, orgRoot string) (*InfraFacts, error) {
 	facts := &InfraFacts{}
 
 	scanDeploymentHCL(infraRoot, facts)
 	scanCloudRunAdmin(infraRoot, facts)
+	scanCloudRunAllServices(infraRoot, facts)
 	scanCloudSQLModule(infraRoot, facts)
 	scanKMSModule(infraRoot, facts)
 	scanGCSModule(infraRoot, facts)
 	scanVPCModule(infraRoot, facts)
+	scanVPCSC(infraRoot, facts)
 	scanCloudArmorModule(infraRoot, facts)
 	scanAssuredWorkloads(infraRoot, facts)
 	scanCloudflareModules(infraRoot, facts)
 	scanCloudflareConfigs(infraRoot, facts)
 	scanAuditLogs(infraRoot, facts)
+	scanMonitoring(infraRoot, facts)
 	scanClamAV(infraRoot, facts)
+	scanCloudBuild(infraRoot, facts)
+	scanDLP(infraRoot, facts)
+	scanCMEK(infraRoot, facts)
+	scanIdentityPlatform(infraRoot, facts)
 
 	if backendRoot != "" {
 		scanBackendCode(backendRoot, facts)
+		scanRLS(backendRoot, facts)
+		scanCICD(backendRoot, facts)
 	}
 
 	if orgRoot != "" {
@@ -459,6 +529,267 @@ func containsPattern(root, subdir string, patterns ...string) bool {
 		}
 	}
 	return false
+}
+
+func scanCloudRunAllServices(infraRoot string, facts *InfraFacts) {
+	type serviceDir struct {
+		project string
+		path    string
+	}
+	dirs := []serviceDir{
+		{"admin", "admin/cloud-run-admin"},
+		{"admin", "admin/cloud-run-spa"},
+		{"app", "app/cloud-run"},
+		{"app", "app/cloud-run-spa"},
+		{"ops", "ops/cloud-run-ops"},
+		{"ops", "ops/cloud-run-jobs"},
+		{"ops", "ops/clamav"},
+	}
+
+	for _, env := range []string{"staging", "fed"} {
+		found := false
+		for _, d := range dirs {
+			path := filepath.Join(infraRoot, "gcp/environments", env, d.path, "terragrunt.hcl")
+			data, err := os.ReadFile(path)
+			if err != nil {
+				continue
+			}
+			found = true
+			content := string(data)
+			svc := CloudRunServiceFacts{
+				Project: d.project,
+				Ingress: hclInputValueFromContent(content, "ingress"),
+			}
+			svc.Name = hclInputValueFromContent(content, "service_name")
+			svc.AllowUnauthenticated = hclInputValueFromContent(content, "allow_unauthenticated") == "true"
+			svc.UseSharedVPC = strings.Contains(content, "use_shared_vpc")
+
+			if envVars := extractBlock(content, "env_vars"); envVars != "" {
+				svc.ServerMode = hclInputValueFromContent(envVars, "SERVER_MODE")
+				svc.RequireIDPPool = hclInputValueFromContent(envVars, "REQUIRE_IDP_POOL") == "true"
+				svc.SAMLOnly = hclInputValueFromContent(envVars, "AUTH_SAML_ONLY") == "true"
+			}
+			facts.CloudRunServices = append(facts.CloudRunServices, svc)
+		}
+		if found {
+			break
+		}
+	}
+}
+
+func scanVPCSC(infraRoot string, facts *InfraFacts) {
+	for _, env := range []string{"staging", "fed"} {
+		path := filepath.Join(infraRoot, "gcp/environments", env, "vpc-service-controls/terragrunt.hcl")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		content := string(data)
+		facts.VPCSCEnabled = true
+		facts.VPCSCEnforced = hclInputValueFromContent(content, "dry_run_mode") == "false"
+		facts.VPCSCPerimeterName = hclInputValueFromContent(content, "perimeter_name")
+		facts.VPCSCProtectedProjects = len(extractHCLList(content, "protected_project_ids"))
+		facts.VPCSCViolationAlerts = hclInputValueFromContent(content, "enable_violation_alerts") == "true"
+
+		facts.VPCSCIngressPolicies = strings.Count(content, "service_name")
+		facts.VPCSCEgressPolicies = len(extractHCLList(content, "egress_policies"))
+		break
+	}
+}
+
+func scanMonitoring(infraRoot string, facts *InfraFacts) {
+	path := filepath.Join(infraRoot, "gcp/modules/monitoring/main.tf")
+	if data, err := os.ReadFile(path); err == nil {
+		content := string(data)
+		facts.MonitoringAlertPolicies = strings.Count(content, "google_monitoring_alert_policy")
+		facts.MonitoringUptimeChecks = strings.Count(content, "google_monitoring_uptime_check")
+	}
+
+	ncPath := filepath.Join(infraRoot, "gcp/modules/notification-channels/main.tf")
+	if data, err := os.ReadFile(ncPath); err == nil {
+		facts.MonitoringNotificationChannels = strings.Count(string(data), "google_monitoring_notification_channel")
+	}
+
+	auditPath := filepath.Join(infraRoot, "gcp/modules/audit-logs/main.tf")
+	if data, err := os.ReadFile(auditPath); err == nil {
+		content := string(data)
+		facts.AuditLogAlertPolicies = strings.Count(content, "google_monitoring_alert_policy")
+		facts.AuditLogSinksPerProject = strings.Count(content, "google_logging_project_sink")
+	}
+}
+
+func scanCloudBuild(infraRoot string, facts *InfraFacts) {
+	path := filepath.Join(infraRoot, "gcp/modules/cloud-build/main.tf")
+	if data, err := os.ReadFile(path); err == nil {
+		content := string(data)
+		facts.CloudBuildEnabled = true
+		facts.CloudBuildTriggers = strings.Count(content, "google_cloudbuild_trigger")
+		facts.CloudBuildBinauthzEnabled = strings.Contains(content, "binary_authorization_attestor") || strings.Contains(content, "binauthz")
+	}
+
+	varPath := filepath.Join(infraRoot, "gcp/modules/cloud-build/variables.tf")
+	if data, err := os.ReadFile(varPath); err == nil {
+		content := string(data)
+		if strings.Contains(content, "enable_binary_authorization") {
+			facts.CloudBuildBinauthzEnabled = true
+		}
+	}
+}
+
+func scanDLP(infraRoot string, facts *InfraFacts) {
+	path := filepath.Join(infraRoot, "gcp/modules/dlp/variables.tf")
+	if data, err := os.ReadFile(path); err == nil {
+		content := string(data)
+		facts.DLPTemplateEnabled = true
+		facts.DLPPIIInfoTypes = len(extractHCLList(content, "pii_info_types"))
+		facts.DLPCredentialTypes = len(extractHCLList(content, "credential_info_types"))
+	}
+}
+
+func scanCMEK(infraRoot string, facts *InfraFacts) {
+	// Check which consumer modules reference KMS keys
+	for _, mod := range []struct {
+		path string
+		flag *bool
+	}{
+		{"gcp/modules/cloud-sql/main.tf", &facts.CMEKCloudSQL},
+		{"gcp/modules/gcs/main.tf", &facts.CMEKGCS},
+		{"gcp/modules/audit-logs/main.tf", &facts.CMEKBigQuery},
+		{"gcp/modules/secrets/main.tf", &facts.CMEKSecrets},
+	} {
+		p := filepath.Join(infraRoot, mod.path)
+		if data, err := os.ReadFile(p); err == nil {
+			content := string(data)
+			if strings.Contains(content, "kms_key") || strings.Contains(content, "cmek") || strings.Contains(content, "encryption_key") || strings.Contains(content, "crypto_key") {
+				*mod.flag = true
+			}
+		}
+	}
+
+	// Check logging for CMEK
+	logVars := filepath.Join(infraRoot, "gcp/modules/audit-logs/variables.tf")
+	if data, err := os.ReadFile(logVars); err == nil {
+		if strings.Contains(string(data), "cmek") || strings.Contains(string(data), "kms_key") {
+			facts.CMEKLogging = true
+		}
+	}
+
+	// Check Artifact Registry
+	arPath := filepath.Join(infraRoot, "gcp/modules/artifact-registry/main.tf")
+	if data, err := os.ReadFile(arPath); err == nil {
+		if strings.Contains(string(data), "kms_key") {
+			facts.CMEKArtifactRegistry = true
+		}
+	}
+}
+
+func scanIdentityPlatform(infraRoot string, facts *InfraFacts) {
+	for _, env := range []string{"staging", "fed"} {
+		for _, proj := range []string{"auth-admin", "auth-app"} {
+			path := filepath.Join(infraRoot, "gcp/environments", env, proj, "identity-platform/terragrunt.hcl")
+			data, err := os.ReadFile(path)
+			if err != nil {
+				continue
+			}
+			content := string(data)
+
+			mfa := hclInputValueFromContent(content, "mfa_state")
+			if mfa != "" {
+				facts.IDPMFAState = mfa
+				facts.MFAEnabled = mfa == "ENABLED" || mfa == "MANDATORY"
+			}
+
+			appCheck := hclInputValueFromContent(content, "app_check_enabled")
+			if appCheck == "true" {
+				facts.IDPAppCheckEnabled = true
+			}
+
+			tenants := extractBlock(content, "identity_platform_tenants")
+			if tenants != "" {
+				facts.IDPTenantCount += strings.Count(tenants, "display_name")
+				if strings.Contains(tenants, "enable_email_link_signin") {
+					facts.IDPEmailLinkEnabled = true
+				}
+			}
+
+			if strings.Contains(content, "REQUIRE_IDP_POOL") {
+				facts.RequireIDPPool = true
+			}
+		}
+		if facts.IDPMFAState != "" {
+			break
+		}
+	}
+}
+
+func scanRLS(backendRoot string, facts *InfraFacts) {
+	schemaPath := filepath.Join(backendRoot, "shared-go/postgres/schema.sql")
+	data, err := os.ReadFile(schemaPath)
+	if err != nil {
+		return
+	}
+	content := string(data)
+	facts.RLSTableCount = strings.Count(content, "ENABLE ROW LEVEL SECURITY")
+	facts.RLSPolicyCount = strings.Count(content, "CREATE POLICY")
+
+	for _, role := range []string{"archon_app_ro", "archon_admin_rw", "archon_ops_rw"} {
+		if strings.Contains(content, role) {
+			facts.RLSRoles = append(facts.RLSRoles, role)
+		}
+	}
+}
+
+func scanCICD(backendRoot string, facts *InfraFacts) {
+	for _, name := range []string{"cloudbuild.yaml", "cloudbuild-security.yaml", "cloudbuild-sbom.yaml", "cloudbuild-pr.yaml"} {
+		path := filepath.Join(backendRoot, name)
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		content := string(data)
+		if strings.Contains(content, "trivy") {
+			facts.CloudBuildTrivyEnabled = true
+		}
+		if strings.Contains(content, "govulncheck") {
+			facts.CloudBuildGovulncheck = true
+		}
+		if strings.Contains(content, "sbom") || strings.Contains(content, "cyclonedx") || strings.Contains(content, "spdx") {
+			facts.CloudBuildSBOMEnabled = true
+		}
+		if strings.Contains(content, "gosec") {
+			facts.CloudBuildGosecEnabled = true
+		}
+		if strings.Contains(content, "semgrep") {
+			facts.CloudBuildSemgrepEnabled = true
+		}
+		if strings.Contains(content, "gitleaks") {
+			facts.CloudBuildGitleaksEnabled = true
+		}
+	}
+}
+
+func extractBlock(content, blockName string) string {
+	idx := strings.Index(content, blockName)
+	if idx == -1 {
+		return ""
+	}
+	rest := content[idx:]
+	braceStart := strings.Index(rest, "{")
+	if braceStart == -1 {
+		return ""
+	}
+	depth := 0
+	for i := braceStart; i < len(rest); i++ {
+		if rest[i] == '{' {
+			depth++
+		} else if rest[i] == '}' {
+			depth--
+			if depth == 0 {
+				return rest[:i+1]
+			}
+		}
+	}
+	return rest
 }
 
 func scanCloudflareConfigs(infraRoot string, facts *InfraFacts) {

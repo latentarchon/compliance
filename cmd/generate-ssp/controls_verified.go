@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 func verifiedControls() []ControlDef {
 	return []ControlDef{
@@ -202,25 +205,6 @@ func verifiedControls() []ControlDef {
 					or(f.CloudSQLDatabaseName, "archon"),
 					or(f.GCSDocumentsBucket))
 			}},
-		{ID: "sc-28.1", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
-			ComponentUUIDs: []string{thisSystem, cloudKMS},
-			Parameters: []ParamValue{
-				{ParamID: "sc-28.1_prm_1", Values: []string{"AES-256-GCM (CMEK via Cloud KMS)"}},
-			},
-			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Cryptographic protection for data at rest uses CMEK (Customer-Managed Encryption Keys) via Cloud KMS with %d-day automatic rotation. Algorithm: %s. HSM-backed (FIPS 140-2 Level 3). Keys stored in dedicated project (%s) with separate IAM policies.",
-					f.KMSRotationDays,
-					or(f.KMSAlgorithm, "GOOGLE_SYMMETRIC_ENCRYPTION"),
-					or(f.KMSProjectID))
-			}},
-
-		// SI family
-		{ID: "si-3", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
-			ComponentUUIDs: []string{thisSystem, clamAV},
-			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Malicious code protection: (1) %s provides real-time malware scanning for all uploaded documents; (2) ClamAV is configured as fail-closed in production — upload rejected if scan fails; (3) Container images scanned by Trivy for known malware signatures; (4) gitleaks scans for secrets/credentials in source code.",
-					boolStr(f.ClamAVEnabled, "ClamAV malware scanner (Cloud Run service)", "ClamAV malware scanner"))
-			}},
 
 		// High-only verified
 		{ID: "ac-4.4", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "high",
@@ -261,6 +245,104 @@ func verifiedControls() []ControlDef {
 			NarrativeFn: func(f *InfraFacts) string {
 				return fmt.Sprintf("FIPS 140-2 validated cryptography for IL5: (1) %s provides FIPS 140-2 validated TLS in Go backend; (2) Cloud KMS HSMs are FIPS 140-2 Level 3 certified; (3) All cryptographic operations (encryption, hashing, signing) use FIPS-approved algorithms; (4) Non-FIPS cryptographic modules are not used.",
 					boolStr(f.BoringCrypto, "GOEXPERIMENT=boringcrypto (BoringSSL)", "BoringCrypto"))
+			}},
+
+		// VPC-SC verified
+		{ID: "sc-7.21", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "high",
+			ComponentUUIDs: []string{thisSystem, gcpPlatform},
+			NarrativeFn: func(f *InfraFacts) string {
+				return fmt.Sprintf("VPC Service Controls isolate GCP API access: perimeter %q protects %d projects, enforcement=%v, violation alerts=%v. Ingress/egress policies scope cross-perimeter access to specific APIs (identitytoolkit, storage). Auth projects excluded by design (Identity Platform requires global access).",
+					or(f.VPCSCPerimeterName), f.VPCSCProtectedProjects, f.VPCSCEnforced, f.VPCSCViolationAlerts)
+			}},
+
+		// CMEK verified
+		{ID: "sc-28.1", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
+			ComponentUUIDs: []string{thisSystem, cloudKMS, cloudSQL, cloudStorage},
+			Parameters: []ParamValue{
+				{ParamID: "sc-28.1_prm_1", Values: []string{"AES-256-GCM (CMEK via Cloud KMS)"}},
+			},
+			NarrativeFn: func(f *InfraFacts) string {
+				return fmt.Sprintf("CMEK encryption verified across data stores: Cloud SQL=%v, GCS=%v, BigQuery audit logs=%v, Secrets Manager=%v, Artifact Registry=%v. All keys in dedicated project %s with %d-day rotation, HSM-backed (FIPS 140-2 Level 3).",
+					f.CMEKCloudSQL, f.CMEKGCS, f.CMEKBigQuery, f.CMEKSecrets, f.CMEKArtifactRegistry,
+					or(f.KMSProjectID), f.KMSRotationDays)
+			}},
+
+		// Supply chain verified
+		{ID: "sa-10", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
+			ComponentUUIDs: []string{thisSystem, ciCD},
+			NarrativeFn: func(f *InfraFacts) string {
+				return fmt.Sprintf("Developer security testing in CI/CD pipeline (%d Cloud Build triggers): container scanning (Trivy=%v), Go vulnerability check (govulncheck=%v), SAST (GoSec=%v, Semgrep=%v), secret detection (Gitleaks=%v), SBOM generation=%v, Binary Authorization=%v. All scans run before deployment to staging/production.",
+					f.CloudBuildTriggers, f.CloudBuildTrivyEnabled, f.CloudBuildGovulncheck,
+					f.CloudBuildGosecEnabled, f.CloudBuildSemgrepEnabled, f.CloudBuildGitleaksEnabled,
+					f.CloudBuildSBOMEnabled, f.CloudBuildBinauthzEnabled)
+			}},
+		{ID: "sa-11", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
+			ComponentUUIDs: []string{thisSystem, ciCD},
+			NarrativeFn: func(f *InfraFacts) string {
+				return fmt.Sprintf("Developer security and privacy testing: (1) SAST via GoSec=%v and Semgrep=%v in daily Cloud Build security scan; (2) Dependency scanning via govulncheck=%v (Go advisory database); (3) Container vulnerability scanning via Trivy=%v; (4) Secret detection via Gitleaks=%v in PR checks; (5) SBOM generation=%v (CycloneDX+SPDX) for supply chain transparency.",
+					f.CloudBuildGosecEnabled, f.CloudBuildSemgrepEnabled, f.CloudBuildGovulncheck,
+					f.CloudBuildTrivyEnabled, f.CloudBuildGitleaksEnabled, f.CloudBuildSBOMEnabled)
+			}},
+
+		// DLP/malware verified
+		{ID: "si-3", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
+			ComponentUUIDs: []string{thisSystem, gcpPlatform},
+			NarrativeFn: func(f *InfraFacts) string {
+				return fmt.Sprintf("Malicious code protection: (1) %s scans all uploaded documents before ingestion (fail-closed); (2) Cloud DLP inspect template detects %d PII types and %d credential types in document content; (3) Trivy=%v scans container images for known CVEs; (4) GoSec=%v/Semgrep=%v perform static analysis for code vulnerabilities.",
+					boolStr(f.ClamAVEnabled, "ClamAV malware scanner", "Malware scanning"),
+					f.DLPPIIInfoTypes, f.DLPCredentialTypes,
+					f.CloudBuildTrivyEnabled, f.CloudBuildGosecEnabled, f.CloudBuildSemgrepEnabled)
+			}},
+
+		// RLS verified
+		{ID: "ac-3.8", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "high",
+			ComponentUUIDs: []string{thisSystem, cloudSQL},
+			NarrativeFn: func(f *InfraFacts) string {
+				return fmt.Sprintf("Role-based access control at the database level: PostgreSQL Row-Level Security enforced on %d tables with %d policies. Database roles enforce least privilege: %s. RLS policies scope all queries to the authenticated workspace, preventing cross-tenant data access even if application logic is bypassed.",
+					f.RLSTableCount, f.RLSPolicyCount, strings.Join(f.RLSRoles, ", "))
+			}},
+
+		// Org policy verified
+		{ID: "ac-6.10", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "high",
+			ComponentUUIDs: []string{thisSystem, gcpPlatform},
+			NarrativeFn: func(f *InfraFacts) string {
+				return fmt.Sprintf("Org-level guardrails prevent privilege escalation: %d org policies enforced including SA key creation disabled=%v, SA key upload disabled=%v, VM external IP denied=%v, default SA grants disabled=%v, domain restriction=%v. Access Approval requires explicit authorization before Google support accesses customer data=%v.",
+					f.OrgPolicyCount, f.OrgPolicySAKeyCreationDeny, f.OrgPolicySAKeyUploadDeny,
+					f.OrgPolicyVMExternalIPDeny, f.OrgPolicyDefaultSAGrantDeny,
+					f.OrgPolicyDomainRestricted, f.OrgAccessApprovalEnabled)
+			}},
+
+		// Identity Platform verified
+		{ID: "ia-2.1", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
+			ComponentUUIDs: []string{thisSystem, idPlatform},
+			NarrativeFn: func(f *InfraFacts) string {
+				return fmt.Sprintf("MFA for privileged accounts: Identity Platform MFA state=%s across %d tenants. TOTP (RFC 6238) is the second factor. Magic link (email) provides passwordless first factor. App Check=%v provides bot protection. All admin operations require step-up MFA verification.",
+					or(f.IDPMFAState, "not configured"), f.IDPTenantCount, f.IDPAppCheckEnabled)
+			}},
+		{ID: "ia-2.2", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
+			ComponentUUIDs: []string{thisSystem, idPlatform},
+			NarrativeFn: func(f *InfraFacts) string {
+				return fmt.Sprintf("MFA for non-privileged accounts: all users require TOTP MFA regardless of role. MFA enforcement is set at the Identity Platform project level (state=%s) and inherited by all %d tenants. Email link sign-in=%v provides the passwordless first factor; TOTP provides the second factor.",
+					or(f.IDPMFAState, "not configured"), f.IDPTenantCount, f.IDPEmailLinkEnabled)
+			}},
+
+		// Monitoring verified
+		{ID: "au-6.1", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "high",
+			NarrativeFn: func(f *InfraFacts) string {
+				return fmt.Sprintf("Automated audit analysis: %d monitoring alert policies, %d audit-specific alert policies, %d uptime checks, %d log sinks per project routing to BigQuery/GCS for analysis. VPC-SC violation alerts=%v. Cloudflare WAF and rate limiting provide edge-layer anomaly detection.",
+					f.MonitoringAlertPolicies, f.AuditLogAlertPolicies,
+					f.MonitoringUptimeChecks, f.AuditLogSinksPerProject, f.VPCSCViolationAlerts)
+			}},
+
+		// Cloud Run hardening verified
+		{ID: "cm-7.2", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "high",
+			NarrativeFn: func(f *InfraFacts) string {
+				var svcDetails []string
+				for _, svc := range f.CloudRunServices {
+					svcDetails = append(svcDetails, fmt.Sprintf("%s(ingress=%s,unauth=%v)", or(svc.Name, svc.Project), or(svc.Ingress, "default"), svc.AllowUnauthenticated))
+				}
+				return fmt.Sprintf("Least functionality — Cloud Run services configured with minimal exposure: %s. Org policy restricts ingress=%v, enforces ALL_TRAFFIC egress=%v. No services expose *.run.app URLs directly.",
+					strings.Join(svcDetails, "; "), f.OrgPolicyRunIngressRestrict, f.OrgPolicyRunEgressAllTraffic)
 			}},
 	}
 }

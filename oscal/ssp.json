@@ -3,8 +3,8 @@
     "uuid": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
     "metadata": {
       "title": "Latent Archon Document Intelligence Platform — System Security Plan",
-      "last-modified": "2026-04-19T03:11:07.829576Z",
-      "version": "1.0.6",
+      "last-modified": "2026-04-19T03:22:00.374729Z",
+      "version": "1.0.8",
       "oscal-version": "1.1.3",
       "props": [
         {
@@ -475,7 +475,7 @@
       ]
     },
     "control-implementation": {
-      "description": "Auto-generated from infrastructure-as-code on 2026-04-19. Baseline: NIST 800-53 Rev. 5 high. Controls derived from Terragrunt configs in /Users/andrewhendel/CascadeProjects/latentarchon/infra, backend source in /Users/andrewhendel/CascadeProjects/latentarchon/backend, and org policies in /Users/andrewhendel/CascadeProjects/latentarchon/org.",
+      "description": "Auto-generated from infrastructure-as-code on 2026-04-19. Baseline: NIST 800-53 Rev. 5 high. Controls derived from Terragrunt configs in ../infra, backend source in ../backend, and org policies in ../org.",
       "implemented-requirements": [
         {
           "uuid": "3d997615-2307-4f64-8055-424a75fe6201",
@@ -1669,108 +1669,6 @@
           ]
         },
         {
-          "uuid": "04f4ca15-b4a3-43b2-82c7-454e5acc6f24",
-          "control-id": "sc-28.1",
-          "props": [
-            {
-              "name": "implementation-status",
-              "value": "implemented"
-            },
-            {
-              "name": "evidence-tier",
-              "value": "verified"
-            },
-            {
-              "name": "baseline",
-              "value": "moderate"
-            }
-          ],
-          "set-parameters": [
-            {
-              "param-id": "sc-28.1_prm_1",
-              "values": [
-                "AES-256-GCM (CMEK via Cloud KMS)"
-              ]
-            }
-          ],
-          "responsible-roles": [
-            {
-              "role-id": "system-owner"
-            }
-          ],
-          "statements": [
-            {
-              "statement-id": "sc-28.1_smt",
-              "uuid": "49b6f3e9-cb16-4f30-8356-18ac320d516b",
-              "by-components": [
-                {
-                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
-                  "uuid": "bdaec90f-77af-44b6-86f8-6a34d263bdcb",
-                  "description": "Cryptographic protection for data at rest uses CMEK (Customer-Managed Encryption Keys) via Cloud KMS with 90-day automatic rotation. Algorithm: GOOGLE_SYMMETRIC_ENCRYPTION. HSM-backed (FIPS 140-2 Level 3). Keys stored in dedicated project (archon-fed-kms-staging) with separate IAM policies.",
-                  "implementation-status": {
-                    "state": "implemented"
-                  }
-                },
-                {
-                  "component-uuid": "f2a3b4c5-d6e7-4f80-9102-132435465768",
-                  "uuid": "c1ac0941-d2e3-4209-8da4-aa4d2ca01587",
-                  "description": "See sc-28.1 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
-                  "implementation-status": {
-                    "state": "implemented"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "uuid": "420c325a-8ac2-4b5e-8cb1-63236af822bf",
-          "control-id": "si-3",
-          "props": [
-            {
-              "name": "implementation-status",
-              "value": "implemented"
-            },
-            {
-              "name": "evidence-tier",
-              "value": "verified"
-            },
-            {
-              "name": "baseline",
-              "value": "moderate"
-            }
-          ],
-          "responsible-roles": [
-            {
-              "role-id": "system-owner"
-            }
-          ],
-          "statements": [
-            {
-              "statement-id": "si-3_smt",
-              "uuid": "f0762f19-0afb-4c9e-889b-ed069a1cdfe1",
-              "by-components": [
-                {
-                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
-                  "uuid": "ff3115bb-0aa6-4379-8539-82d20cc1dcf2",
-                  "description": "Malicious code protection: (1) ClamAV malware scanner (Cloud Run service) provides real-time malware scanning for all uploaded documents; (2) ClamAV is configured as fail-closed in production — upload rejected if scan fails; (3) Container images scanned by Trivy for known malware signatures; (4) gitleaks scans for secrets/credentials in source code.",
-                  "implementation-status": {
-                    "state": "implemented"
-                  }
-                },
-                {
-                  "component-uuid": "d6e7f809-1021-4324-b546-57687989abbc",
-                  "uuid": "a5f0aaf3-310f-44e8-822b-7e122214158a",
-                  "description": "See si-3 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
-                  "implementation-status": {
-                    "state": "implemented"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
           "uuid": "5808eb1f-bb07-4686-8d81-1a3fbe012521",
           "control-id": "ac-4.4",
           "props": [
@@ -1879,6 +1777,531 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "ba072ddc-5171-49c6-8e12-8523f4d2a51a",
                   "description": "Alternate storage site is separated from primary: (1) GitHub (source code, IaC) is geographically separate from GCP us-east4; (2) Cloud SQL backups can be restored to alternate region; (3) Container images available in Artifact Registry across regions.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "c49fab69-df84-42f5-8c68-d26ce189739c",
+          "control-id": "sc-7.21",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sc-7.21_smt",
+              "uuid": "980eb8a5-0dcc-4ee2-83a8-25c9ceb921d6",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "3ed9c5a7-9412-4234-8be9-68544d3c5096",
+                  "description": "VPC Service Controls isolate GCP API access: perimeter \"archon_staging\" protects 4 projects, enforcement=true, violation alerts=true. Ingress/egress policies scope cross-perimeter access to specific APIs (identitytoolkit, storage). Auth projects excluded by design (Identity Platform requires global access).",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                },
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "2edc4d9b-5034-4573-8360-a19b73293803",
+                  "description": "See sc-7.21 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "04f4ca15-b4a3-43b2-82c7-454e5acc6f24",
+          "control-id": "sc-28.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "set-parameters": [
+            {
+              "param-id": "sc-28.1_prm_1",
+              "values": [
+                "AES-256-GCM (CMEK via Cloud KMS)"
+              ]
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sc-28.1_smt",
+              "uuid": "49b6f3e9-cb16-4f30-8356-18ac320d516b",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "bdaec90f-77af-44b6-86f8-6a34d263bdcb",
+                  "description": "CMEK encryption verified across data stores: Cloud SQL=true, GCS=true, BigQuery audit logs=true, Secrets Manager=true, Artifact Registry=true. All keys in dedicated project archon-fed-kms-staging with 90-day rotation, HSM-backed (FIPS 140-2 Level 3).",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                },
+                {
+                  "component-uuid": "f2a3b4c5-d6e7-4f80-9102-132435465768",
+                  "uuid": "c1ac0941-d2e3-4209-8da4-aa4d2ca01587",
+                  "description": "See sc-28.1 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                },
+                {
+                  "component-uuid": "c9d0e1f2-a3b4-4c5d-8e7f-809102132435",
+                  "uuid": "c4dc18e9-02bd-4bbe-8255-2106cfdb6b1e",
+                  "description": "See sc-28.1 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                },
+                {
+                  "component-uuid": "d0e1f2a3-b4c5-4d6e-8f80-910213243546",
+                  "uuid": "9ebfcf2f-dccc-42c9-8f40-944660224c58",
+                  "description": "See sc-28.1 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "ef60d32a-6157-40a7-89b3-b16dc0280ba4",
+          "control-id": "sa-10",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sa-10_smt",
+              "uuid": "7d078e15-bb2f-43cb-8b3b-3d48bf0c9e71",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "389e1aaa-96a5-45ca-8d68-26b1def8dcde",
+                  "description": "Developer security testing in CI/CD pipeline (2 Cloud Build triggers): container scanning (Trivy=true), Go vulnerability check (govulncheck=true), SAST (GoSec=true, Semgrep=true), secret detection (Gitleaks=true), SBOM generation=true, Binary Authorization=true. All scans run before deployment to staging/production.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                },
+                {
+                  "component-uuid": "c5d6e7f8-0910-4213-a435-4657687989ab",
+                  "uuid": "0c2e8fe7-0208-4300-8c82-0cf804e99d13",
+                  "description": "See sa-10 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "b00723a1-aa05-4c76-8868-a6083f19a78e",
+          "control-id": "sa-11",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "sa-11_smt",
+              "uuid": "da524f48-2280-402b-80d5-4a0c7b1dd168",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "796d88fc-e5c0-42d8-8b25-2b4598a56e66",
+                  "description": "Developer security and privacy testing: (1) SAST via GoSec=true and Semgrep=true in daily Cloud Build security scan; (2) Dependency scanning via govulncheck=true (Go advisory database); (3) Container vulnerability scanning via Trivy=true; (4) Secret detection via Gitleaks=true in PR checks; (5) SBOM generation=true (CycloneDX+SPDX) for supply chain transparency.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                },
+                {
+                  "component-uuid": "c5d6e7f8-0910-4213-a435-4657687989ab",
+                  "uuid": "40aeedc1-bb1f-4dc1-84be-2b5f1f55889c",
+                  "description": "See sa-11 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "420c325a-8ac2-4b5e-8cb1-63236af822bf",
+          "control-id": "si-3",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "si-3_smt",
+              "uuid": "f0762f19-0afb-4c9e-889b-ed069a1cdfe1",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "ff3115bb-0aa6-4379-8539-82d20cc1dcf2",
+                  "description": "Malicious code protection: (1) ClamAV malware scanner scans all uploaded documents before ingestion (fail-closed); (2) Cloud DLP inspect template detects 9 PII types and 10 credential types in document content; (3) Trivy=true scans container images for known CVEs; (4) GoSec=true/Semgrep=true perform static analysis for code vulnerabilities.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                },
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "a5f0aaf3-310f-44e8-822b-7e122214158a",
+                  "description": "See si-3 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "3fc15e7d-1b7c-4ff5-8ca7-f92e38cc87c7",
+          "control-id": "ac-3.8",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ac-3.8_smt",
+              "uuid": "28db042b-3b0d-45ac-821b-1a835e4b9df9",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "f42d057c-4ef6-4fc5-8f64-f938ff82f6b5",
+                  "description": "Role-based access control at the database level: PostgreSQL Row-Level Security enforced on 17 tables with 36 policies. Database roles enforce least privilege: archon_admin_rw. RLS policies scope all queries to the authenticated workspace, preventing cross-tenant data access even if application logic is bypassed.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                },
+                {
+                  "component-uuid": "c9d0e1f2-a3b4-4c5d-8e7f-809102132435",
+                  "uuid": "27dd47ae-c887-4eae-86a9-1e841262e0dc",
+                  "description": "See ac-3.8 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "d1d66ee0-c5f1-4194-8a08-ab1838ebfef5",
+          "control-id": "ac-6.10",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ac-6.10_smt",
+              "uuid": "ef962c20-5e17-435a-85af-de9417561c9d",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "3b5fb522-89ba-424b-8a5e-b2ff1a645443",
+                  "description": "Org-level guardrails prevent privilege escalation: 25 org policies enforced including SA key creation disabled=true, SA key upload disabled=true, VM external IP denied=true, default SA grants disabled=true, domain restriction=true. Access Approval requires explicit authorization before Google support accesses customer data=true.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                },
+                {
+                  "component-uuid": "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
+                  "uuid": "2dd4f2e0-5bfb-4d72-8a78-373a90306bb3",
+                  "description": "See ac-6.10 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "2e3ef7d8-e6c2-4a58-8bce-a8bcde05094c",
+          "control-id": "ia-2.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ia-2.1_smt",
+              "uuid": "0e22333b-7375-49a3-8ac4-75287550222a",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "da78d292-df59-466b-8061-2eeffef27ccf",
+                  "description": "MFA for privileged accounts: Identity Platform MFA state=ENABLED across 14 tenants. TOTP (RFC 6238) is the second factor. Magic link (email) provides passwordless first factor. App Check=false provides bot protection. All admin operations require step-up MFA verification.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                },
+                {
+                  "component-uuid": "a3b4c5d6-e7f8-4091-8213-243546576879",
+                  "uuid": "4b47f8d6-fedd-4a2f-8014-67b8f601c4a1",
+                  "description": "See ia-2.1 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "cc7a99fe-9916-4af3-8fb1-984d2df240b7",
+          "control-id": "ia-2.2",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
+              "name": "baseline",
+              "value": "moderate"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "ia-2.2_smt",
+              "uuid": "7a847cc7-728e-4e74-8724-2dd6ceedc5af",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "d045832a-75fd-4ae8-8b14-0f617bfb90bf",
+                  "description": "MFA for non-privileged accounts: all users require TOTP MFA regardless of role. MFA enforcement is set at the Identity Platform project level (state=ENABLED) and inherited by all 14 tenants. Email link sign-in=true provides the passwordless first factor; TOTP provides the second factor.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                },
+                {
+                  "component-uuid": "a3b4c5d6-e7f8-4091-8213-243546576879",
+                  "uuid": "4dc3e988-86d0-4514-8802-4b3413b56459",
+                  "description": "See ia-2.2 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "4dbead26-d029-45b8-81fd-833efc4b658d",
+          "control-id": "au-6.1",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "au-6.1_smt",
+              "uuid": "b4f7a992-c63f-477b-860c-dd0ae1eff1fe",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "81cda53e-2e70-4b6d-8bf9-39e9f6d01d97",
+                  "description": "Automated audit analysis: 15 monitoring alert policies, 10 audit-specific alert policies, 4 uptime checks, 8 log sinks per project routing to BigQuery/GCS for analysis. VPC-SC violation alerts=true. Cloudflare WAF and rate limiting provide edge-layer anomaly detection.",
+                  "implementation-status": {
+                    "state": "implemented"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uuid": "ea41ec2b-0c29-48f1-84c5-a22893bd3f27",
+          "control-id": "cm-7.2",
+          "props": [
+            {
+              "name": "implementation-status",
+              "value": "implemented"
+            },
+            {
+              "name": "evidence-tier",
+              "value": "verified"
+            },
+            {
+              "name": "baseline",
+              "value": "high"
+            }
+          ],
+          "responsible-roles": [
+            {
+              "role-id": "system-owner"
+            }
+          ],
+          "statements": [
+            {
+              "statement-id": "cm-7.2_smt",
+              "uuid": "42f7f7c2-66f5-4e41-86a7-9d933b65ce69",
+              "by-components": [
+                {
+                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+                  "uuid": "e32bd031-97d6-48d6-8701-cf1359cb1d63",
+                  "description": "Least functionality — Cloud Run services configured with minimal exposure: archon-admin(ingress=internal-and-cloud-load-balancing,unauth=true); admin-spa(ingress=internal-and-cloud-load-balancing,unauth=true); archon-app(ingress=internal-and-cloud-load-balancing,unauth=true); app-spa(ingress=internal-and-cloud-load-balancing,unauth=true); archon-ops(ingress=internal,unauth=false); ops(ingress=default,unauth=false); ops(ingress=default,unauth=false). Org policy restricts ingress=true, enforces ALL_TRAFFIC egress=true. No services expose *.run.app URLs directly.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -2308,45 +2731,6 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "05011f4a-f9f2-41b0-8429-4f9acd409dc7",
                   "description": "All privileged function executions are logged: (1) Application audit log captures all admin mutations (role changes, member management, SSO config, IP allowlist changes) with actor, action, timestamp, IP, and correlation ID; (2) GCP Cloud Audit Logs capture all Admin Activity and Data Access events; (3) Cloudflare audit logs capture all configuration changes.",
-                  "implementation-status": {
-                    "state": "implemented"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "uuid": "d1d66ee0-c5f1-4194-8a08-ab1838ebfef5",
-          "control-id": "ac-6.10",
-          "props": [
-            {
-              "name": "implementation-status",
-              "value": "implemented"
-            },
-            {
-              "name": "evidence-tier",
-              "value": "templated"
-            },
-            {
-              "name": "baseline",
-              "value": "moderate"
-            }
-          ],
-          "responsible-roles": [
-            {
-              "role-id": "system-owner"
-            }
-          ],
-          "statements": [
-            {
-              "statement-id": "ac-6.10_smt",
-              "uuid": "ef962c20-5e17-435a-85af-de9417561c9d",
-              "by-components": [
-                {
-                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
-                  "uuid": "3b5fb522-89ba-424b-8a5e-b2ff1a645443",
-                  "description": "Non-privileged users cannot execute privileged functions. The Connect-RPC interceptor chain enforces RBAC checks before every RPC handler. Attempts to invoke admin-only RPCs with insufficient role are rejected with `PermissionDenied` and logged. GCP IAM prevents non-authorized identities from accessing infrastructure APIs.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -3076,45 +3460,6 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "87d09d59-1cd0-4577-87d9-6606bd6c4349",
                   "description": "Audit records are reviewed weekly via an automated audit-review tool (cmd/audit-review) that queries BigQuery audit_logs datasets across all projects. The tool checks for: (1) failed authentication spikes (\u003e10/hour); (2) IAM policy changes (SetIamPolicy events); (3) privilege escalation attempts (CreateRole, CreateServiceAccountKey); (4) bulk data deletion events; (5) off-hours administrative access by non-service-accounts; (6) application-layer auth failures. Reports are generated weekly via Cloud Build scheduler and uploaded to Drata. Cloud Monitoring alert policies provide real-time anomaly detection in parallel.",
-                  "implementation-status": {
-                    "state": "implemented"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "uuid": "4dbead26-d029-45b8-81fd-833efc4b658d",
-          "control-id": "au-6.1",
-          "props": [
-            {
-              "name": "implementation-status",
-              "value": "implemented"
-            },
-            {
-              "name": "evidence-tier",
-              "value": "templated"
-            },
-            {
-              "name": "baseline",
-              "value": "moderate"
-            }
-          ],
-          "responsible-roles": [
-            {
-              "role-id": "system-owner"
-            }
-          ],
-          "statements": [
-            {
-              "statement-id": "au-6.1_smt",
-              "uuid": "b4f7a992-c63f-477b-860c-dd0ae1eff1fe",
-              "by-components": [
-                {
-                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
-                  "uuid": "81cda53e-2e70-4b6d-8bf9-39e9f6d01d97",
-                  "description": "Automated analysis of audit records is performed using: (1) Cloud Logging log-based metrics for authentication failures, authorization denials, and WAF blocks; (2) Cloudflare Security Analytics for edge-layer threat detection; (3) Custom Cloud Monitoring dashboards correlating application and infrastructure events.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -4410,92 +4755,6 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "c569b8ad-f5a2-46f5-8353-c6670250f806",
                   "description": "Latent Archon maintains an Identification and Authentication Policy (POL-IA-001) defining authenticator requirements, identity proofing, and credential management procedures. The policy is reviewed annually.",
-                  "implementation-status": {
-                    "state": "implemented"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "uuid": "2e3ef7d8-e6c2-4a58-8bce-a8bcde05094c",
-          "control-id": "ia-2.1",
-          "props": [
-            {
-              "name": "implementation-status",
-              "value": "implemented"
-            },
-            {
-              "name": "evidence-tier",
-              "value": "templated"
-            },
-            {
-              "name": "baseline",
-              "value": "moderate"
-            }
-          ],
-          "responsible-roles": [
-            {
-              "role-id": "system-owner"
-            }
-          ],
-          "statements": [
-            {
-              "statement-id": "ia-2.1_smt",
-              "uuid": "0e22333b-7375-49a3-8ac4-75287550222a",
-              "by-components": [
-                {
-                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
-                  "uuid": "da78d292-df59-466b-8061-2eeffef27ccf",
-                  "description": "Multi-factor authentication (MFA) is required for all privileged and non-privileged network access. TOTP-based MFA (RFC 6238) is enforced at the application layer via the auth interceptor. Users who have not enrolled in MFA are blocked from accessing any functionality. MFA enrollment is mandatory during first login.",
-                  "implementation-status": {
-                    "state": "implemented"
-                  }
-                },
-                {
-                  "component-uuid": "a3b4c5d6-e7f8-4091-8213-243546576879",
-                  "uuid": "4b47f8d6-fedd-4a2f-8014-67b8f601c4a1",
-                  "description": "See ia-2.1 implementation for full description. This component contributes to the control implementation as described in the primary narrative.",
-                  "implementation-status": {
-                    "state": "implemented"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "uuid": "cc7a99fe-9916-4af3-8fb1-984d2df240b7",
-          "control-id": "ia-2.2",
-          "props": [
-            {
-              "name": "implementation-status",
-              "value": "implemented"
-            },
-            {
-              "name": "evidence-tier",
-              "value": "templated"
-            },
-            {
-              "name": "baseline",
-              "value": "moderate"
-            }
-          ],
-          "responsible-roles": [
-            {
-              "role-id": "system-owner"
-            }
-          ],
-          "statements": [
-            {
-              "statement-id": "ia-2.2_smt",
-              "uuid": "7a847cc7-728e-4e74-8724-2dd6ceedc5af",
-              "by-components": [
-                {
-                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
-                  "uuid": "d045832a-75fd-4ae8-8b14-0f617bfb90bf",
-                  "description": "MFA is required for all non-privileged network access. The same TOTP MFA requirement applies to all user roles (viewer through master_admin). No exemptions are granted.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -7205,84 +7464,6 @@
           ]
         },
         {
-          "uuid": "ef60d32a-6157-40a7-89b3-b16dc0280ba4",
-          "control-id": "sa-10",
-          "props": [
-            {
-              "name": "implementation-status",
-              "value": "implemented"
-            },
-            {
-              "name": "evidence-tier",
-              "value": "templated"
-            },
-            {
-              "name": "baseline",
-              "value": "moderate"
-            }
-          ],
-          "responsible-roles": [
-            {
-              "role-id": "system-owner"
-            }
-          ],
-          "statements": [
-            {
-              "statement-id": "sa-10_smt",
-              "uuid": "7d078e15-bb2f-43cb-8b3b-3d48bf0c9e71",
-              "by-components": [
-                {
-                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
-                  "uuid": "389e1aaa-96a5-45ca-8d68-26b1def8dcde",
-                  "description": "Configuration management in development: (1) all code in Git with full history; (2) PR-based workflow with required reviews; (3) branch protection rules; (4) CI/CD pipeline validates all changes; (5) infrastructure changes require Terragrunt plan review.",
-                  "implementation-status": {
-                    "state": "implemented"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "uuid": "b00723a1-aa05-4c76-8868-a6083f19a78e",
-          "control-id": "sa-11",
-          "props": [
-            {
-              "name": "implementation-status",
-              "value": "implemented"
-            },
-            {
-              "name": "evidence-tier",
-              "value": "templated"
-            },
-            {
-              "name": "baseline",
-              "value": "moderate"
-            }
-          ],
-          "responsible-roles": [
-            {
-              "role-id": "system-owner"
-            }
-          ],
-          "statements": [
-            {
-              "statement-id": "sa-11_smt",
-              "uuid": "da524f48-2280-402b-80d5-4a0c7b1dd168",
-              "by-components": [
-                {
-                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
-                  "uuid": "796d88fc-e5c0-42d8-8b25-2b4598a56e66",
-                  "description": "Developer security testing: (1) SAST via GoSec and Semgrep (daily + PR-time); (2) dependency scanning via govulncheck and npm audit; (3) container scanning via Trivy; (4) secret scanning via gitleaks; (5) unit and integration testing; (6) manual security review for sensitive changes.",
-                  "implementation-status": {
-                    "state": "implemented"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
           "uuid": "6c671551-bd2c-4f2a-8947-2e4b8d7668ab",
           "control-id": "sa-11.1",
           "props": [
@@ -9599,45 +9780,6 @@
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "63c24302-29ec-4b47-8c45-506767622153",
                   "description": "Fail secure: if boundary protection mechanisms fail, the system defaults to deny: (1) Cloud Armor defaults to deny-all if rules cannot be evaluated; (2) VPC egress firewall defaults to deny-all; (3) Cloud Run rejects requests if auth middleware fails; (4) ClamAV operates fail-closed (upload rejected if scan unavailable).",
-                  "implementation-status": {
-                    "state": "implemented"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "uuid": "c49fab69-df84-42f5-8c68-d26ce189739c",
-          "control-id": "sc-7.21",
-          "props": [
-            {
-              "name": "implementation-status",
-              "value": "implemented"
-            },
-            {
-              "name": "evidence-tier",
-              "value": "templated"
-            },
-            {
-              "name": "baseline",
-              "value": "high"
-            }
-          ],
-          "responsible-roles": [
-            {
-              "role-id": "system-owner"
-            }
-          ],
-          "statements": [
-            {
-              "statement-id": "sc-7.21_smt",
-              "uuid": "980eb8a5-0dcc-4ee2-83a8-25c9ceb921d6",
-              "by-components": [
-                {
-                  "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
-                  "uuid": "3ed9c5a7-9412-4234-8be9-68544d3c5096",
-                  "description": "Isolation of system components: (1) three-project GCP architecture provides blast-radius isolation; (2) separate service accounts per Cloud Run service; (3) VPC peering with restricted routes; (4) KMS keys in dedicated project with separate IAM.",
                   "implementation-status": {
                     "state": "implemented"
                   }

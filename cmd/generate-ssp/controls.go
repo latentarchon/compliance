@@ -39,14 +39,16 @@ const (
 )
 
 var verifiedControlIDs = map[string]bool{
-	"ac-2": true, "ac-3": true, "ac-4": true, "ac-5": true,
+	"ac-2": true, "ac-3": true, "ac-3.8": true, "ac-4": true, "ac-5": true,
+	"ac-6.10": true,
 	"ac-17": true, "ac-17.1": true,
-	"au-4": true, "au-9": true, "au-9.4": true, "au-11": true,
-	"cm-6": true,
+	"au-4": true, "au-6.1": true, "au-9": true, "au-9.4": true, "au-11": true,
+	"cm-6": true, "cm-7.2": true,
 	"cp-2": true, "cp-6": true, "cp-9": true,
-	"ia-2": true, "ia-7": true,
+	"ia-2": true, "ia-2.1": true, "ia-2.2": true, "ia-7": true,
 	"mp-2": true, "mp-4": true,
-	"sc-5": true, "sc-7": true, "sc-7.4": true, "sc-8.1": true,
+	"sa-10": true, "sa-11": true,
+	"sc-5": true, "sc-7": true, "sc-7.4": true, "sc-7.21": true, "sc-8.1": true,
 	"sc-12": true, "sc-13": true, "sc-28": true, "sc-28.1": true,
 	"si-3": true,
 	"ac-4.4": true, "cp-2.3": true, "cp-6.1": true,
@@ -197,6 +199,14 @@ func formatFactsSummary(facts *InfraFacts) string {
 	b.WriteString(fmt.Sprintf("  ClamAV: %v\n", facts.ClamAVEnabled))
 	b.WriteString(fmt.Sprintf("  Audit Logs: retention=%dd, WORM=%v\n", facts.AuditLogRetentionDays, facts.AuditLogWORM))
 	b.WriteString(fmt.Sprintf("  Backend: BoringCrypto=%v, RBAC=%v, RLS=%v, Audit=%v, SCIM=%v, DLP=%v\n", facts.BoringCrypto, facts.RBACEnabled, facts.RLSEnabled, facts.AuditLoggingEnabled, facts.SCIMEnabled, facts.DLPEnabled))
+	b.WriteString(fmt.Sprintf("  VPC-SC: enabled=%v, enforced=%v, perimeter=%s, %d projects, alerts=%v\n", facts.VPCSCEnabled, facts.VPCSCEnforced, or(facts.VPCSCPerimeterName, "(none)"), facts.VPCSCProtectedProjects, facts.VPCSCViolationAlerts))
+	b.WriteString(fmt.Sprintf("  CMEK: SQL=%v, GCS=%v, BigQuery=%v, Logging=%v, Secrets=%v, AR=%v\n", facts.CMEKCloudSQL, facts.CMEKGCS, facts.CMEKBigQuery, facts.CMEKLogging, facts.CMEKSecrets, facts.CMEKArtifactRegistry))
+	b.WriteString(fmt.Sprintf("  Cloud Build: %d triggers, binauthz=%v, trivy=%v, govulncheck=%v, SBOM=%v, gosec=%v, semgrep=%v, gitleaks=%v\n", facts.CloudBuildTriggers, facts.CloudBuildBinauthzEnabled, facts.CloudBuildTrivyEnabled, facts.CloudBuildGovulncheck, facts.CloudBuildSBOMEnabled, facts.CloudBuildGosecEnabled, facts.CloudBuildSemgrepEnabled, facts.CloudBuildGitleaksEnabled))
+	b.WriteString(fmt.Sprintf("  DLP: template=%v, %d PII types, %d credential types\n", facts.DLPTemplateEnabled, facts.DLPPIIInfoTypes, facts.DLPCredentialTypes))
+	b.WriteString(fmt.Sprintf("  RLS: %d tables, %d policies, roles=%v\n", facts.RLSTableCount, facts.RLSPolicyCount, facts.RLSRoles))
+	b.WriteString(fmt.Sprintf("  IDP: MFA=%s, %d tenants, app_check=%v, email_link=%v\n", or(facts.IDPMFAState, "(not set)"), facts.IDPTenantCount, facts.IDPAppCheckEnabled, facts.IDPEmailLinkEnabled))
+	b.WriteString(fmt.Sprintf("  Cloud Run: %d services scanned\n", len(facts.CloudRunServices)))
+	b.WriteString(fmt.Sprintf("  Monitoring: %d alert policies, %d uptime checks, %d audit alert policies, %d log sinks/project\n", facts.MonitoringAlertPolicies, facts.MonitoringUptimeChecks, facts.AuditLogAlertPolicies, facts.AuditLogSinksPerProject))
 	b.WriteString(fmt.Sprintf("  Org Policies: %d policies, SA key deny=%v, VM ext IP deny=%v, SQL pub IP deny=%v\n", facts.OrgPolicyCount, facts.OrgPolicySAKeyCreationDeny, facts.OrgPolicyVMExternalIPDeny, facts.OrgPolicySQLPublicIPDeny))
 	b.WriteString(fmt.Sprintf("  Org: domain_restricted=%v, shielded_vm=%v, default_sa_deny=%v, access_approval=%v, %d IAM groups\n", facts.OrgPolicyDomainRestricted, facts.OrgPolicyShieldedVM, facts.OrgPolicyDefaultSAGrantDeny, facts.OrgAccessApprovalEnabled, facts.OrgIAMGroupCount))
 	return b.String()
