@@ -243,7 +243,8 @@ All environments are managed via Terraform/Terragrunt. No manual cloud console c
 | Customer Browser | Inbound | HTTPS | 443 | SPA access | N/A |
 | Microsoft Graph API | Outbound | HTTPS REST | 443 | SharePoint/OneDrive document sync (delta queries, file download) | Microsoft FedRAMP High |
 | Microsoft Entra ID (Azure AD) | Outbound | HTTPS (OAuth2) | 443 | OAuth2 authorization code grant for Graph API token exchange | Microsoft FedRAMP High |
-| Cloudflare | Inbound/Outbound | HTTPS/DNS | 443/53 | Edge WAF proxy (inbound traffic), authoritative DNS with DNSSEC, Zero Trust Access for admin | FedRAMP Moderate |
+| Cloudflare | Inbound/Outbound | HTTPS/DNS | 443/53 | Edge WAF proxy (inbound traffic), authoritative DNS with DNSSEC, Zero Trust Access for admin, Worker proxy for same-origin API gateway | FedRAMP Moderate |
+| Cloudflare Access JWKS | Outbound | HTTPS | 443 | CF Access JWT validation — backend fetches signing keys from `latentarchon.cloudflareaccess.com` (FQDN egress allowlist) | FedRAMP Moderate |
 | Cloud Provider APIs | Outbound | HTTPS | 443 | All cloud service APIs (via egress firewall allowlist) | FedRAMP High (inherited) |
 | GitHub | Outbound | HTTPS | 443 | CI/CD source code, Dependabot | N/A |
 
@@ -257,9 +258,10 @@ All outbound traffic from VPC is **denied by default**. Egress controls explicit
 <!-- MULTI-CLOUD: Original also included AWS VPC Endpoints, ECR endpoints; Azure Private Endpoints, ACR endpoints. -->
 - `graph.microsoft.com` — Microsoft Graph API (SharePoint/OneDrive document sync)
 - `login.microsoftonline.com` — Microsoft Entra ID (OAuth2 token exchange)
+- `latentarchon.cloudflareaccess.com` — Cloudflare Access JWKS endpoint (CF Access JWT signing key validation)
 - Cloudflare DNS endpoints
 
-All other egress is blocked. Microsoft Graph API egress is only active when the integration is configured (`MSGRAPH_CLIENT_ID` present). This is enforced via Terraform-managed firewall rules.
+All other egress is blocked. Microsoft Graph API egress is only active when the integration is configured (`MSGRAPH_CLIENT_ID` present). Cloudflare Access JWKS egress is required for backend validation of CF Access JWTs — the backend fetches signing keys to verify that requests transited through the Cloudflare Access identity gate. This is enforced via Terraform-managed FQDN firewall rules.
 
 ### 4.2 VPC Service Controls
 
@@ -449,6 +451,7 @@ External (outside boundary):
   • Microsoft Entra ID — OAuth2 token exchange (outbound HTTPS)
   • Cloudflare (FedRAMP Moderate) — DNSSEC-signed authoritative DNS, edge WAF proxy
     (Managed + OWASP rulesets, rate limiting, threat score challenges, path probing protection, Zero Trust Access for admin),
+    Worker proxy for same-origin API gateway (injects CF Access service token, eliminates CORS),
     origin restricted to Cloudflare IPs via Cloud Armor
   • Customer browsers — HTTPS only (traffic proxied through Cloudflare edge)
   • CSP FedRAMP High infrastructure — inherited controls (GCP)
@@ -465,6 +468,8 @@ Cloudflare Edge (proxied DNS):
     ├─► Rate limiting (global, auth, login tiers)
     ├─► Geo-blocking (US + territories only)
     ├─► Zero Trust Access (admin endpoints)
+    ├─► Worker proxy (admin /_api/* — injects CF Access service token,
+    │   forwards to API origin; credentials never reach browser)
     │
     ▼
 Cloud Armor (origin WAF — Cloudflare IPs only):
@@ -586,6 +591,8 @@ Cloudflare Edge (proxied DNS, DNSSEC enabled):
     ├─► Threat score challenge (score > 14)
     ├─► Path probing protection (/.env, /wp-admin, /.git, etc.)
     ├─► Zero Trust Access (admin endpoints — identity gate)
+    ├─► Worker proxy (admin /_api/* — same-origin API gateway,
+    │   injects CF Access service token; browser never sees credentials)
     ├─► Zone hardening (TLS 1.2+, TLS 1.3 0-RTT, browser check)
     │
     ▼
@@ -612,7 +619,8 @@ Private Network (VPC — no public IPs on any service):
     │
     ├─► Egress Controls:
     │   ├─► DEFAULT: DENY ALL
-    │   ├─► ALLOW: Cloud provider APIs only
+    │   ├─► ALLOW: Cloud provider APIs (FQDN allowlist)
+    │   ├─► ALLOW: CF Access JWKS (latentarchon.cloudflareaccess.com)
     │   └─► All other egress BLOCKED
     │
     ▼

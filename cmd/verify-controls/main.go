@@ -49,28 +49,34 @@ type ControlResult struct {
 	Evidence    interface{} `json:"evidence,omitempty"`
 }
 
-// ProjectConfig holds project IDs for the 3-project split.
+// ProjectConfig holds project IDs for the multi-project split.
 type ProjectConfig struct {
-	AdminProject string
-	OpsProject   string
-	AppProject   string
-	Region       string
+	AdminProject     string
+	OpsProject       string
+	AppProject       string
+	AuthAdminProject string
+	AuthAppProject   string
+	Region           string
 }
 
 func envConfig(env string) ProjectConfig {
 	if env == "production" {
 		return ProjectConfig{
-			AdminProject: "archon-fed-admin-prod",
-			OpsProject:   "archon-fed-ops-prod",
-			AppProject:   "archon-fed-app-prod",
-			Region:       "us-east4",
+			AdminProject:     "archon-fed-admin-prod",
+			OpsProject:       "archon-fed-ops-prod",
+			AppProject:       "archon-fed-app-prod",
+			AuthAdminProject: "archon-fed-auth-admin-prod",
+			AuthAppProject:   "archon-fed-auth-app-prod",
+			Region:           "us-east4",
 		}
 	}
 	return ProjectConfig{
-		AdminProject: "archon-fed-admin-staging",
-		OpsProject:   "archon-fed-ops-staging",
-		AppProject:   "archon-fed-app-staging",
-		Region:       "us-east4",
+		AdminProject:     "archon-fed-admin-staging",
+		OpsProject:       "archon-fed-ops-staging",
+		AppProject:       "archon-fed-app-staging",
+		AuthAdminProject: "archon-fed-auth-admin-stg",
+		AuthAppProject:   "archon-fed-auth-app-stg",
+		Region:           "us-east4",
 	}
 }
 
@@ -81,7 +87,7 @@ type Verifier struct {
 	ctx       context.Context
 	kmsClient *kms.KeyManagementClient
 	fwClient  *compute.FirewallsClient
-	armorClient *compute.SecurityPoliciesClient
+	armorClient *compute.RegionSecurityPoliciesClient
 	runClient *run.ServicesClient
 	logClient *logging.ConfigClient
 	gcsClient *storage.Client
@@ -101,7 +107,7 @@ func NewVerifier(ctx context.Context, cfg ProjectConfig, env string) (*Verifier,
 	if err != nil {
 		return nil, fmt.Errorf("firewall client: %w", err)
 	}
-	v.armorClient, err = compute.NewSecurityPoliciesRESTClient(ctx)
+	v.armorClient, err = compute.NewRegionSecurityPoliciesRESTClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cloud armor client: %w", err)
 	}
@@ -214,23 +220,28 @@ func (v *Verifier) checkKMSKeys() []ControlResult {
 					break
 				}
 
+				purpose := key.GetPurpose()
+				isAsymmetric := purpose == kmspb.CryptoKey_ASYMMETRIC_SIGN || purpose == kmspb.CryptoKey_ASYMMETRIC_DECRYPT
+
 				info := map[string]string{
 					"name":    key.GetName(),
-					"purpose": key.GetPurpose().String(),
+					"purpose": purpose.String(),
 				}
 				if t := key.GetVersionTemplate(); t != nil {
 					info["algorithm"] = t.GetAlgorithm().String()
 					info["protection_level"] = t.GetProtectionLevel().String()
-					if t.GetProtectionLevel().String() == "HSM" {
-						hsmCount++
-					} else {
-						nonHSMCount++
+					if !isAsymmetric {
+						if t.GetProtectionLevel().String() == "HSM" {
+							hsmCount++
+						} else {
+							nonHSMCount++
+						}
 					}
 				}
 				if rp := key.GetRotationPeriod(); rp != nil {
 					rotatingCount++
 					info["rotation_period"] = rp.String()
-				} else {
+				} else if !isAsymmetric {
 					nonRotatingCount++
 				}
 				allKeys = append(allKeys, info)
@@ -378,7 +389,7 @@ func (v *Verifier) checkCloudRunIngress() []ControlResult {
 func (v *Verifier) checkCloudArmor() []ControlResult {
 	var results []ControlResult
 	for _, project := range []string{v.cfg.AdminProject, v.cfg.AppProject} {
-		it := v.armorClient.List(v.ctx, &computepb.ListSecurityPoliciesRequest{Project: project})
+		it := v.armorClient.List(v.ctx, &computepb.ListRegionSecurityPoliciesRequest{Project: project, Region: v.cfg.Region})
 		count := 0
 		for {
 			_, err := it.Next()
@@ -715,9 +726,11 @@ func (v *Verifier) checkGCSVersioning() []ControlResult {
 
 func (v *Verifier) checkIDPMFA() []ControlResult {
 	var results []ControlResult
-	for _, project := range []string{v.cfg.AdminProject, v.cfg.AppProject} {
+	for _, project := range []string{v.cfg.AuthAdminProject, v.cfg.AuthAppProject} {
 		url := fmt.Sprintf("https://identitytoolkit.googleapis.com/v2/projects/%s/tenants?pageSize=100", project)
-		resp, err := v.httpClient.Do(mustNewRequest(v.ctx, url))
+		req := mustNewRequest(v.ctx, url)
+		req.Header.Set("x-goog-user-project", project)
+		resp, err := v.httpClient.Do(req)
 		if err != nil {
 			results = append(results, ControlResult{
 				ControlID: "IA-2", ControlName: "Identification and Authentication",

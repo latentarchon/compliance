@@ -158,6 +158,8 @@ Vector search results are scoped to authorized workspace IDs via token restricti
 ```
 Client (SPA)
   → Cloudflare Edge (WAF: Managed + OWASP rulesets, rate limiting, threat score challenges, path probing protection)
+  → Worker proxy (admin /_api/* — injects CF Access service token, forwards to API origin)
+  → CF Access (validates service token, adds signed JWT)
   → Cloud Armor (origin WAF: OWASP CRS, Cloudflare-only origin restriction)
   → Load Balancer (TLS termination)
   → Container Runtime (Cloud Run)
@@ -917,11 +919,12 @@ All clouds implement deny-by-default egress with explicit allowlists:
 | 1 | Cloud APIs | FQDN firewall → `*.googleapis.com` |
 | 2 | Microsoft Graph | FQDN → `graph.microsoft.com`, `login.microsoftonline.com` |
 | 3 | Internal APIs | FQDN → `*.latentarchon.com` |
+| 4 | CF Access JWKS | FQDN → `latentarchon.cloudflareaccess.com` |
 | Default | DENY ALL | `0.0.0.0/0` blocked |
 
 <!-- MULTI-CLOUD: Original table included AWS (VPC Endpoints, Security group → Microsoft FQDNs, Security group → ALB, Default SG deny) and Azure (Private Endpoints, NSG → Microsoft FQDNs, NSG → Front Door, Default NSG deny) columns. -->
 
-**The platform cannot exfiltrate data to arbitrary external endpoints.** Only explicitly allowlisted cloud APIs, Microsoft Graph API (for SharePoint/OneDrive document sync), and internal services are reachable. Microsoft Graph API egress is only enabled when the Graph integration is configured.
+**The platform cannot exfiltrate data to arbitrary external endpoints.** Only explicitly allowlisted cloud APIs, Microsoft Graph API (for SharePoint/OneDrive document sync), Cloudflare Access JWKS (for CF Access JWT validation), and internal services are reachable. Microsoft Graph API egress is only enabled when the Graph integration is configured.
 
 ### Ingress Controls
 
@@ -1018,7 +1021,7 @@ Custom firewall rules are enforced at the Cloudflare edge before traffic reaches
 - **Threat Score Challenge**: Requests with Cloudflare threat score > 14 receive a managed challenge
 - **Path Probing Protection**: Common probe paths blocked (/.env, /wp-admin, /.git, /phpmyadmin, /actuator, /cgi-bin, etc.)
 - **Zone Hardening**: TLS 1.2+ minimum, TLS 1.3 with 0-RTT, always-HTTPS, browser integrity check, email obfuscation, hotlink protection, automatic HTTPS rewrites
-- **Zero Trust Access**: Admin endpoints (admin SPA + API) protected by Cloudflare Access identity gate — users must authenticate at edge before traffic reaches GCP. Backend validates `Cf-Access-Jwt-Assertion` JWT via JWKS verification to ensure requests actually transited through CF Access
+- **Zero Trust Access**: Admin endpoints (admin SPA + API) protected by Cloudflare Access identity gate — users must authenticate at edge before traffic reaches GCP. A Cloudflare Worker proxy serves as a same-origin API gateway on admin SPA domains (`/_api/*`), injecting CF Access service token credentials at the edge and forwarding to the API backend. This eliminates CORS and keeps machine credentials out of the browser. Backend validates `Cf-Access-Jwt-Assertion` JWT via JWKS verification (with 5-second timeout, 5-minute cache, and single retry) to ensure requests actually transited through CF Access
 
 **Cloud Armor Origin:**
 - **Cloudflare-Only Origin Restriction**: Load balancers only accept traffic from Cloudflare IP ranges (auto-updated via `data.cloudflare_ip_ranges`); GCP health check probe IPs explicitly allowed; non-CF traffic denied
