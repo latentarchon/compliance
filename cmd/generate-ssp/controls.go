@@ -271,5 +271,6 @@ func formatFactsSummary(facts *InfraFacts) string {
 	b.WriteString(fmt.Sprintf("  VPC: flow_log_sampling=%.0f%%, cloud_shell_disabled=%v\n", facts.FlowLogSampling*100, facts.CloudShellDisabled))
 	b.WriteString(fmt.Sprintf("  Artifact Registry: immutable_tags=%v\n", facts.ImmutableTags))
 	b.WriteString(fmt.Sprintf("  Email: provider=%s\n", or(facts.EmailProvider, "(not detected)")))
+
 	return b.String()
 }

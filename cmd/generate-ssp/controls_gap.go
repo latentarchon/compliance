@@ -110,7 +110,11 @@ func gapCMControls() []ControlDef {
 			}},
 		{ID: "cm-3.6", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "high",
 			NarrativeFn: func(f *InfraFacts) string {
-				return "Cryptographic integrity verification: (1) Go module checksums verified via go.sum; (2) container image digests ensure immutable references; (3) Binary Authorization verifies cryptographic attestations before deployment; (4) Terraform provider checksums verified by HashiCorp's registry."
+				binauthzStep := "Cosign-signed container image digests verify provenance"
+				if f.CloudBuildBinauthzEnabled {
+					binauthzStep = "Binary Authorization verifies cryptographic attestations before deployment"
+				}
+				return fmt.Sprintf("Cryptographic integrity verification: (1) Go module checksums verified via go.sum; (2) container image digests ensure immutable references; (3) %s; (4) Terraform provider checksums verified by HashiCorp's registry.", binauthzStep)
 			}},
 		{ID: "cm-3.7", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "high",
 			NarrativeFn: func(f *InfraFacts) string {
@@ -132,7 +136,11 @@ func gapCMControls() []ControlDef {
 			}},
 		{ID: "cm-14", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "high",
 			NarrativeFn: func(f *InfraFacts) string {
-				return "Signed components: (1) container images signed via Binary Authorization attestation; (2) Go binaries built with verified module checksums; (3) Terraform providers verified via HashiCorp GPG signatures; (4) SBOMs generated for component provenance."
+				signingDesc := "container images signed via Cosign with digest pinning"
+				if f.CloudBuildBinauthzEnabled {
+					signingDesc = "container images signed via Binary Authorization attestation"
+				}
+				return fmt.Sprintf("Signed components: (1) %s; (2) Go binaries built with verified module checksums; (3) Terraform providers verified via HashiCorp GPG signatures; (4) SBOMs generated for component provenance.", signingDesc)
 			}},
 	}
 }
