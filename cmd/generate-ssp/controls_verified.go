@@ -39,7 +39,7 @@ func verifiedControls() []ControlDef {
 			}},
 		{ID: "ac-17", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("All access to the system is remote access — there is no physical console access. Remote access is controlled through: (1) HTTPS/TLS 1.2+ for all user-facing connections via Cloudflare and Cloud Armor; (2) Cloudflare Zero Trust Access for admin endpoints (%s); (3) GCP IAP or IAM Conditions for infrastructure access; (4) GitHub with SSO for code repository access; (5) Workload Identity Federation for CI/CD (keyless).",
+				return fmt.Sprintf("All access to the system is remote access — there is no physical console access. Remote access is controlled through: (1) HTTPS/TLS 1.2+ for all user-facing connections via Cloudflare and Cloud Armor; (2) Cloudflare Zero Trust Access for admin endpoints (%s); (3) GCP IAP or IAM Conditions for infrastructure access; (4) GitHub with SSO for code repository access; (5) Workload Identity Federation for CI/CD (keyless); (6) Cloud Shell disabled on all projects via org constraint.",
 					or(f.AdminDomain))
 			}},
 		{ID: "ac-17.1", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
@@ -183,7 +183,7 @@ func verifiedControls() []ControlDef {
 				{ParamID: "sc-12_prm_1", Values: []string{"90 days"}},
 			},
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Cryptographic key management: (1) Cloud KMS in dedicated project %s provides centralized key management; (2) Key rotation every %d days (automated); (3) HSM-backed keys (FIPS 140-2 Level 3); (4) Separate key rings for each data type (SQL, GCS, logging, secrets); (5) Key access controlled via IAM — only authorized service accounts can use keys.",
+				return fmt.Sprintf("Cryptographic key management: (1) Cloud KMS in dedicated project %s provides centralized key management; (2) Key rotation every %d days (automated); (3) HSM-backed keys (FIPS 140-2 Level 3); (4) Separate key rings for each data type (SQL, GCS, logging, secrets); (5) Key access controlled via IAM — only authorized service accounts can use keys; (6) Per-tenant CMEK keys anchored via organizations.kms_key_name column — used for application-level envelope encryption of document chunks, chat messages, GCS objects, and Microsoft Graph OAuth tokens; (7) DEK lifecycle: random 256-bit DEK generated per encrypt operation, wrapped by tenant KMS key, stored alongside ciphertext; (8) Crypto-shredding supported by destroying tenant KMS key versions (24-hour scheduled destruction delay).",
 					or(f.KMSProjectID),
 					f.KMSRotationDays)
 			}},
@@ -193,14 +193,14 @@ func verifiedControls() []ControlDef {
 				{ParamID: "sc-13_prm_1", Values: []string{"FIPS 140-2 validated (BoringCrypto, Cloud KMS HSM)"}},
 			},
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("FIPS-validated cryptography: (1) %s provides FIPS 140-2 validated TLS in the Go backend; (2) Cloud KMS uses FIPS 140-2 Level 3 HSMs; (3) AES-256-GCM for data at rest (CMEK); (4) TLS 1.2+ with FIPS-approved cipher suites for data in transit; (5) Algorithm: %s for KMS keys.",
+				return fmt.Sprintf("FIPS-validated cryptography: (1) %s provides FIPS 140-2 validated TLS in the Go backend; (2) Cloud KMS uses FIPS 140-2 Level 3 HSMs; (3) AES-256-GCM for data at rest (CMEK and application-level envelope encryption); (4) TLS 1.2+ with FIPS-approved cipher suites for data in transit; (5) Algorithm: %s for KMS keys; (6) Application-level envelope encryption uses Go crypto/aes + crypto/cipher (AES-256-GCM via BoringCrypto FIPS module) with crypto/rand for DEK and nonce generation.",
 					boolStr(f.BoringCrypto, "GOEXPERIMENT=boringcrypto", "BoringCrypto"),
 					or(f.KMSAlgorithm, "GOOGLE_SYMMETRIC_ENCRYPTION"))
 			}},
 		{ID: "sc-28", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			ComponentUUIDs: []string{thisSystem, cloudSQL, cloudStorage, cloudKMS},
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Protection of information at rest: all data at rest is encrypted with AES-256-GCM using CMEK via Cloud KMS (%s). Encrypted data stores: (1) Cloud SQL (%s) — CMEK; (2) Cloud Storage (%s) — CMEK; (3) Cloud Logging — CMEK; (4) Artifact Registry — CMEK; (5) Cloud Tasks — CMEK; (6) Vertex AI indexes — CMEK.",
+				return fmt.Sprintf("Protection of information at rest: all data at rest is encrypted with AES-256-GCM using CMEK via Cloud KMS (%s). Encrypted data stores: (1) Cloud SQL (%s) — CMEK; (2) Cloud Storage (%s) — CMEK; (3) Cloud Logging — CMEK; (4) Artifact Registry — CMEK; (5) Cloud Tasks — CMEK; (6) Vertex AI indexes — CMEK. Per-tenant envelope encryption: organizations with a kms_key_name receive application-level AES-256-GCM envelope encryption for document chunk content, chat message content, and GCS-stored objects. Each write generates a random 256-bit DEK, encrypts the data, wraps the DEK with the tenant's Cloud KMS key, and stores ciphertext + nonce + wrapped DEK alongside the record. Per-object CMEK is applied to GCS uploads for tenants with a configured key. Crypto-shredding: destroying the tenant's KMS key versions renders all envelope-encrypted data permanently irrecoverable.",
 					or(f.KMSProjectID),
 					or(f.CloudSQLDatabaseName, "archon"),
 					or(f.GCSDocumentsBucket))
@@ -264,7 +264,7 @@ func verifiedControls() []ControlDef {
 				{ParamID: "sc-28.1_prm_1", Values: []string{"AES-256-GCM (CMEK via Cloud KMS)"}},
 			},
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("CMEK encryption verified across data stores: Cloud SQL=%v, GCS=%v, BigQuery audit logs=%v, Secrets Manager=%v, Artifact Registry=%v. All keys in dedicated project %s with %d-day rotation, HSM-backed (FIPS 140-2 Level 3).",
+				return fmt.Sprintf("CMEK encryption verified across data stores: Cloud SQL=%v, GCS=%v, BigQuery audit logs=%v, Secrets Manager=%v, Artifact Registry=%v. All keys in dedicated project %s with %d-day rotation, HSM-backed (FIPS 140-2 Level 3). Application-level envelope encryption: per-tenant AES-256-GCM with random DEK per write, DEK wrapped by tenant's Cloud KMS key (HSM-backed). DEK cache (SHA-256 fingerprint → plaintext DEK, 5-minute TTL) reduces KMS API calls during read-heavy workloads. Envelope-encrypted fields: chunks.content_ciphertext, messages.content_ciphertext, plus GCS per-object CMEK for document files.",
 					f.CMEKCloudSQL, f.CMEKGCS, f.CMEKBigQuery, f.CMEKSecrets, f.CMEKArtifactRegistry,
 					or(f.KMSProjectID), f.KMSRotationDays)
 			}},

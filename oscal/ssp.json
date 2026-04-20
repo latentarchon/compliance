@@ -3,8 +3,8 @@
     "uuid": "ca197ba9-13f0-4ba8-8c0a-9c22304fccb6",
     "metadata": {
       "title": "Latent Archon Document Intelligence Platform — System Security Plan",
-      "last-modified": "2026-04-19T13:10:22.661171Z",
-      "version": "1.0.0",
+      "last-modified": "2026-04-20T16:24:56.273033Z",
+      "version": "1.0.1",
       "oscal-version": "1.1.3",
       "props": [
         {
@@ -13,7 +13,7 @@
         },
         {
           "name": "build-sha-compliance",
-          "value": "553a4a657f5b86b2e3705103c94213376f592d6e",
+          "value": "3147c051d00850e8988a1f50ce03fd625506d14d",
           "ns": "https://latentarchon.com/ns/oscal/build"
         },
         {
@@ -23,7 +23,7 @@
         },
         {
           "name": "build-sha-infra",
-          "value": "b4d008d703341c13e58d4d1693f3fbd575c27dfc",
+          "value": "414b8267afe261b33cfb5d8800dd25373531f358",
           "ns": "https://latentarchon.com/ns/oscal/build"
         },
         {
@@ -33,7 +33,7 @@
         },
         {
           "name": "build-sha-backend",
-          "value": "f6123d8136f70f5a38d91085333ff094e79d29bd",
+          "value": "3fa41706a645da6f78c18a40abf171b0d1da5bdc",
           "ns": "https://latentarchon.com/ns/oscal/build"
         },
         {
@@ -43,7 +43,7 @@
         },
         {
           "name": "build-sha-org",
-          "value": "ea992bf5d23c541fd8bbed2eaae36026a0e10af8",
+          "value": "020ed2be030a2fa683bdb1f6639355aa29c77c05",
           "ns": "https://latentarchon.com/ns/oscal/build"
         },
         {
@@ -53,7 +53,7 @@
         },
         {
           "name": "build-timestamp",
-          "value": "2026-04-19T13:10:22Z",
+          "value": "2026-04-20T16:24:56Z",
           "ns": "https://latentarchon.com/ns/oscal/build"
         }
       ],
@@ -454,7 +454,7 @@
       ]
     },
     "control-implementation": {
-      "description": "Auto-generated from infrastructure-as-code on 2026-04-19. Baseline: NIST 800-53 Rev. 5 il5. Controls derived from Terragrunt configs in /Users/andrewhendel/CascadeProjects/latentarchon/infra, backend source in /Users/andrewhendel/CascadeProjects/latentarchon/backend, and org policies in ...",
+      "description": "Auto-generated from infrastructure-as-code on 2026-04-20. Baseline: NIST 800-53 Rev. 5 il5. Controls derived from Terragrunt configs in /Users/andrewhendel/CascadeProjects/latentarchon/infra, backend source in /Users/andrewhendel/CascadeProjects/latentarchon/backend, and org policies in /Users/andrewhendel/CascadeProjects/latentarchon/org.",
       "implemented-requirements": [
         {
           "uuid": "1d729e3a-e052-4d19-8dc5-ec56f3dffba5",
@@ -1150,7 +1150,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "295778a9-e09a-4b81-8d70-b8d615b2d120",
-                  "description": "Information flow is controlled at multiple layers: (1) Cloudflare Edge WAF with managed rulesets, OWASP CRS, threat score challenges (threshold=14), path probing protection (15 paths blocked), and IP/ASN blocking (active); (2) Cloud Armor origin WAF restricts traffic to Cloudflare IPs only (Cloudflare-only rule active); (3) VPC egress firewall is deny-all by default with FQDN allowlist for GCP APIs only (org policy enforces ALL_TRAFFIC egress=false); (4) Cloud Run services configured with ingress=internal-and-cloud-load-balancing restricting to internal + load-balancer traffic; (5) Cloud SQL has no public IP (public_ip=false, org policy sql.restrictPublicIp=false); (6) Vertex AI accessed via Private Service Connect (PSC) within the VPC.",
+                  "description": "Information flow is controlled at multiple layers: (1) Cloudflare Edge WAF with managed rulesets, OWASP CRS, threat score challenges (threshold=14), path probing protection (15 paths blocked), and IP/ASN blocking (active); (2) Cloud Armor origin WAF restricts traffic to Cloudflare IPs only (Cloudflare-only rule active); (3) VPC egress firewall is deny-all by default with FQDN allowlist for GCP APIs only (org policy enforces ALL_TRAFFIC egress=true); (4) Cloud Run services configured with ingress=internal-and-cloud-load-balancing restricting to internal + load-balancer traffic; (5) Cloud SQL has no public IP (public_ip=false, org policy sql.restrictPublicIp=true); (6) Vertex AI accessed via Private Service Connect (PSC) within the VPC.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -1346,7 +1346,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "8d125ff9-02dc-4cd2-8ea6-f1c182db137f",
-                  "description": "Separation of duties is enforced through: (1) Three-project GCP architecture (archon-admin-staging for admin, archon-ops-staging for ops/data, archon-app-staging for app) with separate IAM policies; (2) RBAC with four distinct roles — viewer cannot modify, editor cannot manage users, admin cannot change org settings, master_admin has full org scope; (3) CI/CD pipeline uses Workload Identity Federation with per-project service accounts — no single identity spans all projects; (4) KMS keys in dedicated project archon-kms-staging with separate IAM grants; (5) 0 org-level IAM groups with role-based access (org policy: domain restricted=false, SA key creation disabled=false, default SA grants disabled=false).",
+                  "description": "Separation of duties is enforced through: (1) Three-project GCP architecture (archon-admin-staging for admin, archon-ops-staging for ops/data, archon-app-staging for app) with separate IAM policies; (2) RBAC with four distinct roles — viewer cannot modify, editor cannot manage users, admin cannot change org settings, master_admin has full org scope; (3) CI/CD pipeline uses Workload Identity Federation with per-project service accounts — no single identity spans all projects; (4) KMS keys in dedicated project archon-kms-staging with separate IAM grants; (5) 7 org-level IAM groups with role-based access (org policy: domain restricted=true, SA key creation disabled=true, default SA grants disabled=true).",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -1705,7 +1705,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "04407e39-0fde-4872-84c3-7e2cde37753b",
-                  "description": "Org-level guardrails prevent privilege escalation: 0 org policies enforced including SA key creation disabled=false, SA key upload disabled=false, VM external IP denied=false, default SA grants disabled=false, domain restriction=false. Access Approval requires explicit authorization before Google support accesses customer data=false.",
+                  "description": "Org-level guardrails prevent privilege escalation: 25 org policies enforced including SA key creation disabled=true, SA key upload disabled=true, VM external IP denied=true, default SA grants disabled=true, domain restriction=true. Access Approval requires explicit authorization before Google support accesses customer data=true.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -2795,7 +2795,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "53b3db40-9b96-45d8-82d0-43910c257853",
-                  "description": "Restricted use of non-organizationally owned systems: (1) org policy denies SA key creation=false, preventing external system credential issuance; (2) domain-restricted sharing=false limits IAM grants to organizational domains; (3) VPC Service Controls perimeter \"archon_staging\" blocks API access from non-approved networks; (4) Cloudflare Access restricts application access to managed devices.",
+                  "description": "Restricted use of non-organizationally owned systems: (1) org policy denies SA key creation=true, preventing external system credential issuance; (2) domain-restricted sharing=true limits IAM grants to organizational domains; (3) VPC Service Controls perimeter \"archon_staging\" blocks API access from non-approved networks; (4) Cloudflare Access restricts application access to managed devices.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -3545,7 +3545,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "d8e34b9d-5f49-4397-8659-900be1d3f6ed",
-                  "description": "Audit records are reviewed weekly via an automated audit-review tool (cmd/audit-review) that queries BigQuery audit_logs datasets across all projects. The tool checks for: (1) failed authentication spikes (>10/hour); (2) IAM policy changes (SetIamPolicy events); (3) privilege escalation attempts (CreateRole, CreateServiceAccountKey); (4) bulk data deletion events; (5) off-hours administrative access by non-service-accounts; (6) application-layer auth failures. Reports are generated weekly via Cloud Build scheduler and uploaded to Drata. Cloud Monitoring alert policies provide real-time anomaly detection in parallel.",
+                  "description": "Audit records are reviewed weekly via an automated audit-review tool (cmd/audit-review) that queries BigQuery audit_logs datasets across all projects. The tool checks for: (1) failed authentication spikes (\u003e10/hour); (2) IAM policy changes (SetIamPolicy events); (3) privilege escalation attempts (CreateRole, CreateServiceAccountKey); (4) bulk data deletion events; (5) off-hours administrative access by non-service-accounts; (6) application-layer auth failures. Reports are generated weekly via Cloud Build scheduler and uploaded to Drata. Cloud Monitoring alert policies provide real-time anomaly detection in parallel.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -4725,7 +4725,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "e3f51b9d-6eac-480f-8e0c-0dd6bc704a94",
-                  "description": "Plan of Action and Milestones (POA&M) is maintained and tracked via Drata. An automated POA&M report generator (cmd/poam-report) runs daily via Cloud Build, parsing SARIF scan results from GoSec, Semgrep, Trivy, govulncheck, and Gitleaks. Findings are deduplicated by fingerprint (tool + rule + location), tracked with severity-based remediation deadlines (CRITICAL: 15 days, HIGH: 30 days, MEDIUM: 90 days, LOW: 180 days), and automatically closed when resolved. Reports are uploaded to Drata as evidence artifacts.",
+                  "description": "Plan of Action and Milestones (POA\u0026M) is maintained and tracked via Drata. An automated POA\u0026M report generator (cmd/poam-report) runs daily via Cloud Build, parsing SARIF scan results from GoSec, Semgrep, Trivy, govulncheck, and Gitleaks. Findings are deduplicated by fingerprint (tool + rule + location), tracked with severity-based remediation deadlines (CRITICAL: 15 days, HIGH: 30 days, MEDIUM: 90 days, LOW: 180 days), and automatically closed when resolved. Reports are uploaded to Drata as evidence artifacts.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -4764,7 +4764,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "aa5fae03-8ef7-4e47-84a4-0b5b250148f3",
-                  "description": "The system is pursuing FedRAMP authorization via the 20x process. The authorizing official (AO) is identified in the SSP metadata. Authorization decisions are based on: SSP, security assessment report, POA&M, and continuous monitoring evidence.",
+                  "description": "The system is pursuing FedRAMP authorization via the 20x process. The authorizing official (AO) is identified in the SSP metadata. Authorization decisions are based on: SSP, security assessment report, POA\u0026M, and continuous monitoring evidence.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -5740,7 +5740,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "1fd047c8-4b2c-48c5-8feb-e679d7a73d7e",
-                  "description": "Least functionality — Cloud Run services configured with minimal exposure: archon-admin(ingress=internal-and-cloud-load-balancing,unauth=true); admin-spa(ingress=internal-and-cloud-load-balancing,unauth=true); archon-app(ingress=internal-and-cloud-load-balancing,unauth=true); app-spa(ingress=internal-and-cloud-load-balancing,unauth=true); archon-ops(ingress=internal,unauth=false); ops(ingress=default,unauth=false); ops(ingress=default,unauth=false). Org policy restricts ingress=false, enforces ALL_TRAFFIC egress=false. No services expose *.run.app URLs directly.",
+                  "description": "Least functionality — Cloud Run services configured with minimal exposure: archon-admin(ingress=internal-and-cloud-load-balancing,unauth=true); admin-spa(ingress=internal-and-cloud-load-balancing,unauth=true); archon-app(ingress=internal-and-cloud-load-balancing,unauth=true); app-spa(ingress=internal-and-cloud-load-balancing,unauth=true); archon-ops(ingress=internal,unauth=false); ops(ingress=default,unauth=false); ops(ingress=default,unauth=false). Org policy restricts ingress=true, enforces ALL_TRAFFIC egress=true. No services expose *.run.app URLs directly.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -5826,7 +5826,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "b0d214ff-0ed0-4ee8-872d-a29af3cc2ce0",
-                  "description": "Authorized software allowlisting: (1) 0 org policies restrict which GCP services can be used; (2) Cloud Run only executes container images from authorized Artifact Registry repositories; (3) Binary Authorization (binauthz=true) enforces attestation-based image allowlisting; (4) Go module proxy and checksum database verify authorized packages.",
+                  "description": "Authorized software allowlisting: (1) 25 org policies restrict which GCP services can be used; (2) Cloud Run only executes container images from authorized Artifact Registry repositories; (3) Binary Authorization (binauthz=true) enforces attestation-based image allowlisting; (4) Go module proxy and checksum database verify authorized packages.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -6365,7 +6365,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "38fcb41f-0da3-42c9-836a-d3c7a6eec4b9",
-                  "description": "The contingency plan addresses: (1) essential missions and business functions; (2) recovery objectives (RTO < 1 hour for Tier 1, < 4 hours for Tier 2); (3) recovery strategies per component (Cloud SQL PITR, Cloud Run redeploy, GCS version restore, Vertex AI index rebuild); (4) roles and responsibilities; (5) communication procedures. All infrastructure recoverable via Terragrunt from Git in region us-east4.",
+                  "description": "The contingency plan addresses: (1) essential missions and business functions; (2) recovery objectives (RTO \u003c 1 hour for Tier 1, \u003c 4 hours for Tier 2); (3) recovery strategies per component (Cloud SQL PITR, Cloud Run redeploy, GCS version restore, Vertex AI index rebuild); (4) roles and responsibilities; (5) communication procedures. All infrastructure recoverable via Terragrunt from Git in region us-east4.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -6794,7 +6794,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "dd9a496c-7e0e-4cc3-80f7-be4f18a16044",
-                  "description": "Recovery time and consistency objectives for alternate storage: Cloud SQL automated backups provide RPO < 24 hours. Cloud Storage objects replicated with versioning. Backup encryption uses same CMEK keys (Cloud KMS in archon-kms-staging). RTO target: 4 hours for full service restoration.",
+                  "description": "Recovery time and consistency objectives for alternate storage: Cloud SQL automated backups provide RPO \u003c 24 hours. Cloud Storage objects replicated with versioning. Backup encryption uses same CMEK keys (Cloud KMS in archon-kms-staging). RTO target: 4 hours for full service restoration.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -7442,7 +7442,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "0552a421-123b-4fa6-8798-6ed95a828422",
-                  "description": "Recovery procedures documented for five failure scenarios: (1) Database failure → Cloud SQL PITR; (2) Cloud Run failure → redeploy from Artifact Registry; (3) GCS failure → restore from versioned objects; (4) Vector Search failure → rebuild from source documents; (5) Regional failure → redeploy to alternate US region via Terragrunt. Target RTOs: Tier 1 < 1 hour, Tier 2 < 4 hours.",
+                  "description": "Recovery procedures documented for five failure scenarios: (1) Database failure → Cloud SQL PITR; (2) Cloud Run failure → redeploy from Artifact Registry; (3) GCS failure → restore from versioned objects; (4) Vector Search failure → rebuild from source documents; (5) Regional failure → redeploy to alternate US region via Terragrunt. Target RTOs: Tier 1 \u003c 1 hour, Tier 2 \u003c 4 hours.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -10433,7 +10433,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "9e9ed0f4-2f8a-4923-84f2-7e15cfbb0e31",
-                  "description": "Media sanitization is inherited from GCP's FedRAMP High authorization for physical media. Digital sanitization: (1) account closure triggers 90-day automated data purge; (2) document deletion removes from GCS and purges embeddings; (3) Cloud SQL row-level deletion with vacuum for space reclamation; (4) KMS key destruction after data retention period; (5) Per-tenant crypto-shredding: destroying a tenant’s Cloud KMS key versions renders all envelope-encrypted data (document chunks, chat messages, GCS objects, OAuth tokens) permanently irrecoverable without requiring individual record deletion.",
+                  "description": "Media sanitization is inherited from GCP's FedRAMP High authorization for physical media. Digital sanitization: (1) account closure triggers 90-day automated data purge; (2) document deletion removes from GCS and purges embeddings; (3) Cloud SQL row-level deletion with vacuum for space reclamation; (4) KMS key destruction after data retention period; (5) Per-tenant crypto-shredding: destroying a tenant's Cloud KMS key versions renders all envelope-encrypted data (document chunks, chat messages, GCS objects, OAuth tokens) permanently irrecoverable without requiring individual record deletion.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -11915,7 +11915,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "53f6ccbb-eea9-403a-84e4-3ed9da862f5e",
-                  "description": "POA&M is maintained in Drata and updated continuously as vulnerabilities are discovered, assessed, and remediated. POA&M items include milestones and completion dates.",
+                  "description": "POA\u0026M is maintained in Drata and updated continuously as vulnerabilities are discovered, assessed, and remediated. POA\u0026M items include milestones and completion dates.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -11993,7 +11993,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "5a311d79-362d-4ddc-8ca6-c6998b4746ac",
-                  "description": "Risk management is measured through: (1) security scan results trending; (2) POA&M age and closure rates; (3) incident frequency and severity trending; (4) control assessment pass rates (via `cmd/verify-controls`); (5) time-to-remediate metrics.",
+                  "description": "Risk management is measured through: (1) security scan results trending; (2) POA\u0026M age and closure rates; (3) incident frequency and severity trending; (4) control assessment pass rates (via `cmd/verify-controls`); (5) time-to-remediate metrics.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -12812,7 +12812,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "38ad9b8e-76a9-4890-8ffc-79696be50681",
-                  "description": "Risk framing: risk management approach aligned with NIST RMF. Risk assessment considers: (1) CUI confidentiality (high impact); (2) system availability for mission-critical operations; (3) supply chain risks (mitigated by FedRAMP-authorized providers). 0 org policies enforce risk boundaries.",
+                  "description": "Risk framing: risk management approach aligned with NIST RMF. Risk assessment considers: (1) CUI confidentiality (high impact); (2) system availability for mission-critical operations; (3) supply chain risks (mitigated by FedRAMP-authorized providers). 25 org policies enforce risk boundaries.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -13748,7 +13748,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "7c8bcba8-27ba-49fe-8e10-5474c56822cf",
-                  "description": "Risk assessments identify threats, vulnerabilities, and likelihood/impact of exploitation. Risk assessment results are documented in the risk register and inform security control selection and POA&M prioritization.",
+                  "description": "Risk assessments identify threats, vulnerabilities, and likelihood/impact of exploitation. Risk assessment results are documented in the risk register and inform security control selection and POA\u0026M prioritization.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -15067,7 +15067,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "1faefe37-f9d4-47a3-8b74-bb3a3d77d863",
-                  "description": "Boundary protection is implemented at: (1) Cloudflare Edge WAF — managed ruleset=true, OWASP CRS=true, threat score challenges (threshold=14), path probing protection (15 blocked paths), Worker proxy for same-origin API gateway; (2) Cloud Armor Origin WAF — Cloudflare-only origin restriction (active), OWASP CRS, rate-based bans; (3) Regional HTTPS Load Balancer; (4) VPC egress firewall — deny-all with FQDN allowlist; (5) Cloud Run ingress restricted to internal-and-cloud-load-balancing (org policy enforced=false); (6) No public IP addresses on any service (org policy: VM external IP deny=false, SQL public IP deny=false).",
+                  "description": "Boundary protection is implemented at: (1) Cloudflare Edge WAF — managed ruleset=true, OWASP CRS=true, threat score challenges (threshold=14), path probing protection (15 blocked paths), Worker proxy for same-origin API gateway; (2) Cloud Armor Origin WAF — Cloudflare-only origin restriction (active), OWASP CRS, rate-based bans; (3) Regional HTTPS Load Balancer; (4) VPC egress firewall — deny-all with FQDN allowlist; (5) Cloud Run ingress restricted to internal-and-cloud-load-balancing (org policy enforced=true); (6) No public IP addresses on any service (org policy: VM external IP deny=true, SQL public IP deny=true).",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -16147,7 +16147,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "4be0b70c-b64f-4a39-85c3-16dd48c03eb1",
-                  "description": "Symmetric key management: Cloud KMS manages symmetric CMEK keys (AES-256-GCM) with 90-day automatic rotation, HSM-backed (FIPS 140-2 Level 3). Keys stored in dedicated project archon-kms-staging with independent IAM. Key versions retained for decryption of historical data. Per-tenant envelope encryption uses symmetric AES-256-GCM with random 256-bit DEKs; DEKs are wrapped (encrypted) by the tenant’s Cloud KMS symmetric key before storage. DEK cache uses SHA-256 fingerprints with 5-minute TTL to reduce KMS Decrypt API calls.",
+                  "description": "Symmetric key management: Cloud KMS manages symmetric CMEK keys (AES-256-GCM) with 90-day automatic rotation, HSM-backed (FIPS 140-2 Level 3). Keys stored in dedicated project archon-kms-staging with independent IAM. Key versions retained for decryption of historical data. Per-tenant envelope encryption uses symmetric AES-256-GCM with random 256-bit DEKs; DEKs are wrapped (encrypted) by the tenant's Cloud KMS symmetric key before storage. DEK cache uses SHA-256 fingerprints with 5-minute TTL to reduce KMS Decrypt API calls.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -17187,7 +17187,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "b99b2dac-b591-452b-80fa-5b53e2fcbb7c",
-                  "description": "Protection of information at rest: all data at rest is encrypted with AES-256-GCM using CMEK via Cloud KMS (archon-kms-staging). Encrypted data stores: (1) Cloud SQL (archon) — CMEK; (2) Cloud Storage (archon-ops-staging-documents) — CMEK; (3) Cloud Logging — CMEK; (4) Artifact Registry — CMEK; (5) Cloud Tasks — CMEK; (6) Vertex AI indexes — CMEK. Per-tenant envelope encryption: organizations with a kms_key_name receive application-level AES-256-GCM envelope encryption for document chunk content, chat message content, and GCS-stored objects. Each write generates a random 256-bit DEK, encrypts the data, wraps the DEK with the tenant’s Cloud KMS key, and stores ciphertext + nonce + wrapped DEK alongside the record. Per-object CMEK is applied to GCS uploads for tenants with a configured key. Crypto-shredding: destroying the tenant’s KMS key versions renders all envelope-encrypted data permanently irrecoverable.",
+                  "description": "Protection of information at rest: all data at rest is encrypted with AES-256-GCM using CMEK via Cloud KMS (archon-kms-staging). Encrypted data stores: (1) Cloud SQL (archon) — CMEK; (2) Cloud Storage (archon-ops-staging-documents) — CMEK; (3) Cloud Logging — CMEK; (4) Artifact Registry — CMEK; (5) Cloud Tasks — CMEK; (6) Vertex AI indexes — CMEK. Per-tenant envelope encryption: organizations with a kms_key_name receive application-level AES-256-GCM envelope encryption for document chunk content, chat message content, and GCS-stored objects. Each write generates a random 256-bit DEK, encrypts the data, wraps the DEK with the tenant's Cloud KMS key, and stores ciphertext + nonce + wrapped DEK alongside the record. Per-object CMEK is applied to GCS uploads for tenants with a configured key. Crypto-shredding: destroying the tenant's KMS key versions renders all envelope-encrypted data permanently irrecoverable.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -17258,7 +17258,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "23628f28-7504-41d8-83ab-326fd1957f72",
-                  "description": "CMEK encryption verified across data stores: Cloud SQL=true, GCS=true, BigQuery audit logs=true, Secrets Manager=true, Artifact Registry=true. All keys in dedicated project archon-kms-staging with 90-day rotation, HSM-backed (FIPS 140-2 Level 3). Application-level envelope encryption: per-tenant AES-256-GCM with random DEK per write, DEK wrapped by tenant’s Cloud KMS key (HSM-backed). DEK cache (SHA-256 fingerprint → plaintext DEK, 5-minute TTL) reduces KMS API calls during read-heavy workloads. Envelope-encrypted fields: chunks.content_ciphertext, messages.content_ciphertext, plus GCS per-object CMEK for document files.",
+                  "description": "CMEK encryption verified across data stores: Cloud SQL=true, GCS=true, BigQuery audit logs=true, Secrets Manager=true, Artifact Registry=true. All keys in dedicated project archon-kms-staging with 90-day rotation, HSM-backed (FIPS 140-2 Level 3). Application-level envelope encryption: per-tenant AES-256-GCM with random DEK per write, DEK wrapped by tenant's Cloud KMS key (HSM-backed). DEK cache (SHA-256 fingerprint → plaintext DEK, 5-minute TTL) reduces KMS API calls during read-heavy workloads. Envelope-encrypted fields: chunks.content_ciphertext, messages.content_ciphertext, plus GCS per-object CMEK for document files.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -17532,7 +17532,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "1552c52e-e70c-4b09-884b-1af541a5b3e8",
-                  "description": "Flaw remediation: (1) critical vulnerabilities patched within 24 hours; (2) high within 7 days; (3) medium within 30 days; (4) low within 90 days. Vulnerability scanning runs daily via Cloud Build. Patch status tracked in POA&M via Drata.",
+                  "description": "Flaw remediation: (1) critical vulnerabilities patched within 24 hours; (2) high within 7 days; (3) medium within 30 days; (4) low within 90 days. Vulnerability scanning runs daily via Cloud Build. Patch status tracked in POA\u0026M via Drata.",
                   "implementation-status": {
                     "state": "implemented"
                   }

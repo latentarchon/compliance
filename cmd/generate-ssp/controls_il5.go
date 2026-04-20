@@ -90,7 +90,7 @@ func il5Controls() []ControlDef {
 		{ID: "sc-12.2", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "il5",
 			ComponentUUIDs: []string{thisSystem, cloudKMS},
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Symmetric key management: Cloud KMS manages symmetric CMEK keys (AES-256-GCM) with %d-day automatic rotation, HSM-backed (FIPS 140-2 Level 3). Keys stored in dedicated project %s with independent IAM. Key versions retained for decryption of historical data.",
+				return fmt.Sprintf("Symmetric key management: Cloud KMS manages symmetric CMEK keys (AES-256-GCM) with %d-day automatic rotation, HSM-backed (FIPS 140-2 Level 3). Keys stored in dedicated project %s with independent IAM. Key versions retained for decryption of historical data. Per-tenant envelope encryption uses symmetric AES-256-GCM with random 256-bit DEKs; DEKs are wrapped (encrypted) by the tenant's Cloud KMS symmetric key before storage. DEK cache uses SHA-256 fingerprints with 5-minute TTL to reduce KMS Decrypt API calls.",
 					f.KMSRotationDays, or(f.KMSProjectID))
 			}},
 		{ID: "sc-12.3", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "il5",
