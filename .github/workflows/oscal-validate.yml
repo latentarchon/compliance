@@ -16,8 +16,8 @@ on:
       - 'scripts/**'
       - 'package.json'
       - 'oscal/**'
-  repository_dispatch:
-    types: [infra-changed, backend-changed]
+  schedule:
+    - cron: '0 10 * * *'  # daily 6am ET
   workflow_dispatch:
 
 jobs:
