@@ -165,6 +165,16 @@ type InfraFacts struct {
 	CMEKSecrets   bool
 	CMEKArtifactRegistry bool
 
+	// VPC — flow logs and shell
+	FlowLogSampling    float64
+	CloudShellDisabled bool
+
+	// Artifact Registry
+	ImmutableTags bool
+
+	// Email
+	EmailProvider string
+
 	// Cloud Run per-service
 	CloudRunServices []CloudRunServiceFacts
 
@@ -226,6 +236,7 @@ func scanInfrastructure(infraRoot, backendRoot, orgRoot string) (*InfraFacts, er
 	scanVPCSC(infraRoot, facts)
 	scanCloudArmorModule(infraRoot, facts)
 	scanAssuredWorkloads(infraRoot, facts)
+	scanArtifactRegistry(infraRoot, facts)
 	scanCloudflareModules(infraRoot, facts)
 	scanCloudflareConfigs(infraRoot, facts)
 	scanAuditLogs(infraRoot, facts)
@@ -364,15 +375,49 @@ func scanGCSModule(infraRoot string, facts *InfraFacts) {
 }
 
 func scanVPCModule(infraRoot string, facts *InfraFacts) {
-	// Check for FQDN egress firewall
 	for _, env := range []string{"staging", "fed"} {
-		path := filepath.Join(infraRoot, "gcp/environments", env, "admin/vpc/terragrunt.hcl")
-		if data, err := os.ReadFile(path); err == nil {
-			if strings.Contains(string(data), "egress") {
-				// VPC egress controls exist
+		for _, proj := range []string{"admin/vpc", "app/vpc", "ops/vpc", "ops/shared-vpc"} {
+			path := filepath.Join(infraRoot, "gcp/environments", env, proj, "terragrunt.hcl")
+			data, err := os.ReadFile(path)
+			if err != nil {
+				continue
 			}
+			content := string(data)
+
+			if v := hclInputValueFromContent(content, "flow_log_sampling"); v != "" {
+				if parsed, err := strconv.ParseFloat(v, 64); err == nil && parsed > facts.FlowLogSampling {
+					facts.FlowLogSampling = parsed
+				}
+			}
+
+			if v := hclInputValueFromContent(content, "enable_cloud_shell_access"); v == "false" {
+				facts.CloudShellDisabled = true
+			}
+		}
+		if facts.FlowLogSampling > 0 {
 			break
 		}
+	}
+}
+
+func scanArtifactRegistry(infraRoot string, facts *InfraFacts) {
+	varPath := filepath.Join(infraRoot, "gcp/modules/artifact-registry/variables.tf")
+	if v, ok := hclVarDefault(varPath, "immutable_tags"); ok {
+		facts.ImmutableTags = v == "true"
+	}
+	for _, env := range []string{"staging", "fed"} {
+		for _, proj := range []string{"admin", "app", "ops"} {
+			path := filepath.Join(infraRoot, "gcp/environments", env, proj, "artifact-registry/terragrunt.hcl")
+			data, err := os.ReadFile(path)
+			if err != nil {
+				continue
+			}
+			content := string(data)
+			if v := hclInputValueFromContent(content, "immutable_tags"); v == "false" {
+				facts.ImmutableTags = false
+			}
+		}
+		break
 	}
 }
 
@@ -568,6 +613,9 @@ func scanCloudRunAllServices(infraRoot string, facts *InfraFacts) {
 				svc.ServerMode = hclInputValueFromContent(envVars, "SERVER_MODE")
 				svc.RequireIDPPool = hclInputValueFromContent(envVars, "REQUIRE_IDP_POOL") == "true"
 				svc.SAMLOnly = hclInputValueFromContent(envVars, "AUTH_SAML_ONLY") == "true"
+				if ep := hclInputValueFromContent(envVars, "EMAIL_PROVIDER"); ep != "" && facts.EmailProvider == "" {
+					facts.EmailProvider = ep
+				}
 			}
 			facts.CloudRunServices = append(facts.CloudRunServices, svc)
 		}
@@ -624,15 +672,21 @@ func scanCloudBuild(infraRoot string, facts *InfraFacts) {
 		content := string(data)
 		facts.CloudBuildEnabled = true
 		facts.CloudBuildTriggers = strings.Count(content, "google_cloudbuild_trigger")
-		facts.CloudBuildBinauthzEnabled = strings.Contains(content, "binary_authorization_attestor") || strings.Contains(content, "binauthz")
 	}
 
-	varPath := filepath.Join(infraRoot, "gcp/modules/cloud-build/variables.tf")
-	if data, err := os.ReadFile(varPath); err == nil {
-		content := string(data)
-		if strings.Contains(content, "enable_binary_authorization") {
-			facts.CloudBuildBinauthzEnabled = true
+	// Check actual terragrunt configs for enable_binary_authorization
+	for _, env := range []string{"staging", "fed"} {
+		for _, proj := range []string{"admin", "app", "ops"} {
+			path := filepath.Join(infraRoot, "gcp/environments", env, proj, "cloud-build/terragrunt.hcl")
+			data, err := os.ReadFile(path)
+			if err != nil {
+				continue
+			}
+			if hclInputValueFromContent(string(data), "enable_binary_authorization") == "true" {
+				facts.CloudBuildBinauthzEnabled = true
+			}
 		}
+		break
 	}
 }
 

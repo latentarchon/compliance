@@ -268,5 +268,8 @@ func formatFactsSummary(facts *InfraFacts) string {
 	b.WriteString(fmt.Sprintf("  Monitoring: %d alert policies, %d uptime checks, %d audit alert policies, %d log sinks/project\n", facts.MonitoringAlertPolicies, facts.MonitoringUptimeChecks, facts.AuditLogAlertPolicies, facts.AuditLogSinksPerProject))
 	b.WriteString(fmt.Sprintf("  Org Policies: %d policies, SA key deny=%v, VM ext IP deny=%v, SQL pub IP deny=%v\n", facts.OrgPolicyCount, facts.OrgPolicySAKeyCreationDeny, facts.OrgPolicyVMExternalIPDeny, facts.OrgPolicySQLPublicIPDeny))
 	b.WriteString(fmt.Sprintf("  Org: domain_restricted=%v, shielded_vm=%v, default_sa_deny=%v, access_approval=%v, %d IAM groups\n", facts.OrgPolicyDomainRestricted, facts.OrgPolicyShieldedVM, facts.OrgPolicyDefaultSAGrantDeny, facts.OrgAccessApprovalEnabled, facts.OrgIAMGroupCount))
+	b.WriteString(fmt.Sprintf("  VPC: flow_log_sampling=%.0f%%, cloud_shell_disabled=%v\n", facts.FlowLogSampling*100, facts.CloudShellDisabled))
+	b.WriteString(fmt.Sprintf("  Artifact Registry: immutable_tags=%v\n", facts.ImmutableTags))
+	b.WriteString(fmt.Sprintf("  Email: provider=%s\n", or(facts.EmailProvider, "(not detected)")))
 	return b.String()
 }

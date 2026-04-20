@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 func templatedControls() []ControlDef {
 	var controls []ControlDef
 	controls = append(controls, templatedACControls()...)
@@ -168,7 +170,11 @@ func templatedAUControls() []ControlDef {
 			}},
 		{ID: "au-12", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			NarrativeFn: func(f *InfraFacts) string {
-				return "Audit record generation is provided at: (1) Application layer via `internal/audit/logger.go` for all business logic events; (2) GCP Cloud Audit Logs for all infrastructure API calls; (3) Cloudflare audit logs for edge configuration changes; (4) Cloud Build logs for CI/CD pipeline execution; (5) VPC flow logs on all subnets with 100% sampling rate for complete network traffic metadata. Audit generation is enabled by default and cannot be disabled by non-privileged users."
+				flowLogDesc := ""
+				if f.FlowLogSampling > 0 {
+					flowLogDesc = fmt.Sprintf("; (5) VPC flow logs on all subnets with %.0f%% sampling rate for complete network traffic metadata", f.FlowLogSampling*100)
+				}
+				return fmt.Sprintf("Audit record generation is provided at: (1) Application layer via `internal/audit/logger.go` for all business logic events; (2) GCP Cloud Audit Logs for all infrastructure API calls; (3) Cloudflare audit logs for edge configuration changes; (4) Cloud Build logs for CI/CD pipeline execution%s. Audit generation is enabled by default and cannot be disabled by non-privileged users.", flowLogDesc)
 			}},
 	}
 }
@@ -344,7 +350,14 @@ func templatedSCControls() []ControlDef {
 		{ID: "sc-7.5", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate", NarrativeFn: func(f *InfraFacts) string { return "Default deny: (1) VPC egress firewall denies all outbound by default, with FQDN allowlist for required GCP APIs only; (2) Cloud Armor denies all non-Cloudflare traffic; (3) Cloud Run ingress restricted to internal + load balancer; (4) RBAC denies access by default — explicit grants required." }},
 		{ID: "sc-7.7", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate", NarrativeFn: func(f *InfraFacts) string { return "Split tunneling prevention: not directly applicable to a SaaS system. However, all system access is forced through the WAF stack (Cloudflare → Cloud Armor → LB → Cloud Run). There is no way to bypass the boundary protection to reach origin services directly." }},
 		{ID: "sc-7.8", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate", NarrativeFn: func(f *InfraFacts) string { return "Traffic is routed to authenticated proxy: all inbound traffic is proxied through Cloudflare (authenticated via Cloud Armor Cloudflare-only IP restriction). Internal traffic between GCP services uses GCP's internal networking with service identity verification." }},
-		{ID: "sc-8", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate", ComponentUUIDs: []string{thisSystem, edgeWAF}, NarrativeFn: func(f *InfraFacts) string { return "Transmission confidentiality and integrity: all data in transit is encrypted with TLS 1.2+ (minimum enforced by Cloudflare and GCP). HSTS headers enforce HTTPS. Internal GCP service-to-service communication uses mTLS via Cloud Run's built-in service mesh. Transactional email (magic link sign-in, notifications) uses Gmail API with domain-wide delegation over Google's internal API transport rather than external SMTP relay." }},
+		{ID: "sc-8", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate", ComponentUUIDs: []string{thisSystem, edgeWAF},
+			NarrativeFn: func(f *InfraFacts) string {
+				emailDesc := "Transactional email uses Gmail API with domain-wide delegation over Google's internal API transport rather than external SMTP relay."
+				if f.EmailProvider != "" && f.EmailProvider != "gmail" {
+					emailDesc = fmt.Sprintf("Transactional email uses %s provider.", f.EmailProvider)
+				}
+				return fmt.Sprintf("Transmission confidentiality and integrity: all data in transit is encrypted with TLS 1.2+ (minimum enforced by Cloudflare and GCP). HSTS headers enforce HTTPS. Internal GCP service-to-service communication uses mTLS via Cloud Run's built-in service mesh. %s", emailDesc)
+			}},
 		{ID: "sc-10", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			Parameters: []ParamValue{{ParamID: "sc-10_prm_1", Values: []string{"15 minutes of inactivity"}}},
 			NarrativeFn: func(f *InfraFacts) string { return "Network connections are terminated after: (1) 15 minutes of inactivity (application session timeout); (2) 12 hours maximum session duration; (3) Cloudflare connection timeouts for idle TCP connections; (4) Cloud Run request timeouts (300 seconds for streaming, 60 seconds for standard)." }},
@@ -373,7 +386,18 @@ func templatedSIControls() []ControlDef {
 		{ID: "si-4.5", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate", NarrativeFn: func(f *InfraFacts) string { return "Automated alerts for security-relevant events: (1) authentication failure spikes → email + PagerDuty; (2) WAF block rate increase → Cloud Monitoring alert; (3) error rate SLO violation → PagerDuty; (4) unauthorized API access attempts → audit log alert; (5) configuration drift detected → CI alert." }},
 		{ID: "si-5", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate", NarrativeFn: func(f *InfraFacts) string { return "Security alerts and advisories: (1) US-CERT advisories monitored; (2) Go vulnerability database (govulncheck) checked daily; (3) NVD CVE feed monitored for dependencies; (4) Cloudflare security advisories; (5) GCP security bulletins. Relevant advisories trigger vulnerability assessment and patching within defined SLAs." }},
 		{ID: "si-6", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate", NarrativeFn: func(f *InfraFacts) string { return "Security function verification: (1) `cmd/verify-controls` validates NIST controls against live GCP state; (2) `cmd/check-ssp-iac-drift` verifies SSP accuracy against IaC; (3) `cmd/generate-ssp` regenerates SSP from IaC to prevent drift; (4) CI/CD pipeline validates security configurations on every change." }},
-		{ID: "si-7", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate", ComponentUUIDs: []string{thisSystem, ciCD}, NarrativeFn: func(f *InfraFacts) string { return "Software and information integrity: (1) container images built in Cloud Build with deterministic builds; (2) container image digests (SHA-256) used for deployment (not mutable tags); (3) Artifact Registry immutable tags prevent tag overwrite after publication; (4) Git commit signing for source code integrity; (5) SBOM generation tracks all components. Binary Authorization attestation is not currently enabled — the IL5 gcp.restrictServiceUsage org policy blocks containeranalysis.googleapis.com. Compensating controls: digest-pinned deploys, Trivy scan gating, Cosign-signed digests, immutable AR tags." }},
+		{ID: "si-7", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate", ComponentUUIDs: []string{thisSystem, ciCD},
+			NarrativeFn: func(f *InfraFacts) string {
+				immutableDesc := "Artifact Registry immutable tags prevent tag overwrite after publication"
+				if !f.ImmutableTags {
+					immutableDesc = "Artifact Registry tags are mutable (immutable_tags not enabled)"
+				}
+				binauthzDesc := "Binary Authorization attestation is not currently enabled — the IL5 gcp.restrictServiceUsage org policy blocks containeranalysis.googleapis.com. Compensating controls: digest-pinned deploys, Trivy scan gating, Cosign-signed digests, immutable AR tags."
+				if f.CloudBuildBinauthzEnabled {
+					binauthzDesc = "Binary Authorization attests images before deployment to production."
+				}
+				return fmt.Sprintf("Software and information integrity: (1) container images built in Cloud Build with deterministic builds; (2) container image digests (SHA-256) used for deployment (not mutable tags); (3) %s; (4) Git commit signing for source code integrity; (5) SBOM generation tracks all components. %s", immutableDesc, binauthzDesc)
+			}},
 		{ID: "si-7.1", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate", NarrativeFn: func(f *InfraFacts) string { return "Integrity checking: (1) container image digests verified at deployment; (2) Go module checksums verified via go.sum; (3) npm integrity verified via package-lock.json; (4) Terraform provider checksums verified; (5) ClamAV definition checksums verified on update." }},
 		{ID: "si-8", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate", NarrativeFn: func(f *InfraFacts) string { return "Spam protection: (1) reCAPTCHA Enterprise on registration and login endpoints; (2) Cloudflare Bot Management; (3) rate limiting on all API endpoints; (4) email sending restricted to transactional notifications only (no bulk email)." }},
 		{ID: "si-10", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate", NarrativeFn: func(f *InfraFacts) string { return "Information input validation: (1) Connect-RPC/Protobuf enforces type-safe API contracts; (2) Server-side validation for all user inputs; (3) SQL injection prevented by parameterized queries (no string interpolation); (4) XSS prevented by React's automatic escaping and CSP headers; (5) File upload validation (MIME type, size limits, malware scan)." }},

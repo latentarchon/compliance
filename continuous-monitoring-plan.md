@@ -143,8 +143,8 @@ Refer to the Incident Response Policy (POL-IR-001) for detailed procedures.
 | Break-glass secret access (db-postgres-password) | Cloud Monitoring log-based metric + CRITICAL alert | Immediate investigation; verify authorized break-glass operation; rotate password if unauthorized |
 | Database DDL/role changes | pgAudit (`ddl,role,write`) via Cloud SQL flags | Review for unauthorized schema modifications |
 | Slow queries (>1s) | `log_min_duration_statement=1000` Cloud SQL flag | Performance investigation; potential abuse detection |
-| BinAuthz admission denial | Cloud Monitoring alert (Binary Authorization deny event) | Unauthorized image deployment investigation; verify attestation pipeline |
-| BinAuthz break-glass override | Cloud Monitoring alert (break-glass annotation on deploy) | Verify authorized emergency operation; audit break-glass justification |
+| BinAuthz admission denial | _Not currently active — Binary Authorization blocked by IL5 org policy (`containeranalysis.googleapis.com` restricted). Compensating: immutable AR tags, Trivy scan gating, Cosign-signed digests_ | Will activate when IL5 approves Container Analysis API |
+| BinAuthz break-glass override | _Not currently active — see above_ | Will activate when IL5 approves Container Analysis API |
 
 ### 5.2 Incident Reporting
 

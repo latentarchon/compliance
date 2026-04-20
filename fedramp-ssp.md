@@ -273,6 +273,8 @@ All other egress is blocked. Microsoft Graph API egress is only active when the 
 - **Auth project exclusion**: Auth projects (Identity Platform) use global services incompatible with VPC-SC and are excluded from the perimeter.
 - **Enforcement**: When enforced, hard 403 errors for API calls that violate the perimeter boundary. In dry-run mode, violations are logged in Cloud Audit Logs without blocking.
 
+All Terraform/Terragrunt operations use service account impersonation (`terraform-sa@<project>.iam.gserviceaccount.com`) to ensure VPC-SC identity resolution succeeds — direct ADC OAuth tokens cannot be resolved by VPC-SC. This applies to both GCS state backends and Google provider API calls across all modules, including centralized KMS.
+
 VPC-SC complements the FQDN egress firewall — the firewall controls network-layer egress while VPC-SC controls API-layer data movement.
 
 ---
@@ -352,7 +354,7 @@ VPC-SC complements the FQDN egress firewall — the firewall controls network-la
 |-------------|----------------|
 | **Multi-Factor Authentication** | TOTP-based MFA enforced on all data endpoints via auth interceptor; step-up MFA for sensitive operations. |
 | **Session Management** | Global idle timeout: 25 min (default). Global absolute timeout: 12 hr (default). Per-org configurable: idle 5-480 min, absolute 60-1440 min. Enforced server-side via JWT `auth_time` and `iat` claims. |
-| **Password Policy** | Managed by Identity Platform; magic link (passwordless) preferred. SSO/SAML available with password policy delegated to customer IdP. |
+| **Password Policy** | Managed by Identity Platform; magic link (passwordless) preferred, delivered via Gmail API with domain-wide delegation (no SMTP relay). SSO/SAML available with password policy delegated to customer IdP. |
 | **Account Lockout** | Identity provider built-in brute-force protection. Application-level rate limiting at IP + per-user levels. |
 
 ### 7.3 Role-Based Access Control (RBAC)
@@ -775,6 +777,7 @@ The following algorithms are explicitly prohibited per NIST SP 800-131A:
 | POA-15 | Hire dedicated Security Lead for independent incident investigation and two-person integrity | Medium | AC-5, SA-11, IR-4 | CEO | Post-first-customer | Open — Currently addressed by automation-first architecture (see SOD-LA-001 §5). Hire planned as organization scales. |
 | POA-16 | Hire dedicated Engineering Lead for independent PR review and expanded development capacity | Medium | AC-5, CM-3 | CEO | Post-revenue | Open — Currently addressed by 6 independent automated security scanners that review every change (see SOD-LA-001 §5). |
 | POA-17 | Implement phishing simulation program (AT-2(1)) | Low | AT-2(1) | CEO | Post-first-hire | Open — Adversarial personnel testing will be added as team grows. Currently, continuous automated adversarial testing (44-attack red team suite) validates security posture monthly. |
+| POA-18 | Enable Binary Authorization attestation on Cloud Run | Medium | SI-7(14) | Engineering | Pending IL5 service approval | Open — IL5 `gcp.restrictServiceUsage` org policy blocks `containeranalysis.googleapis.com` required for attestation notes. Compensating controls: immutable AR tags, Trivy scan gating, Cosign-signed digests, digest-pinned deploys. Will enable when IL5 approves Container Analysis API. |
 
 ---
 
