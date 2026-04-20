@@ -1,0 +1,138 @@
+# Cloud Build — Compliance Evidence Pipeline
+#
+# Triggered by: push to main (compliance paths) + weekly Cloud Scheduler
+# Generates OSCAL SSP, validates, runs compliance checks, uploads evidence
+# to gs://archon-compliance-evidence (management project).
+#
+# Runs in archon-org-admin — Cloud Build SA has storage.objectAdmin on the
+# evidence bucket and is in the management VPC SC trusted_members.
+
+substitutions:
+  _EVIDENCE_BUCKET: archon-compliance-evidence
+  _GO_VERSION: '1.25'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  # ═══════════════════════════════════════════════════════════════════════
+  # Step 1: Download Go modules
+  # ═══════════════════════════════════════════════════════════════════════
+  - id: go-deps
+    name: golang:${_GO_VERSION}
+    entrypoint: go
+    args: ['mod', 'download']
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Step 2: Validate personnel.json schema
+  # ═══════════════════════════════════════════════════════════════════════
+  - id: validate-personnel
+    name: node:22-alpine
+    entrypoint: npx
+    args: ['ajv', 'validate', '-s', 'personnel.schema.json', '-d', 'personnel.json', '--spec=draft2020']
+    waitFor: ['-']
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Step 3: Run SSP generator tests
+  # ═══════════════════════════════════════════════════════════════════════
+  - id: ssp-tests
+    name: golang:${_GO_VERSION}
+    entrypoint: go
+    args: ['test', './cmd/generate-ssp/', '-v', '-count=1']
+    waitFor: ['go-deps']
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Step 4: Generate OSCAL SSP
+  # ═══════════════════════════════════════════════════════════════════════
+  - id: generate-ssp
+    name: golang:${_GO_VERSION}
+    entrypoint: go
+    args:
+      - run
+      - ./cmd/generate-ssp/
+      - --baseline
+      - high
+      - --out
+      - oscal/ssp.json
+      - --evidence-dir
+      - evidence
+      - -v
+    waitFor: ['go-deps']
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Step 5: Install Node dependencies (OSCAL schema validation)
+  # ═══════════════════════════════════════════════════════════════════════
+  - id: npm-install
+    name: node:22-alpine
+    entrypoint: npm
+    args: ['ci']
+    waitFor: ['-']
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Step 6: Validate OSCAL SSP (JSON Schema)
+  # ═══════════════════════════════════════════════════════════════════════
+  - id: validate-schema
+    name: node:22-alpine
+    entrypoint: npm
+    args: ['run', 'validate:oscal-schema']
+    waitFor: ['generate-ssp', 'npm-install']
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Step 7: Validate OSCAL SSP (oscal-cli)
+  # ═══════════════════════════════════════════════════════════════════════
+  - id: validate-oscal-cli
+    name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        docker run --rm -v /workspace:/data \
+          ghcr.io/metaschema-framework/oscal-cli:latest \
+          validate /data/oscal/ssp.json || true
+    waitFor: ['generate-ssp']
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Step 8: Policy Review
+  # ═══════════════════════════════════════════════════════════════════════
+  - id: policy-review
+    name: golang:${_GO_VERSION}
+    entrypoint: go
+    args: ['run', './cmd/policy-review/', '--policies-dir', 'policies', '--warn-only']
+    waitFor: ['go-deps']
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Step 9: Build compliance tools
+  # ═══════════════════════════════════════════════════════════════════════
+  - id: build-tools
+    name: golang:${_GO_VERSION}
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        go build ./cmd/access-review/
+        go build ./cmd/audit-review/
+        go build ./cmd/poam-report/
+    waitFor: ['go-deps']
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Step 10: Upload evidence to compliance bucket
+  # ═══════════════════════════════════════════════════════════════════════
+  - id: upload-evidence
+    name: gcr.io/cloud-builders/gsutil
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        DATE=$(date +%Y-%m-%d)
+        DEST="gs://${_EVIDENCE_BUCKET}/$${DATE}"
+
+        gsutil cp oscal/ssp.json $${DEST}/oscal-ssp.json
+        gsutil -m cp -r evidence/ $${DEST}/evidence/ || true
+
+        # Overwrite latest pointer
+        gsutil cp oscal/ssp.json gs://${_EVIDENCE_BUCKET}/latest/oscal-ssp.json
+
+        echo "Evidence uploaded to $${DEST}"
+    waitFor: ['validate-schema', 'policy-review', 'build-tools']
+
+timeout: 900s
