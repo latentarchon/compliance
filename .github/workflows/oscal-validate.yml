@@ -17,7 +17,7 @@ on:
       - 'package.json'
       - 'oscal/**'
   schedule:
-    - cron: '0 10 * * *'  # daily 6am ET
+    - cron: '0 10 * * 1'  # weekly Monday 6am ET
   workflow_dispatch:
 
 jobs:
