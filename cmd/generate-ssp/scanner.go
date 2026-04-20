@@ -178,6 +178,37 @@ type InfraFacts struct {
 	// Cloud Run per-service
 	CloudRunServices []CloudRunServiceFacts
 
+	// GDC (air-gapped IL6)
+	GDCPlatform             bool
+	GDCProject              string
+	GDCLocation             string
+	GDCRegistryHost         string
+	GDCAppReplicas          int
+	GDCAdminReplicas        int
+	GDCOpsReplicas          int
+	GDCWorkerReplicas       int
+	GDCWorkerEnabled        bool
+	GDCGatewayEnabled       bool
+	GDCGatewayMTLS          bool
+	GDCGatewayClassName     string
+	GDCAppHost              string
+	GDCAdminHost            string
+	GDCNetworkPolicyEnabled bool
+	GDCPDBEnabled           bool
+	GDCDoDCAMounted         bool
+	GDCStorageBucket        string
+	GDCEmbeddingModel       string
+	GDCEmbeddingDimensions  int
+	GDCExtractorModel       string
+	GDCAlloyDBHost          string
+	GDCAlloyDBSSLMode       string
+	GDCSessionIdleTimeout   int
+	GDCSessionAbsTimeout    int
+	GDCMaxConcurrentSess    int
+	GDCSecurityContext      bool // runAsNonRoot + readOnlyRootFilesystem + drop ALL
+	GDCDeploymentCount      int
+	GDCServiceCount         int
+
 	// RLS
 	RLSTableCount  int
 	RLSPolicyCount int
@@ -251,6 +282,7 @@ func scanInfrastructure(infraRoot, backendRoot, orgRoot string) (*InfraFacts, er
 		scanBackendCode(backendRoot, facts)
 		scanRLS(backendRoot, facts)
 		scanCICD(backendRoot, facts)
+		scanGDCDeployment(backendRoot, facts)
 	}
 
 	if orgRoot != "" {

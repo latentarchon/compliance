@@ -39,8 +39,12 @@ func verifiedControls() []ControlDef {
 			}},
 		{ID: "ac-17", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("All access to the system is remote access — there is no physical console access. Remote access is controlled through: (1) HTTPS/TLS 1.2+ for all user-facing connections via Cloudflare and Cloud Armor; (2) Cloudflare Zero Trust Access for admin endpoints (%s); (3) GCP IAP or IAM Conditions for infrastructure access; (4) GitHub with SSO for code repository access; (5) Workload Identity Federation for CI/CD (keyless); (6) Cloud Shell disabled on all projects via org constraint.",
-					or(f.AdminDomain))
+				cloudShellDesc := ""
+				if f.CloudShellDisabled {
+					cloudShellDesc = "; (6) Cloud Shell disabled on all projects via org constraint"
+				}
+				return fmt.Sprintf("All access to the system is remote access — there is no physical console access. Remote access is controlled through: (1) HTTPS/TLS 1.2+ for all user-facing connections via Cloudflare and Cloud Armor; (2) Cloudflare Zero Trust Access for admin endpoints (%s); (3) GCP IAP or IAM Conditions for infrastructure access; (4) GitHub with SSO for code repository access; (5) Workload Identity Federation for CI/CD (keyless)%s.",
+					or(f.AdminDomain), cloudShellDesc)
 			}},
 		{ID: "ac-17.1", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			NarrativeFn: func(f *InfraFacts) string {

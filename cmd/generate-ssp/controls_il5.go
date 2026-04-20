@@ -96,8 +96,12 @@ func il5Controls() []ControlDef {
 		{ID: "sc-12.3", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "il5",
 			ComponentUUIDs: []string{thisSystem, cloudKMS},
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Asymmetric key management: Cloud KMS manages asymmetric signing keys for Binary Authorization attestations. HSM-backed (FIPS 140-2 Level 3). Asymmetric keys do not rotate automatically (by design — attestation verification requires stable public keys). Keys in project %s.",
-					or(f.KMSProjectID))
+				signingDesc := "Binary Authorization attestations"
+				if !f.CloudBuildBinauthzEnabled {
+					signingDesc = "Cosign container image signatures (Binary Authorization not currently active due to IL5 containeranalysis restriction)"
+				}
+				return fmt.Sprintf("Asymmetric key management: Cloud KMS manages asymmetric signing keys for %s. HSM-backed (FIPS 140-2 Level 3). Asymmetric keys do not rotate automatically (by design — attestation verification requires stable public keys). Keys in project %s.",
+					signingDesc, or(f.KMSProjectID))
 			}},
 		{ID: "sc-12.6", ImplStatus: "inherited", RoleID: "system-owner", Baseline: "high",
 			ComponentUUIDs: []string{gcpPlatform},
@@ -118,8 +122,12 @@ func il5Controls() []ControlDef {
 		{ID: "si-7.6", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "il5",
 			ComponentUUIDs: []string{thisSystem, cloudKMS},
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Cryptographic protection of integrity: (1) CMEK encryption (AES-256-GCM) provides authenticated encryption with integrity verification; (2) Binary Authorization uses KMS-signed attestations; (3) TLS provides integrity protection in transit; (4) all keys HSM-backed (FIPS 140-2 Level 3) in project %s.",
-					or(f.KMSProjectID))
+				attestDesc := "Binary Authorization uses KMS-signed attestations"
+				if !f.CloudBuildBinauthzEnabled {
+					attestDesc = "Cosign container image signing provides deployment provenance (Binary Authorization pending IL5 service approval)"
+				}
+				return fmt.Sprintf("Cryptographic protection of integrity: (1) CMEK encryption (AES-256-GCM) provides authenticated encryption with integrity verification; (2) %s; (3) TLS provides integrity protection in transit; (4) all keys HSM-backed (FIPS 140-2 Level 3) in project %s.",
+					attestDesc, or(f.KMSProjectID))
 			}},
 		{ID: "si-7.15", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "high",
 			NarrativeFn: func(f *InfraFacts) string {
@@ -477,8 +485,12 @@ func il5Controls() []ControlDef {
 		{ID: "sr-3.2", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "il5",
 			ComponentUUIDs: []string{thisSystem, gcpPlatform},
 			NarrativeFn: func(f *InfraFacts) string {
-				return fmt.Sprintf("Limitation of harm from supply chain compromise: (1) VPC Service Controls (enforced=%v) limit blast radius of compromised components; (2) least-privilege IAM ensures compromised service accounts have minimal access; (3) separate GCP projects (%s, %s, %s) isolate supply chain impact; (4) Binary Authorization prevents deployment of tampered images.",
-					f.VPCSCEnforced, or(f.AdminProjectID), or(f.OpsProjectID), or(f.AppProjectID))
+				binauthzDesc := "digest-pinned deploys and Cosign signatures prevent deployment of tampered images"
+				if f.CloudBuildBinauthzEnabled {
+					binauthzDesc = "Binary Authorization prevents deployment of tampered images"
+				}
+				return fmt.Sprintf("Limitation of harm from supply chain compromise: (1) VPC Service Controls (enforced=%v) limit blast radius of compromised components; (2) least-privilege IAM ensures compromised service accounts have minimal access; (3) separate GCP projects (%s, %s, %s) isolate supply chain impact; (4) %s.",
+					f.VPCSCEnforced, or(f.AdminProjectID), or(f.OpsProjectID), or(f.AppProjectID), binauthzDesc)
 			}},
 		{ID: "sr-3.3", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "il5",
 			ComponentUUIDs: []string{thisSystem},
