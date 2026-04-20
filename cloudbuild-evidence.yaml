@@ -115,7 +115,32 @@ steps:
     waitFor: ['go-deps']
 
   # ═══════════════════════════════════════════════════════════════════════
-  # Step 10: Upload evidence to compliance bucket
+  # Step 10: Write provenance manifest
+  # ═══════════════════════════════════════════════════════════════════════
+  - id: provenance
+    name: gcr.io/cloud-builders/git
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        cat > manifest.json <<MANIFEST
+        {
+          "build_id": "${BUILD_ID}",
+          "project_id": "${PROJECT_ID}",
+          "trigger_name": "${TRIGGER_NAME}",
+          "commit_sha": "${COMMIT_SHA}",
+          "repo_name": "${REPO_NAME}",
+          "branch_name": "${BRANCH_NAME}",
+          "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+          "go_version": "${_GO_VERSION}",
+          "generator": "cmd/generate-ssp",
+          "baseline": "high"
+        }
+        MANIFEST
+    waitFor: ['-']
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Step 11: Upload evidence to compliance bucket
   # ═══════════════════════════════════════════════════════════════════════
   - id: upload-evidence
     name: gcr.io/cloud-builders/gsutil
@@ -127,12 +152,14 @@ steps:
         DEST="gs://${_EVIDENCE_BUCKET}/$${DATE}"
 
         gsutil cp oscal/ssp.json $${DEST}/oscal-ssp.json
+        gsutil cp manifest.json $${DEST}/manifest.json
         gsutil -m cp -r evidence/ $${DEST}/evidence/ || true
 
-        # Overwrite latest pointer
+        # Overwrite latest pointers
         gsutil cp oscal/ssp.json gs://${_EVIDENCE_BUCKET}/latest/oscal-ssp.json
+        gsutil cp manifest.json gs://${_EVIDENCE_BUCKET}/latest/manifest.json
 
         echo "Evidence uploaded to $${DEST}"
-    waitFor: ['validate-schema', 'policy-review', 'build-tools']
+    waitFor: ['validate-schema', 'policy-review', 'build-tools', 'provenance']
 
 timeout: 900s
