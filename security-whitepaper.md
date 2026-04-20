@@ -281,7 +281,9 @@ All data-tier services (database, object storage, KMS, vector search, LLM, docum
 
 <!-- MULTI-CLOUD: Original table included AWS Key Management (CMEK via KMS/RDS, SSE-KMS/S3, etc.) and Azure Key Management (CMEK via Key Vault/TDE, etc.) columns. -->
 
-All data-at-rest encryption uses Customer-Managed Encryption Keys (CMEK) backed by HSMs (FIPS 140-2 Level 3). Keys rotate automatically every 90 days. Each service has a dedicated CMEK key, with IAM grants scoped to minimum required permissions. Key lifecycle events (disable, destroy, version state changes) trigger monitoring alerts. Per-tenant CMEK anchor: `organizations.kms_key_name` column stores the KMS key resource name for each tenant, enabling future per-tenant encryption key isolation.
+All data-at-rest encryption uses Customer-Managed Encryption Keys (CMEK) backed by HSMs (FIPS 140-2 Level 3). Keys rotate automatically every 90 days. Each service has a dedicated CMEK key, with IAM grants scoped to minimum required permissions. Key lifecycle events (disable, destroy, version state changes) trigger monitoring alerts.
+
+**Per-tenant envelope encryption**: Organizations with a `kms_key_name` receive application-level AES-256-GCM envelope encryption for sensitive content. Each write generates a random 256-bit Data Encryption Key (DEK), encrypts the data with AES-256-GCM, wraps the DEK using the tenant's Cloud KMS key (HSM-backed), and stores the ciphertext, nonce, and wrapped DEK alongside the database record. Encrypted data types: document chunk content (`chunks.content_ciphertext`), chat message content (`messages.content_ciphertext`), GCS-stored document files (per-object CMEK), and Microsoft Graph OAuth refresh tokens. A DEK cache (keyed by SHA-256 fingerprint of the wrapped DEK, 5-minute TTL) reduces KMS Decrypt API calls during read-heavy workloads. **Crypto-shredding**: destroying a tenant's KMS key versions renders all envelope-encrypted data permanently irrecoverable without requiring individual record deletion — supporting rapid, verifiable data destruction for tenant offboarding or compliance requirements.
 
 ### Data in Transit
 
@@ -332,9 +334,11 @@ These flags are defined in the Cloud SQL module (`infra/gcp/modules/cloud-sql/`)
 
 <!-- MULTI-CLOUD: Original referenced infra/{gcp,aws,azure}/modules/ and RDS parameter groups / Azure Flexible Server parameters. -->
 
-### Schema future-proofing (no behavioral change today)
+### Schema fields for per-tenant isolation
 
-- `organizations.kms_key_name` — Per-tenant CMEK anchor for future customer-managed key isolation.
+- `organizations.kms_key_name` — Per-tenant CMEK key resource name; when set, activates application-level envelope encryption for document chunks, chat messages, GCS objects, and OAuth tokens. Supports crypto-shredding via KMS key destruction.
+- `chunks.content_ciphertext`, `chunks.content_nonce`, `chunks.content_wrapped_dek` — Envelope-encrypted document chunk content (AES-256-GCM with KMS-wrapped DEK).
+- `messages.content_ciphertext`, `messages.content_nonce`, `messages.content_wrapped_dek` — Envelope-encrypted chat message content.
 - `organizations.data_region` — Default `us-east4`; enables future per-tenant data residency constraints.
 - `audit_events.session_id` and `audit_events.mfa_method` — Additional audit information per AU-3(1) for session correlation and MFA method tracking.
 
@@ -412,7 +416,7 @@ The platform includes a **real-time security notification service** that alerts 
 
 - **Deduplication window** — prevents alert storms (default 5 min per org+action, configurable)
 - **Panic recovery** — notification goroutine catches panics, never crashes the server
-- **Timeout protection** — 10s recipient resolution + 30s SMTP send timeout
+- **Timeout protection** — 10s recipient resolution + 30s Gmail API send timeout
 - **Fallback recipient** — configurable default alert email when no org admins can be resolved
 - **Bypasses EMAIL_ALLOWLIST** — security notifications always deliver, even in staging
 
@@ -592,8 +596,8 @@ Automated alert policies are deployed via Terraform across all cloud environment
 | KMS Key Lifecycle | Key disable, destroy, or version state changes | CRITICAL | Unauthorized key operations detection |
 | Secret Access | Secret read operations on managed secrets | CRITICAL | Unexpected secret access detection |
 | Break-Glass Secret Access | Access to database superuser password secret | CRITICAL | Emergency credential usage tracking |
-| BinAuthz Admission Denial | Binary Authorization rejects a Cloud Run deploy (missing/invalid attestation) | CRITICAL | Unauthorized or untrusted image deployment detection |
-| BinAuthz Break-Glass Override | Deploy bypasses Binary Authorization via break-glass annotation | CRITICAL | Emergency attestation bypass tracking |
+| BinAuthz Admission Denial | _Not currently active — IL5 org policy blocks `containeranalysis.googleapis.com`_ | Will activate when IL5 approves Container Analysis API |
+| BinAuthz Break-Glass Override | _Not currently active — see above_ | Will activate when IL5 approves Container Analysis API |
 
 All alerts route to configured notification channels with rate limiting to prevent alert fatigue. Staging and production environments share identical alert configurations to ensure security parity.
 
@@ -711,17 +715,19 @@ This ensures:
 
 ### Binary Authorization Enforcement
 
-Cloud Run enforces a Binary Authorization policy that **rejects images without a valid attestation** in production:
+Binary Authorization is **not currently active** on any environment. The IL5 `gcp.restrictServiceUsage` org policy blocks `containeranalysis.googleapis.com`, which Binary Authorization requires for attestation notes. This affects all IL5 projects — both staging and production data-plane projects are IL5 Assured Workloads.
+
+**Compensating controls** for supply chain integrity in the absence of Binary Authorization:
 
 | Control | Detail |
 |---------|--------|
-| Attestor | Cloud Build attestor with KMS-backed signing key |
-| Policy | `ALWAYS_DENY` default; only images signed by the Cloud Build attestor are admitted |
-| Break-Glass | Annotation-based override for emergency deploys — triggers CRITICAL monitoring alert |
-| Monitoring | Admission denials and break-glass overrides both fire alert policies routed to notification channels |
-| Staging | Disabled — IL5 org policy (`gcp.restrictServiceUsage`) blocks `containeranalysis.googleapis.com`, which Binary Auth requires for attestation notes |
+| Immutable AR Tags | Artifact Registry repositories enforce immutable tags, preventing tag-squatting attacks |
+| Digest-Pinned Deploys | All Cloud Run deployments reference images by SHA-256 digest, not mutable tags |
+| Cosign Signatures | Container images are Cosign-signed with OIDC keyless attestation via Sigstore |
+| Trivy Scan Gating | Vulnerability scans gate image push — images above threshold are rejected |
+| Cloud Build Only | Images are built exclusively in Cloud Build; no local developer builds permitted |
 
-This provides a second layer of supply chain enforcement beyond Cosign — even if a malicious image is pushed to Artifact Registry, it cannot be deployed without a valid attestation from the authorized Cloud Build pipeline. Binary Authorization is enabled in production where the Container Analysis API is permitted. In staging (IL5 Assured Workloads), the org policy restricts this API, so supply chain integrity relies on digest-pinned deploys, Cosign signature verification, and immutable Artifact Registry tags.
+Binary Authorization will be enabled when the Container Analysis API is approved for IL5 workloads (tracked as POA-18).
 
 ### CI/CD Security
 
@@ -876,7 +882,7 @@ All keys are HSM-backed with automatic rotation and lifecycle event alerting.
 | Capability | GCP |
 |-----------|-----|
 | Network isolation | Shared VPC (host + service projects) |
-| Flow logging | VPC Flow Logs (50% sampling) |
+| Flow logging | VPC Flow Logs (100% sampling) |
 | Egress control | FQDN-based firewall policy |
 | Cross-env access | Shared VPC service project attachment |
 

@@ -2373,7 +2373,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "df0377e4-9d7d-4ec7-8286-535a9a34c7e4",
-                  "description": "All access to the system is remote access — there is no physical console access. Remote access is controlled through: (1) HTTPS/TLS 1.2+ for all user-facing connections via Cloudflare and Cloud Armor; (2) Cloudflare Zero Trust Access for admin endpoints (admin.staging.latentarchon.com); (3) GCP IAP or IAM Conditions for infrastructure access; (4) GitHub with SSO for code repository access; (5) Workload Identity Federation for CI/CD (keyless).",
+                  "description": "All access to the system is remote access — there is no physical console access. Remote access is controlled through: (1) HTTPS/TLS 1.2+ for all user-facing connections via Cloudflare and Cloud Armor; (2) Cloudflare Zero Trust Access for admin endpoints (admin.staging.latentarchon.com); (3) GCP IAP or IAM Conditions for infrastructure access; (4) GitHub with SSO for code repository access; (5) Workload Identity Federation for CI/CD (keyless); (6) Cloud Shell disabled on all projects via org constraint.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -3545,7 +3545,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "d8e34b9d-5f49-4397-8659-900be1d3f6ed",
-                  "description": "Audit records are reviewed weekly via an automated audit-review tool (cmd/audit-review) that queries BigQuery audit_logs datasets across all projects. The tool checks for: (1) failed authentication spikes (\u003e10/hour); (2) IAM policy changes (SetIamPolicy events); (3) privilege escalation attempts (CreateRole, CreateServiceAccountKey); (4) bulk data deletion events; (5) off-hours administrative access by non-service-accounts; (6) application-layer auth failures. Reports are generated weekly via Cloud Build scheduler and uploaded to Drata. Cloud Monitoring alert policies provide real-time anomaly detection in parallel.",
+                  "description": "Audit records are reviewed weekly via an automated audit-review tool (cmd/audit-review) that queries BigQuery audit_logs datasets across all projects. The tool checks for: (1) failed authentication spikes (>10/hour); (2) IAM policy changes (SetIamPolicy events); (3) privilege escalation attempts (CreateRole, CreateServiceAccountKey); (4) bulk data deletion events; (5) off-hours administrative access by non-service-accounts; (6) application-layer auth failures. Reports are generated weekly via Cloud Build scheduler and uploaded to Drata. Cloud Monitoring alert policies provide real-time anomaly detection in parallel.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -4178,7 +4178,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "c2bfd691-9e5c-43b4-8072-e7434d65bfde",
-                  "description": "Audit record generation is provided at: (1) Application layer via `internal/audit/logger.go` for all business logic events; (2) GCP Cloud Audit Logs for all infrastructure API calls; (3) Cloudflare audit logs for edge configuration changes; (4) Cloud Build logs for CI/CD pipeline execution. Audit generation is enabled by default and cannot be disabled by non-privileged users.",
+                  "description": "Audit record generation is provided at: (1) Application layer via `internal/audit/logger.go` for all business logic events; (2) GCP Cloud Audit Logs for all infrastructure API calls; (3) Cloudflare audit logs for edge configuration changes; (4) Cloud Build logs for CI/CD pipeline execution; (5) VPC flow logs on all subnets with 100% sampling rate for complete network traffic metadata. Audit generation is enabled by default and cannot be disabled by non-privileged users.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -4725,7 +4725,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "e3f51b9d-6eac-480f-8e0c-0dd6bc704a94",
-                  "description": "Plan of Action and Milestones (POA\u0026M) is maintained and tracked via Drata. An automated POA\u0026M report generator (cmd/poam-report) runs daily via Cloud Build, parsing SARIF scan results from GoSec, Semgrep, Trivy, govulncheck, and Gitleaks. Findings are deduplicated by fingerprint (tool + rule + location), tracked with severity-based remediation deadlines (CRITICAL: 15 days, HIGH: 30 days, MEDIUM: 90 days, LOW: 180 days), and automatically closed when resolved. Reports are uploaded to Drata as evidence artifacts.",
+                  "description": "Plan of Action and Milestones (POA&M) is maintained and tracked via Drata. An automated POA&M report generator (cmd/poam-report) runs daily via Cloud Build, parsing SARIF scan results from GoSec, Semgrep, Trivy, govulncheck, and Gitleaks. Findings are deduplicated by fingerprint (tool + rule + location), tracked with severity-based remediation deadlines (CRITICAL: 15 days, HIGH: 30 days, MEDIUM: 90 days, LOW: 180 days), and automatically closed when resolved. Reports are uploaded to Drata as evidence artifacts.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -4764,7 +4764,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "aa5fae03-8ef7-4e47-84a4-0b5b250148f3",
-                  "description": "The system is pursuing FedRAMP authorization via the 20x process. The authorizing official (AO) is identified in the SSP metadata. Authorization decisions are based on: SSP, security assessment report, POA\u0026M, and continuous monitoring evidence.",
+                  "description": "The system is pursuing FedRAMP authorization via the 20x process. The authorizing official (AO) is identified in the SSP metadata. Authorization decisions are based on: SSP, security assessment report, POA&M, and continuous monitoring evidence.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -6365,7 +6365,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "38fcb41f-0da3-42c9-836a-d3c7a6eec4b9",
-                  "description": "The contingency plan addresses: (1) essential missions and business functions; (2) recovery objectives (RTO \u003c 1 hour for Tier 1, \u003c 4 hours for Tier 2); (3) recovery strategies per component (Cloud SQL PITR, Cloud Run redeploy, GCS version restore, Vertex AI index rebuild); (4) roles and responsibilities; (5) communication procedures. All infrastructure recoverable via Terragrunt from Git in region us-east4.",
+                  "description": "The contingency plan addresses: (1) essential missions and business functions; (2) recovery objectives (RTO < 1 hour for Tier 1, < 4 hours for Tier 2); (3) recovery strategies per component (Cloud SQL PITR, Cloud Run redeploy, GCS version restore, Vertex AI index rebuild); (4) roles and responsibilities; (5) communication procedures. All infrastructure recoverable via Terragrunt from Git in region us-east4.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -6794,7 +6794,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "dd9a496c-7e0e-4cc3-80f7-be4f18a16044",
-                  "description": "Recovery time and consistency objectives for alternate storage: Cloud SQL automated backups provide RPO \u003c 24 hours. Cloud Storage objects replicated with versioning. Backup encryption uses same CMEK keys (Cloud KMS in archon-kms-staging). RTO target: 4 hours for full service restoration.",
+                  "description": "Recovery time and consistency objectives for alternate storage: Cloud SQL automated backups provide RPO < 24 hours. Cloud Storage objects replicated with versioning. Backup encryption uses same CMEK keys (Cloud KMS in archon-kms-staging). RTO target: 4 hours for full service restoration.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -7442,7 +7442,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "0552a421-123b-4fa6-8798-6ed95a828422",
-                  "description": "Recovery procedures documented for five failure scenarios: (1) Database failure → Cloud SQL PITR; (2) Cloud Run failure → redeploy from Artifact Registry; (3) GCS failure → restore from versioned objects; (4) Vector Search failure → rebuild from source documents; (5) Regional failure → redeploy to alternate US region via Terragrunt. Target RTOs: Tier 1 \u003c 1 hour, Tier 2 \u003c 4 hours.",
+                  "description": "Recovery procedures documented for five failure scenarios: (1) Database failure → Cloud SQL PITR; (2) Cloud Run failure → redeploy from Artifact Registry; (3) GCS failure → restore from versioned objects; (4) Vector Search failure → rebuild from source documents; (5) Regional failure → redeploy to alternate US region via Terragrunt. Target RTOs: Tier 1 < 1 hour, Tier 2 < 4 hours.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -10433,7 +10433,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "9e9ed0f4-2f8a-4923-84f2-7e15cfbb0e31",
-                  "description": "Media sanitization is inherited from GCP's FedRAMP High authorization for physical media. Digital sanitization: (1) account closure triggers 90-day automated data purge; (2) document deletion removes from GCS and purges embeddings; (3) Cloud SQL row-level deletion with vacuum for space reclamation; (4) KMS key destruction after data retention period.",
+                  "description": "Media sanitization is inherited from GCP's FedRAMP High authorization for physical media. Digital sanitization: (1) account closure triggers 90-day automated data purge; (2) document deletion removes from GCS and purges embeddings; (3) Cloud SQL row-level deletion with vacuum for space reclamation; (4) KMS key destruction after data retention period; (5) Per-tenant crypto-shredding: destroying a tenant’s Cloud KMS key versions renders all envelope-encrypted data (document chunks, chat messages, GCS objects, OAuth tokens) permanently irrecoverable without requiring individual record deletion.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -11915,7 +11915,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "53f6ccbb-eea9-403a-84e4-3ed9da862f5e",
-                  "description": "POA\u0026M is maintained in Drata and updated continuously as vulnerabilities are discovered, assessed, and remediated. POA\u0026M items include milestones and completion dates.",
+                  "description": "POA&M is maintained in Drata and updated continuously as vulnerabilities are discovered, assessed, and remediated. POA&M items include milestones and completion dates.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -11993,7 +11993,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "5a311d79-362d-4ddc-8ca6-c6998b4746ac",
-                  "description": "Risk management is measured through: (1) security scan results trending; (2) POA\u0026M age and closure rates; (3) incident frequency and severity trending; (4) control assessment pass rates (via `cmd/verify-controls`); (5) time-to-remediate metrics.",
+                  "description": "Risk management is measured through: (1) security scan results trending; (2) POA&M age and closure rates; (3) incident frequency and severity trending; (4) control assessment pass rates (via `cmd/verify-controls`); (5) time-to-remediate metrics.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -13748,7 +13748,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "7c8bcba8-27ba-49fe-8e10-5474c56822cf",
-                  "description": "Risk assessments identify threats, vulnerabilities, and likelihood/impact of exploitation. Risk assessment results are documented in the risk register and inform security control selection and POA\u0026M prioritization.",
+                  "description": "Risk assessments identify threats, vulnerabilities, and likelihood/impact of exploitation. Risk assessment results are documented in the risk register and inform security control selection and POA&M prioritization.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -15881,7 +15881,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "01b68dfc-efdc-4f28-8d86-a1a1a3b62269",
-                  "description": "Transmission confidentiality and integrity: all data in transit is encrypted with TLS 1.2+ (minimum enforced by Cloudflare and GCP). HSTS headers enforce HTTPS. Internal GCP service-to-service communication uses mTLS via Cloud Run's built-in service mesh.",
+                  "description": "Transmission confidentiality and integrity: all data in transit is encrypted with TLS 1.2+ (minimum enforced by Cloudflare and GCP). HSTS headers enforce HTTPS. Internal GCP service-to-service communication uses mTLS via Cloud Run's built-in service mesh. Transactional email (magic link sign-in, notifications) uses Gmail API with domain-wide delegation over Google's internal API transport rather than external SMTP relay.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -16061,7 +16061,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "1a8326e8-3880-45b5-8ccf-14b13ecd8367",
-                  "description": "Cryptographic key management: (1) Cloud KMS in dedicated project archon-kms-staging provides centralized key management; (2) Key rotation every 90 days (automated); (3) HSM-backed keys (FIPS 140-2 Level 3); (4) Separate key rings for each data type (SQL, GCS, logging, secrets); (5) Key access controlled via IAM — only authorized service accounts can use keys.",
+                  "description": "Cryptographic key management: (1) Cloud KMS in dedicated project archon-kms-staging provides centralized key management; (2) Key rotation every 90 days (automated); (3) HSM-backed keys (FIPS 140-2 Level 3); (4) Separate key rings for each data type (SQL, GCS, logging, secrets); (5) Key access controlled via IAM — only authorized service accounts can use keys; (6) Per-tenant CMEK keys anchored via organizations.kms_key_name column — used for application-level envelope encryption of document chunks, chat messages, GCS objects, and Microsoft Graph OAuth tokens; (7) DEK lifecycle: random 256-bit DEK generated per encrypt operation, wrapped by tenant KMS key, stored alongside ciphertext; (8) Crypto-shredding supported by destroying tenant KMS key versions (24-hour scheduled destruction delay).",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -16147,7 +16147,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "4be0b70c-b64f-4a39-85c3-16dd48c03eb1",
-                  "description": "Symmetric key management: Cloud KMS manages symmetric CMEK keys (AES-256-GCM) with 90-day automatic rotation, HSM-backed (FIPS 140-2 Level 3). Keys stored in dedicated project archon-kms-staging with independent IAM. Key versions retained for decryption of historical data.",
+                  "description": "Symmetric key management: Cloud KMS manages symmetric CMEK keys (AES-256-GCM) with 90-day automatic rotation, HSM-backed (FIPS 140-2 Level 3). Keys stored in dedicated project archon-kms-staging with independent IAM. Key versions retained for decryption of historical data. Per-tenant envelope encryption uses symmetric AES-256-GCM with random 256-bit DEKs; DEKs are wrapped (encrypted) by the tenant’s Cloud KMS symmetric key before storage. DEK cache uses SHA-256 fingerprints with 5-minute TTL to reduce KMS Decrypt API calls.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -16288,7 +16288,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "043ff7f4-e5af-4e6f-83dd-0db12a76b007",
-                  "description": "FIPS-validated cryptography: (1) GOEXPERIMENT=boringcrypto provides FIPS 140-2 validated TLS in the Go backend; (2) Cloud KMS uses FIPS 140-2 Level 3 HSMs; (3) AES-256-GCM for data at rest (CMEK); (4) TLS 1.2+ with FIPS-approved cipher suites for data in transit; (5) Algorithm: GOOGLE_SYMMETRIC_ENCRYPTION for KMS keys.",
+                  "description": "FIPS-validated cryptography: (1) GOEXPERIMENT=boringcrypto provides FIPS 140-2 validated TLS in the Go backend; (2) Cloud KMS uses FIPS 140-2 Level 3 HSMs; (3) AES-256-GCM for data at rest (CMEK and application-level envelope encryption); (4) TLS 1.2+ with FIPS-approved cipher suites for data in transit; (5) Algorithm: GOOGLE_SYMMETRIC_ENCRYPTION for KMS keys; (6) Application-level envelope encryption uses Go crypto/aes + crypto/cipher (AES-256-GCM via BoringCrypto FIPS module) with crypto/rand for DEK and nonce generation.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -17187,7 +17187,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "b99b2dac-b591-452b-80fa-5b53e2fcbb7c",
-                  "description": "Protection of information at rest: all data at rest is encrypted with AES-256-GCM using CMEK via Cloud KMS (archon-kms-staging). Encrypted data stores: (1) Cloud SQL (archon) — CMEK; (2) Cloud Storage (archon-ops-staging-documents) — CMEK; (3) Cloud Logging — CMEK; (4) Artifact Registry — CMEK; (5) Cloud Tasks — CMEK; (6) Vertex AI indexes — CMEK.",
+                  "description": "Protection of information at rest: all data at rest is encrypted with AES-256-GCM using CMEK via Cloud KMS (archon-kms-staging). Encrypted data stores: (1) Cloud SQL (archon) — CMEK; (2) Cloud Storage (archon-ops-staging-documents) — CMEK; (3) Cloud Logging — CMEK; (4) Artifact Registry — CMEK; (5) Cloud Tasks — CMEK; (6) Vertex AI indexes — CMEK. Per-tenant envelope encryption: organizations with a kms_key_name receive application-level AES-256-GCM envelope encryption for document chunk content, chat message content, and GCS-stored objects. Each write generates a random 256-bit DEK, encrypts the data, wraps the DEK with the tenant’s Cloud KMS key, and stores ciphertext + nonce + wrapped DEK alongside the record. Per-object CMEK is applied to GCS uploads for tenants with a configured key. Crypto-shredding: destroying the tenant’s KMS key versions renders all envelope-encrypted data permanently irrecoverable.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -17258,7 +17258,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "23628f28-7504-41d8-83ab-326fd1957f72",
-                  "description": "CMEK encryption verified across data stores: Cloud SQL=true, GCS=true, BigQuery audit logs=true, Secrets Manager=true, Artifact Registry=true. All keys in dedicated project archon-kms-staging with 90-day rotation, HSM-backed (FIPS 140-2 Level 3).",
+                  "description": "CMEK encryption verified across data stores: Cloud SQL=true, GCS=true, BigQuery audit logs=true, Secrets Manager=true, Artifact Registry=true. All keys in dedicated project archon-kms-staging with 90-day rotation, HSM-backed (FIPS 140-2 Level 3). Application-level envelope encryption: per-tenant AES-256-GCM with random DEK per write, DEK wrapped by tenant’s Cloud KMS key (HSM-backed). DEK cache (SHA-256 fingerprint → plaintext DEK, 5-minute TTL) reduces KMS API calls during read-heavy workloads. Envelope-encrypted fields: chunks.content_ciphertext, messages.content_ciphertext, plus GCS per-object CMEK for document files.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -17532,7 +17532,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "1552c52e-e70c-4b09-884b-1af541a5b3e8",
-                  "description": "Flaw remediation: (1) critical vulnerabilities patched within 24 hours; (2) high within 7 days; (3) medium within 30 days; (4) low within 90 days. Vulnerability scanning runs daily via Cloud Build. Patch status tracked in POA\u0026M via Drata.",
+                  "description": "Flaw remediation: (1) critical vulnerabilities patched within 24 hours; (2) high within 7 days; (3) medium within 30 days; (4) low within 90 days. Vulnerability scanning runs daily via Cloud Build. Patch status tracked in POA&M via Drata.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -18470,7 +18470,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "55ac5d9c-8986-45be-8563-a580f860456b",
-                  "description": "Software and information integrity: (1) container images built in Cloud Build with deterministic builds; (2) container image digests (SHA-256) used for deployment (not mutable tags); (3) Binary Authorization attests images on ops project; (4) Git commit signing for source code integrity; (5) SBOM generation tracks all components.",
+                  "description": "Software and information integrity: (1) container images built in Cloud Build with deterministic builds; (2) container image digests (SHA-256) used for deployment (not mutable tags); (3) Artifact Registry immutable tags prevent tag overwrite after publication; (4) Git commit signing for source code integrity; (5) SBOM generation tracks all components. Binary Authorization attestation is not currently enabled — the IL5 gcp.restrictServiceUsage org policy blocks containeranalysis.googleapis.com. Compensating controls: digest-pinned deploys, Trivy scan gating, Cosign-signed digests, immutable AR tags.",
                   "implementation-status": {
                     "state": "implemented"
                   }
