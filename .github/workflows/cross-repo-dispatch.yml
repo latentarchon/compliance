@@ -1,0 +1,27 @@
+name: Cross-Repo Compliance Trigger
+# Copy this workflow to latentarchon/infra and latentarchon/backend repos
+# as .github/workflows/compliance-dispatch.yml
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'gcp/modules/**'
+      - 'gcp/environments/**'
+      - 'cloudflare/**'
+      - 'org-policy.tf'
+      - 'cloudbuild*.yaml'
+      - 'Dockerfile'
+      - 'shared-go/postgres/schema.sql'
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger compliance regeneration
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.COMPLIANCE_DISPATCH_TOKEN }}
+          repository: latentarchon/compliance
+          event-type: ${{ github.repository == 'latentarchon/infra' && 'infra-changed' || 'backend-changed' }}
+          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}", "repo": "${{ github.repository }}"}'

@@ -38,6 +38,15 @@ const (
 	vertexAI     = "b4c5d6e7-f809-4102-9324-35465768798a"
 	ciCD         = "c5d6e7f8-0910-4213-a435-4657687989ab"
 	clamAV       = "d6e7f809-1021-4324-b546-57687989abbc"
+
+	// GDC-specific components (IL6)
+	gdcPlatform    = "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"
+	alloyDBOmni    = "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e"
+	gdcObjStorage  = "3c4d5e6f-7a8b-4c9d-0e1f-2a3b4c5d6e7f"
+	gdcGateway     = "4d5e6f7a-8b9c-4d0e-1f2a-3b4c5d6e7f80"
+	gdcAppServer   = "5e6f7a8b-9c0d-4e1f-2a3b-4c5d6e7f8091"
+	gdcAdminServer = "6f7a8b9c-0d1e-4f2a-3b4c-5d6e7f809102"
+	gdcOpsServer   = "7a8b9c0d-1e2f-4a3b-4c5d-6e7f80910213"
 )
 
 var verifiedControlIDs = map[string]bool{
@@ -101,6 +110,7 @@ func allControls() []ControlDef {
 	all = append(all, inheritedControls()...)
 	all = append(all, gapControls()...)
 	all = append(all, il5Controls()...)
+	all = append(all, il6Controls()...)
 
 	for i := range all {
 		all[i].EvidenceTier = classifyTier(all[i].ID)

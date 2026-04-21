@@ -65,7 +65,8 @@ func main() {
 	orgRoot := flag.String("org-root", "", "path to org/ directory")
 	existingSSP := flag.String("existing-ssp", "", "path to existing ssp.json (preserves metadata/characteristics)")
 	outFile := flag.String("out", "", "output file (default: stdout)")
-	baseline := flag.String("baseline", "high", "baseline level: moderate, high, il5")
+	baseline := flag.String("baseline", "high", "baseline level: moderate, high, il5, il6")
+	platform := flag.String("platform", "gcp", "deployment platform: gcp, gdc")
 	evidenceDir := flag.String("evidence-dir", "", "output directory for tier-separated evidence files")
 	verbose := flag.Bool("v", false, "print infrastructure facts summary")
 	flag.Parse()
@@ -82,7 +83,11 @@ func main() {
 		*orgRoot = filepath.Join(root, "org")
 	}
 	if *existingSSP == "" {
-		*existingSSP = filepath.Join(root, "compliance", "oscal", "ssp.json")
+		if *platform == "gdc" {
+			*existingSSP = filepath.Join(root, "compliance", "oscal", "ssp-gdc-il6.json")
+		} else {
+			*existingSSP = filepath.Join(root, "compliance", "oscal", "ssp.json")
+		}
 	}
 
 	roster, err := loadRoster(root)
@@ -99,11 +104,18 @@ func main() {
 		fmt.Fprintln(os.Stderr, formatFactsSummary(facts))
 	}
 
+	newSSP := func() SSPDocument {
+		if *platform == "gdc" {
+			return freshSSPGDC(facts, roster, root)
+		}
+		return freshSSP(facts, roster, root)
+	}
+
 	var doc SSPDocument
 	if data, err := os.ReadFile(*existingSSP); err == nil {
 		if err := json.Unmarshal(data, &doc); err != nil {
 			log.Printf("warning: could not parse existing SSP, generating fresh: %v", err)
-			doc = freshSSP(facts, roster, root)
+			doc = newSSP()
 		} else {
 			if len(doc.SystemSecurityPlan.SystemCharacteristics.SystemIDs) > 0 {
 				uuidNamespace = doc.SystemSecurityPlan.SystemCharacteristics.SystemIDs[0].ID
@@ -112,7 +124,7 @@ func main() {
 			doc.SystemSecurityPlan.Metadata.Version = bumpPatch(doc.SystemSecurityPlan.Metadata.Version)
 		}
 	} else {
-		doc = freshSSP(facts, roster, root)
+		doc = newSSP()
 	}
 
 	reqs := buildImplementedRequirements(facts)
@@ -186,11 +198,14 @@ func deterministicUUID(input string) string {
 
 func filterByBaseline(reqs []ImplementedRequirement, level string) []ImplementedRequirement {
 	allowed := map[string]bool{"moderate": true}
-	if level == "high" || level == "il5" {
+	if level == "high" || level == "il5" || level == "il6" {
 		allowed["high"] = true
 	}
-	if level == "il5" {
+	if level == "il5" || level == "il6" {
 		allowed["il5"] = true
+	}
+	if level == "il6" {
+		allowed["il6"] = true
 	}
 
 	var filtered []ImplementedRequirement
@@ -210,6 +225,8 @@ func filterByBaseline(reqs []ImplementedRequirement, level string) []Implemented
 
 func profileHref(baseline string) string {
 	switch baseline {
+	case "il6":
+		return "https://raw.githubusercontent.com/usnistgov/oscal-content/refs/heads/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_HIGH-baseline-resolved-profile_catalog.json"
 	case "il5":
 		return "https://raw.githubusercontent.com/GSA/fedramp-automation/refs/heads/master/dist/content/rev5/baselines/json/FedRAMP_rev5_HIGH-baseline-resolved-profile_catalog.json"
 	case "high":
@@ -429,6 +446,200 @@ func freshSSP(facts *InfraFacts, roster *PersonnelRoster, root string) SSPDocume
 					{UUID: deterministicUUID("res-conmon-plan"), Title: "Continuous Monitoring Plan", Description: "Continuous monitoring strategy and procedures.", RLinks: []RLink{{Href: "./continuous-monitoring-plan.md", MediaType: "text/markdown"}}},
 					{UUID: deterministicUUID("res-scrm-plan"), Title: "Supply Chain Risk Management Plan", Description: "Supply chain risk management plan (SCRMP).", RLinks: []RLink{{Href: "./supply-chain-risk-management-plan.md", MediaType: "text/markdown"}}},
 					{UUID: deterministicUUID("res-pia"), Title: "Privacy Impact Assessment", Description: "Privacy impact assessment (PIA).", RLinks: []RLink{{Href: "./privacy-impact-assessment.md", MediaType: "text/markdown"}}},
+				},
+			},
+		},
+	}
+}
+
+func freshSSPGDC(facts *InfraFacts, roster *PersonnelRoster, root string) SSPDocument {
+	owner := roster.findByRole("system-owner")
+	if owner == nil {
+		log.Fatal("personnel.json: no person with system-owner role")
+	}
+
+	gdcPartyUUID := "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+	gdcLevAuthUUID := "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"
+
+	buildProps := collectBuildMetadata(root)
+	metaProps := append([]Prop{{Name: "marking", Value: "CUI//SP-DISSEM"}}, buildProps...)
+
+	return SSPDocument{
+		SystemSecurityPlan: SSP{
+			UUID: deterministicUUID("ssp-gdc-root"),
+			Metadata: Metadata{
+				Title:        "Latent Archon Document Intelligence Platform — System Security Plan (GDC IL6/Secret)",
+				LastModified: time.Now().UTC().Format(time.RFC3339Nano),
+				Version:      "1.0.0",
+				OscalVersion: "1.1.3",
+				Props:        metaProps,
+				Roles: []Role{
+					{ID: "system-owner", Title: "System Owner"},
+					{ID: "information-system-security-officer", Title: "Information System Security Officer"},
+					{ID: "authorizing-official", Title: "Authorizing Official (DISA)"},
+				},
+				Parties: []Party{
+					{
+						UUID:           roster.Organization.UUID,
+						Type:           "organization",
+						Name:           roster.Organization.Name,
+						EmailAddresses: []string{roster.Organization.Email},
+						Links: []Link{
+							{Href: roster.Organization.Homepage, Rel: "homepage"},
+						},
+					},
+					{
+						UUID: owner.UUID,
+						Type: "person",
+						Name: owner.Name,
+						Props: []Prop{
+							{Name: "job-title", Value: owner.Title},
+						},
+						EmailAddresses:        []string{owner.Email},
+						MemberOfOrganizations: []string{roster.Organization.UUID},
+					},
+					{
+						UUID: gdcPartyUUID,
+						Type: "organization",
+						Name: "Google Distributed Cloud (GDC) Air-Gapped Platform",
+					},
+				},
+				ResponsibleParties: []ResponsibleParty{
+					{RoleID: "system-owner", PartyUUIDs: []string{owner.UUID}},
+				},
+			},
+			ImportProfile: ImportProfile{
+				Href: "https://raw.githubusercontent.com/usnistgov/oscal-content/refs/heads/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_HIGH-baseline-resolved-profile_catalog.json",
+			},
+			SystemCharacteristics: SystemCharacteristics{
+				SystemIDs: []SystemID{
+					{IdentifierType: "http://ietf.org/rfc/rfc4122", ID: "LA-DIP-IL6-2026"},
+				},
+				SystemName:      "Latent Archon Document Intelligence Platform (GDC IL6/Secret)",
+				SystemNameShort: "LA-DIP-GDC",
+				Description:     "Latent Archon is a multi-tenant document intelligence platform deployed on Google Distributed Cloud (GDC) air-gapped infrastructure for processing classified (Secret/IL6) information. The platform provides document management with malware scanning, AI-powered semantic search using Retrieval-Augmented Generation (RAG) via Gemini for GDC, interactive conversation over uploaded documents, workspace-level data isolation enforced through AlloyDB Omni Row-Level Security (RLS), and CAC/PIV-based mTLS authentication.",
+				Props: []Prop{
+					{Name: "cloud-service-model", Value: "saas"},
+					{Name: "cloud-deployment-model", Value: "government-only-cloud"},
+					{Name: "identity-assurance-level", Value: "3"},
+					{Name: "authenticator-assurance-level", Value: "3"},
+					{Name: "federation-assurance-level", Value: "3"},
+				},
+				SecuritySensitivity: "high",
+				SystemInformation: SystemInformation{
+					InformationTypes: []InformationType{
+						{
+							UUID:        "c9fd4122-978b-4365-bc1f-9a35e081c247",
+							Title:       "Customer Documents (Classified/Secret)",
+							Description: "Customer-uploaded documents containing classified information up to Secret/IL6.",
+							Categorizations: []Categorization{
+								{System: "https://doi.org/10.6028/NIST.SP.800-60v2r1", InformationTypeIDs: []string{"D.14"}},
+							},
+							ConfidentialityImpact: ImpactLevel{Base: "high"},
+							IntegrityImpact:       ImpactLevel{Base: "high"},
+							AvailabilityImpact:    ImpactLevel{Base: "moderate"},
+						},
+					},
+				},
+				SecurityImpactLevel: SecurityImpactLevel{
+					Confidentiality: "high",
+					Integrity:       "high",
+					Availability:    "moderate",
+				},
+				Status: Status{
+					State:   "under-development",
+					Remarks: "System is in pre-authorization status. GDC deployment architecture defined via Helm charts. DISA Provisional Authorization engagement pending.",
+				},
+				AuthorizationBoundary: DescriptionBlock{
+					Description: fmt.Sprintf("The authorization boundary encompasses all components deployed on the GDC air-gapped cluster: application pods (archon-app, archon-admin, archon-ops, archon-worker), AlloyDB Omni database (%s), GDC Object Storage (%s), GKE Gateway API with mTLS ingress, Kubernetes NetworkPolicies, and supporting Secrets/ConfigMaps. The GDC platform itself (bare-metal compute, storage, networking) is a separate leveraged authorization. Container images are pre-loaded into the GDC local registry (%s). No internet connectivity exists within the boundary.",
+						or(facts.GDCAlloyDBHost), or(facts.GDCStorageBucket), or(facts.GDCRegistryHost)),
+				},
+				NetworkArchitecture: DescriptionBlock{
+					Description: fmt.Sprintf("All traffic is within the physically air-gapped GDC cluster. Client connections originate from terminals within the IL6-authorized facility. Inbound traffic flows through GKE Gateway API (class=%s) with mTLS (DoD root CA client certificate verification) → HTTPRoute → backend Service → Pod. Internal pod-to-pod communication is restricted by Kubernetes NetworkPolicy: app/admin pods accept ingress on port 8080, ops pods accept only from worker pods, worker pods have zero ingress. AlloyDB Omni is accessed via cluster-internal DNS (%s) with SSL mode=%s. No external network connectivity exists.",
+						or(facts.GDCGatewayClassName), or(facts.GDCAlloyDBHost), or(facts.GDCAlloyDBSSLMode, "require")),
+				},
+				DataFlow: DescriptionBlock{
+					Description: fmt.Sprintf("Document upload: Terminal → mTLS Gateway → Admin API (CAC auth, RBAC, malware scan) → GDC Object Storage (%s) → Task Queue (Postgres SKIP LOCKED) → Worker → Ops Service (extraction via %s, chunking, embedding via %s) → AlloyDB Omni (pgvector/alloydb_scann). Query: Terminal → mTLS Gateway → App API (CAC auth, workspace check) → AlloyDB Omni vector search → Gemini for GDC (streaming response) → Client. All data at rest encrypted by GDC platform (FIPS 140-2). All data in transit protected by mTLS.",
+						or(facts.GDCStorageBucket), or(facts.GDCExtractorModel), or(facts.GDCEmbeddingModel)),
+				},
+			},
+			SystemImplementation: SystemImplementation{
+				LeveragedAuthorizations: []LeveragedAuthorization{
+					{
+						UUID:           gdcLevAuthUUID,
+						Title:          "Google Distributed Cloud (GDC) Air-Gapped Platform",
+						Props:          []Prop{{Name: "implementation-point", Value: "external"}},
+						PartyUUID:      gdcPartyUUID,
+						DateAuthorized: "2025-01-01",
+					},
+				},
+				Users: []User{
+					{
+						UUID:        "9137a909-0d75-4825-b4a2-757f036a1a0c",
+						Title:       "Customer End User",
+						Description: "Cleared personnel using conversation/search functionality via the app SPA from within the IL6-authorized facility.",
+						Props: []Prop{
+							{Name: "type", Value: "external"},
+							{Name: "privilege-level", Value: "non-privileged"},
+						},
+						RoleIDs: []string{"viewer", "editor"},
+						AuthorizedPrivileges: []AuthorizedPriv{{
+							Title:              "Conversation and Search",
+							Description:        "Access to conversation interface and document search within assigned workspaces.",
+							FunctionsPerformed: []string{"document-search", "conversation", "view-documents"},
+						}},
+					},
+					{
+						UUID:        "d03ac1e6-e97f-40e7-9fde-e2c9b43f17fe",
+						Title:       "Customer Org Admin",
+						Description: "Cleared administrator managing organization settings, users, and workspaces.",
+						Props: []Prop{
+							{Name: "type", Value: "external"},
+							{Name: "privilege-level", Value: "privileged"},
+						},
+						RoleIDs: []string{"master_admin", "admin"},
+						AuthorizedPrivileges: []AuthorizedPriv{{
+							Title:              "Organization Management",
+							Description:        "Create/manage workspaces, invite/remove members, upload documents, manage settings.",
+							FunctionsPerformed: []string{"user-management", "workspace-management", "document-management", "settings-management"},
+						}},
+					},
+					{
+						UUID:        "91c44d8d-ea19-4db3-bbcd-8126859edb3f",
+						Title:       "Latent Archon Engineer",
+						Description: "Cleared platform developer deploying via approved media transfer to GDC. No direct production data access.",
+						Props: []Prop{
+							{Name: "type", Value: "internal"},
+							{Name: "privilege-level", Value: "privileged"},
+						},
+						RoleIDs: []string{"developer"},
+						AuthorizedPrivileges: []AuthorizedPriv{{
+							Title:              "Deployment",
+							Description:        "Deploy application containers via Helm to GDC cluster. Images pre-built and transferred via approved media.",
+							FunctionsPerformed: []string{"code-deployment", "infrastructure-management"},
+						}},
+					},
+				},
+				Components: []Component{
+					{UUID: thisSystem, Type: "this-system", Title: "Latent Archon Application (GDC)", Description: "The complete Latent Archon Document Intelligence Platform deployed on GDC air-gapped infrastructure via Helm charts.", Status: Status{State: "under-development"}},
+					{UUID: gdcPlatform, Type: "leveraged-system", Title: "Google Distributed Cloud (GDC) Air-Gapped", Description: "GDC provides bare-metal Kubernetes compute, AlloyDB Omni, Object Storage, Gemini for GDC, and platform-managed encryption within a physically air-gapped IL6-authorized environment.", Props: []Prop{{Name: "leveraged-authorization-uuid", Value: gdcLevAuthUUID}}, Status: Status{State: "operational"}},
+					{UUID: gdcAppServer, Type: "service", Title: "App API (archon-app)", Description: "Kubernetes Deployment handling user-facing API: conversation, search, CAC auth, streaming responses.", Status: Status{State: "under-development"}},
+					{UUID: gdcAdminServer, Type: "service", Title: "Admin API (archon-admin)", Description: "Kubernetes Deployment handling admin API: org management, document ingestion, settings, member management.", Status: Status{State: "under-development"}},
+					{UUID: gdcOpsServer, Type: "service", Title: "Ops Service (archon-ops)", Description: "Kubernetes Deployment handling background processing: document extraction, embeddings, cron jobs.", Status: Status{State: "under-development"}},
+					{UUID: alloyDBOmni, Type: "service", Title: "AlloyDB Omni", Description: "PostgreSQL-compatible database with pgvector and alloydb_scann extensions for vector search. Provisioned by GDC platform team (WWT). Row-Level Security enforces workspace-scoped data isolation.", Status: Status{State: "under-development"}},
+					{UUID: gdcObjStorage, Type: "service", Title: "GDC Object Storage", Description: "GCS-compatible object storage for customer documents. Provisioned via GDC admin console.", Status: Status{State: "under-development"}},
+					{UUID: gdcGateway, Type: "service", Title: "GKE Gateway API (mTLS Ingress)", Description: "Kubernetes Gateway API resource providing HTTPS ingress with mutual TLS. Requires CAC/PIV client certificates validated against DoD root CA bundle.", Status: Status{State: "under-development"}},
+					{UUID: clamAV, Type: "service", Title: "ClamAV Malware Scanner", Description: "Sidecar or cluster-internal service providing document malware scanning. Fail-closed.", Status: Status{State: "under-development"}},
+				},
+			},
+			BackMatter: &BackMatter{
+				Resources: []Resource{
+					{UUID: deterministicUUID("res-baseline-il6"), Title: "NIST SP 800-53 Rev 5 High Baseline", RLinks: []RLink{{Href: "https://raw.githubusercontent.com/usnistgov/oscal-content/refs/heads/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_HIGH-baseline-resolved-profile_catalog.json", MediaType: "application/json"}}},
+					{UUID: deterministicUUID("res-cnssi-1253"), Title: "CNSSI 1253 Security Categorization and Control Selection", RLinks: []RLink{{Href: "https://www.cnss.gov/CNSS/issuances/Instructions.cfm", MediaType: "text/html"}}},
+					{UUID: deterministicUUID("res-ac-policy"), Title: "Access Control Policy (POL-AC-001)", Description: "Access control policy document.", RLinks: []RLink{{Href: "./policies/access-control.md", MediaType: "text/markdown"}}},
+					{UUID: deterministicUUID("res-ir-policy"), Title: "Incident Response Policy (POL-IR-001)", Description: "Incident response policy and procedures.", RLinks: []RLink{{Href: "./policies/incident-response.md", MediaType: "text/markdown"}}},
+					{UUID: deterministicUUID("res-cm-plan"), Title: "Configuration Management Plan", Description: "Configuration management plan document.", RLinks: []RLink{{Href: "./configuration-management-plan.md", MediaType: "text/markdown"}}},
+					{UUID: deterministicUUID("res-cp-plan"), Title: "Contingency Plan", Description: "Information system contingency plan (ISCP).", RLinks: []RLink{{Href: "./contingency-plan.md", MediaType: "text/markdown"}}},
 				},
 			},
 		},
