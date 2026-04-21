@@ -226,8 +226,9 @@ Latent Archon uses a **multi-project architecture** with IL5 Assured Workloads f
 
 | Environment | Purpose | IL5 Projects | FedRAMP High Projects | Access |
 |-------------|---------|--------------|----------------------|--------|
-| Production | Live customer data | `archon-fed-admin`, `archon-fed-ops`, `archon-fed-app`, `archon-fed-kms-prod` | `archon-fed-auth-admin`, `archon-fed-auth-app`, `archon-mgmt-scheduler-prod` | Restricted to CI/CD + emergency break-glass |
-| Staging | Pre-production validation | `archon-admin-staging`, `archon-ops-staging`, `archon-app-staging`, `archon-kms-staging` | `archon-auth-admin-stg`, `archon-auth-app-stg`, `archon-mgmt-scheduler-stg` | Engineering team |
+| Production | Live customer data | `archon-fed-admin`, `archon-fed-ops`, `archon-fed-app`, `archon-fed-kms-prod` | `archon-fed-auth-admin`, `archon-fed-auth-app` | Restricted to CI/CD + emergency break-glass |
+| Staging | Pre-production validation | `archon-admin-staging`, `archon-ops-staging`, `archon-app-staging`, `archon-kms-staging` | `archon-auth-admin-stg`, `archon-auth-app-stg` | Engineering team |
+| Management | Shared management plane | `archon-3pao-portal` | `archon-org-admin` | CI/CD + break-glass |
 | Development | Local development | N/A (local Docker Compose) | N/A | Individual developers |
 
 All environments are managed via Terraform/Terragrunt. No manual cloud console changes are permitted in staging or production.
