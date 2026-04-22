@@ -572,7 +572,7 @@ Vector Search Query (private endpoint):
     │
     ▼
 Context Assembly + LLM Request (Vertex AI Gemini):
-    ├─► Retrieved document chunks as context
+    ├─► Retrieved document chunks as context (NO internet search)
     ├─► System prompt with safety guardrails
     ├─► Streaming response to client
     │
@@ -580,6 +580,8 @@ Context Assembly + LLM Request (Vertex AI Gemini):
 Message persisted (PostgreSQL, RLS-scoped)
 Audit event logged
 ```
+
+**No internet search or external retrieval.** User queries are never forwarded to internet search engines, web grounding services, or external knowledge APIs. The LLM context is constructed exclusively from workspace-scoped document chunks retrieved via the vector store and hydrated from PostgreSQL. This design prevents CUI query leakage — user questions often contain controlled information that would constitute unauthorized disclosure if transmitted to external search endpoints.
 
 ### 8.4 Network Architecture
 
