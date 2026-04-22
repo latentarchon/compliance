@@ -224,6 +224,8 @@ User Message → Workspace Access Verification → Query Embedding
 |------|-------------|
 | LLM | Vertex AI (Gemini 2.5 Pro) |
 
+**No internet search or external retrieval.** The RAG pipeline retrieves context exclusively from documents uploaded to the tenant's workspaces — stored as vector embeddings and hydrated from PostgreSQL. User queries are never forwarded to internet search engines or external knowledge services. This prevents query leakage: user questions frequently contain CUI, and transmitting them to external search endpoints would constitute unauthorized data exfiltration outside the authorization boundary.
+
 <!-- MULTI-CLOUD: Original included AWS (Claude 3.5 Sonnet via Bedrock) and Azure (GPT-4o via Azure OpenAI). -->
 
 ### Microsoft Graph Sync Flow
