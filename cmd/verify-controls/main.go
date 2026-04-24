@@ -57,6 +57,7 @@ type ProjectConfig struct {
 	AuthAdminProject string
 	AuthAppProject   string
 	Region           string
+	OrgID            string
 }
 
 func envConfig(env string) ProjectConfig {
@@ -135,7 +136,40 @@ func NewVerifier(ctx context.Context, cfg ProjectConfig, env string) (*Verifier,
 	}
 	v.httpClient = oauth2.NewClient(ctx, creds.TokenSource)
 
+	if cfg.OrgID == "" {
+		if orgID, err := v.lookupOrgID(cfg.AdminProject); err == nil {
+			v.cfg.OrgID = orgID
+		}
+	}
+
 	return v, nil
+}
+
+func (v *Verifier) lookupOrgID(project string) (string, error) {
+	url := fmt.Sprintf("https://cloudresourcemanager.googleapis.com/v1/projects/%s", project)
+	req := mustNewRequest(v.ctx, url)
+	resp, err := v.httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("project lookup returned %d", resp.StatusCode)
+	}
+	var proj struct {
+		Parent struct {
+			Type string `json:"type"`
+			ID   string `json:"id"`
+		} `json:"parent"`
+	}
+	if err := json.Unmarshal(body, &proj); err != nil {
+		return "", err
+	}
+	if proj.Parent.Type == "organization" {
+		return proj.Parent.ID, nil
+	}
+	return "", fmt.Errorf("project parent is %s, not organization", proj.Parent.Type)
 }
 
 func (v *Verifier) Close() {
@@ -163,7 +197,9 @@ func (v *Verifier) RunAll(familyFilter string) []ControlResult {
 		{"SC", v.checkCloudRunIngress},
 		{"SC", v.checkFirewallRules},
 		{"SC", v.checkCloudArmor},
+		{"SC", v.checkVPCSCPerimeter},
 		{"AC", v.checkCloudRunAuth},
+		{"AC", v.checkOrgPolicies},
 		{"AU", v.checkLogSinks},
 		{"AU", v.checkAuditStorageProtection},
 		{"CP", v.checkSQLBackups},
@@ -862,6 +898,311 @@ func (v *Verifier) checkExpectedServices() []ControlResult {
 			})
 		}
 	}
+	return results
+}
+
+// --------------------------------------------------------------------------
+// SC-7.21: VPC Service Controls — perimeter exists and enforced
+// SSP claims: VPC-SC perimeter isolates GCP API access
+// --------------------------------------------------------------------------
+
+func (v *Verifier) checkVPCSCPerimeter() []ControlResult {
+	if v.cfg.OrgID == "" {
+		return []ControlResult{{
+			ControlID: "SC-7(21)", ControlName: "VPC Service Controls",
+			Family: "SC", Status: "SKIP",
+			Details: "Cannot determine org ID — unable to query Access Context Manager",
+		}}
+	}
+
+	// List access policies for the org
+	url := fmt.Sprintf("https://accesscontextmanager.googleapis.com/v1/accessPolicies?parent=organizations/%s", v.cfg.OrgID)
+	req := mustNewRequest(v.ctx, url)
+	resp, err := v.httpClient.Do(req)
+	if err != nil {
+		return []ControlResult{{
+			ControlID: "SC-7(21)", ControlName: "VPC Service Controls",
+			Family: "SC", Status: "SKIP",
+			Details: fmt.Sprintf("Cannot query access policies: %v", err),
+		}}
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		return []ControlResult{{
+			ControlID: "SC-7(21)", ControlName: "VPC Service Controls",
+			Family: "SC", Status: "SKIP",
+			Details: fmt.Sprintf("Access Context Manager API returned %d: %s", resp.StatusCode, truncate(string(body), 200)),
+		}}
+	}
+
+	var policiesResp struct {
+		AccessPolicies []struct {
+			Name   string `json:"name"`
+			Title  string `json:"title"`
+			Parent string `json:"parent"`
+		} `json:"accessPolicies"`
+	}
+	if err := json.Unmarshal(body, &policiesResp); err != nil {
+		return []ControlResult{{
+			ControlID: "SC-7(21)", ControlName: "VPC Service Controls",
+			Family: "SC", Status: "SKIP",
+			Details: fmt.Sprintf("Cannot parse access policies response: %v", err),
+		}}
+	}
+
+	if len(policiesResp.AccessPolicies) == 0 {
+		return []ControlResult{{
+			ControlID: "SC-7(21)", ControlName: "VPC Service Controls",
+			Family: "SC", Status: "FAIL",
+			Details: "No access policies found for the organization — VPC-SC not configured",
+		}}
+	}
+
+	var results []ControlResult
+	protectedProjects := map[string]bool{}
+	for _, ap := range policiesResp.AccessPolicies {
+		perimURL := fmt.Sprintf("https://accesscontextmanager.googleapis.com/v1/%s/servicePerimeters", ap.Name)
+		perimReq := mustNewRequest(v.ctx, perimURL)
+		perimResp, err := v.httpClient.Do(perimReq)
+		if err != nil {
+			results = append(results, ControlResult{
+				ControlID: "SC-7(21)", ControlName: "VPC Service Controls",
+				Family: "SC", Status: "SKIP",
+				Details: fmt.Sprintf("Cannot list perimeters for %s: %v", ap.Title, err),
+			})
+			continue
+		}
+		defer perimResp.Body.Close()
+		perimBody, _ := io.ReadAll(perimResp.Body)
+		if perimResp.StatusCode != 200 {
+			results = append(results, ControlResult{
+				ControlID: "SC-7(21)", ControlName: "VPC Service Controls",
+				Family: "SC", Status: "SKIP",
+				Details: fmt.Sprintf("Perimeter API returned %d for %s: %s", perimResp.StatusCode, ap.Title, truncate(string(perimBody), 200)),
+			})
+			continue
+		}
+
+		var perimetersResp struct {
+			ServicePerimeters []struct {
+				Name           string `json:"name"`
+				Title          string `json:"title"`
+				PerimeterType  string `json:"perimeterType"`
+				Status         *struct {
+					Resources []string `json:"resources"`
+				} `json:"status"`
+				Spec *struct {
+					Resources []string `json:"resources"`
+				} `json:"spec"`
+				UseExplicitDryRunSpec bool `json:"useExplicitDryRunSpec"`
+			} `json:"servicePerimeters"`
+		}
+		if err := json.Unmarshal(perimBody, &perimetersResp); err != nil {
+			continue
+		}
+
+		if len(perimetersResp.ServicePerimeters) == 0 {
+			results = append(results, ControlResult{
+				ControlID: "SC-7(21)", ControlName: "VPC Service Controls",
+				Family: "SC", Status: "FAIL",
+				Details: fmt.Sprintf("Access policy %q has no service perimeters", ap.Title),
+			})
+			continue
+		}
+
+		for _, sp := range perimetersResp.ServicePerimeters {
+			perimName := shortName(sp.Name)
+
+			// Check enforcement mode
+			if sp.UseExplicitDryRunSpec {
+				results = append(results, ControlResult{
+					ControlID: "SC-7(21)", ControlName: "VPC Service Controls",
+					Family: "SC", Status: "WARN",
+					Details: fmt.Sprintf("Perimeter %q is in dry-run mode — not enforced", perimName),
+				})
+			} else {
+				results = append(results, ControlResult{
+					ControlID: "SC-7(21)", ControlName: "VPC Service Controls",
+					Family: "SC", Status: "PASS",
+					Details: fmt.Sprintf("Perimeter %q is enforced (not dry-run)", perimName),
+				})
+			}
+
+			// Collect protected projects
+			resources := []string{}
+			if sp.Status != nil {
+				resources = sp.Status.Resources
+			}
+			for _, r := range resources {
+				protectedProjects[strings.TrimPrefix(r, "projects/")] = true
+			}
+		}
+	}
+
+	// Verify our projects are inside the perimeter
+	for _, project := range v.allProjects() {
+		projNum := v.lookupProjectNumber(project)
+		if projNum == "" {
+			results = append(results, ControlResult{
+				ControlID: "SC-7(21)", ControlName: "VPC Service Controls",
+				Family: "SC", Status: "SKIP",
+				Details: fmt.Sprintf("Cannot resolve project number for %s", project),
+			})
+			continue
+		}
+		if protectedProjects[projNum] {
+			results = append(results, ControlResult{
+				ControlID: "SC-7(21)", ControlName: "VPC Service Controls",
+				Family: "SC", Status: "PASS",
+				Details: fmt.Sprintf("Project %s is inside the VPC-SC perimeter", project),
+			})
+		} else {
+			results = append(results, ControlResult{
+				ControlID: "SC-7(21)", ControlName: "VPC Service Controls",
+				Family: "SC", Status: "WARN",
+				Details: fmt.Sprintf("Project %s is NOT inside any VPC-SC perimeter", project),
+			})
+		}
+	}
+
+	return results
+}
+
+func (v *Verifier) lookupProjectNumber(project string) string {
+	url := fmt.Sprintf("https://cloudresourcemanager.googleapis.com/v1/projects/%s", project)
+	req := mustNewRequest(v.ctx, url)
+	resp, err := v.httpClient.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return ""
+	}
+	body, _ := io.ReadAll(resp.Body)
+	var proj struct {
+		ProjectNumber string `json:"projectNumber"`
+	}
+	if err := json.Unmarshal(body, &proj); err != nil {
+		return ""
+	}
+	return proj.ProjectNumber
+}
+
+// --------------------------------------------------------------------------
+// AC-6.10: Org Policy Guardrails — confirm critical policies are enforced
+// SSP claims: org-level policies prevent privilege escalation
+// --------------------------------------------------------------------------
+
+func (v *Verifier) checkOrgPolicies() []ControlResult {
+	if v.cfg.OrgID == "" {
+		return []ControlResult{{
+			ControlID: "AC-6(10)", ControlName: "Org Policy Guardrails",
+			Family: "AC", Status: "SKIP",
+			Details: "Cannot determine org ID — unable to query org policies",
+		}}
+	}
+
+	type policyCheck struct {
+		constraint string
+		label      string
+	}
+	checks := []policyCheck{
+		{"iam.disableServiceAccountKeyCreation", "SA key creation disabled"},
+		{"compute.vmExternalIpAccess", "VM external IP denied"},
+		{"sql.restrictPublicIp", "SQL public IP denied"},
+		{"iam.allowedPolicyMemberDomains", "IAM domain restricted"},
+	}
+
+	var results []ControlResult
+	for _, c := range checks {
+		url := fmt.Sprintf("https://orgpolicy.googleapis.com/v2/organizations/%s/policies/%s", v.cfg.OrgID, c.constraint)
+		req := mustNewRequest(v.ctx, url)
+		resp, err := v.httpClient.Do(req)
+		if err != nil {
+			results = append(results, ControlResult{
+				ControlID: "AC-6(10)", ControlName: "Org Policy Guardrails",
+				Family: "AC", Status: "SKIP",
+				Details: fmt.Sprintf("Cannot query %s: %v", c.constraint, err),
+			})
+			continue
+		}
+		defer resp.Body.Close()
+		body, _ := io.ReadAll(resp.Body)
+
+		if resp.StatusCode == 404 {
+			results = append(results, ControlResult{
+				ControlID: "AC-6(10)", ControlName: "Org Policy Guardrails",
+				Family: "AC", Status: "FAIL",
+				Details: fmt.Sprintf("%s: policy not set at org level", c.label),
+			})
+			continue
+		}
+		if resp.StatusCode != 200 {
+			results = append(results, ControlResult{
+				ControlID: "AC-6(10)", ControlName: "Org Policy Guardrails",
+				Family: "AC", Status: "SKIP",
+				Details: fmt.Sprintf("%s: API returned %d: %s", c.label, resp.StatusCode, truncate(string(body), 200)),
+			})
+			continue
+		}
+
+		var policy struct {
+			Spec struct {
+				Rules []struct {
+					Enforce bool `json:"enforce"`
+					Values  *struct {
+						AllowedValues []string `json:"allowedValues"`
+						DeniedValues  []string `json:"deniedValues"`
+					} `json:"values"`
+				} `json:"rules"`
+			} `json:"spec"`
+		}
+		if err := json.Unmarshal(body, &policy); err != nil {
+			results = append(results, ControlResult{
+				ControlID: "AC-6(10)", ControlName: "Org Policy Guardrails",
+				Family: "AC", Status: "SKIP",
+				Details: fmt.Sprintf("%s: cannot parse response: %v", c.label, err),
+			})
+			continue
+		}
+
+		if len(policy.Spec.Rules) == 0 {
+			results = append(results, ControlResult{
+				ControlID: "AC-6(10)", ControlName: "Org Policy Guardrails",
+				Family: "AC", Status: "FAIL",
+				Details: fmt.Sprintf("%s: policy exists but has no rules", c.label),
+			})
+			continue
+		}
+
+		enforced := false
+		hasValues := false
+		for _, rule := range policy.Spec.Rules {
+			if rule.Enforce {
+				enforced = true
+			}
+			if rule.Values != nil && (len(rule.Values.AllowedValues) > 0 || len(rule.Values.DeniedValues) > 0) {
+				hasValues = true
+			}
+		}
+
+		if enforced || hasValues {
+			results = append(results, ControlResult{
+				ControlID: "AC-6(10)", ControlName: "Org Policy Guardrails",
+				Family: "AC", Status: "PASS",
+				Details: fmt.Sprintf("%s: enforced at org level (%d rules)", c.label, len(policy.Spec.Rules)),
+			})
+		} else {
+			results = append(results, ControlResult{
+				ControlID: "AC-6(10)", ControlName: "Org Policy Guardrails",
+				Family: "AC", Status: "WARN",
+				Details: fmt.Sprintf("%s: policy exists but enforcement unclear (%d rules)", c.label, len(policy.Spec.Rules)),
+			})
+		}
+	}
+
 	return results
 }
 

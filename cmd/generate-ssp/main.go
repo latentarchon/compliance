@@ -67,7 +67,8 @@ func main() {
 	outFile := flag.String("out", "", "output file (default: stdout)")
 	baseline := flag.String("baseline", "high", "baseline level: moderate, high, il5, il6")
 	platform := flag.String("platform", "gcp", "deployment platform: gcp, gdc")
-	evidenceDir := flag.String("evidence-dir", "", "output directory for tier-separated evidence files")
+	evidenceDir := flag.String("evidence-dir", "", "output directory for tier-separated evidence files (default: sibling evidence/ next to --out)")
+	noEvidence := flag.Bool("no-evidence", false, "skip evidence file generation")
 	verbose := flag.Bool("v", false, "print infrastructure facts summary")
 	flag.Parse()
 
@@ -155,12 +156,18 @@ func main() {
 		fmt.Fprintf(os.Stderr, "\n--- %d controls generated ---\n", len(filtered))
 	}
 
-	if *evidenceDir != "" {
+	if !*noEvidence {
+		evDir := *evidenceDir
+		if evDir == "" && *outFile != "" {
+			evDir = filepath.Join(filepath.Dir(*outFile), "evidence")
+		} else if evDir == "" {
+			evDir = "evidence"
+		}
 		controls := allControls()
-		if err := generateEvidence(controls, facts, *baseline, *evidenceDir); err != nil {
+		if err := generateEvidence(controls, facts, *baseline, evDir); err != nil {
 			log.Fatalf("evidence generation error: %v", err)
 		}
-		fmt.Fprintf(os.Stderr, "wrote evidence files to %s\n", *evidenceDir)
+		fmt.Fprintf(os.Stderr, "wrote evidence files to %s\n", evDir)
 	}
 }
 
