@@ -79,15 +79,15 @@ All Assured Workloads configurations are defined in Terraform (`infra/gcp/module
 
 **Implementation**:
 
-**(a)** Latent Archon defines four organization-level account types: `master_admin`, `admin`, `editor`, and `viewer`. Each account type has specific privileges documented in the RBAC matrix (see Section 7.3 of the SSP). Account types are enforced per-RPC in the Connect-RPC interceptor chain. Additionally, **service accounts** (e.g., `noreply@latentarchon.com` for transactional email) are a distinct, non-interactive account type — they are blocked from authentication at the application layer and cannot be provisioned into any organization or workspace.
+**(a)** Latent Archon defines four tenant-level account types: `master_admin`, `admin`, `editor`, and `viewer`. Each account type has specific privileges documented in the RBAC matrix (see Section 7.3 of the SSP). Account types are enforced per-RPC in the Connect-RPC interceptor chain. Additionally, **service accounts** (e.g., `noreply@latentarchon.com` for transactional email) are a distinct, non-interactive account type — they are blocked from authentication at the application layer and cannot be provisioned into any tenant or workspace.
 
-**(b)** Account managers are designated per customer organization. The `master_admin` role serves as the organization account manager with authority to create, modify, disable, and remove accounts. Latent Archon platform operations serve as the system-level account manager.
+**(b)** Account managers are designated per customer tenant. The `master_admin` role serves as the tenant account manager with authority to create, modify, disable, and remove accounts. Latent Archon platform operations serve as the system-level account manager.
 
-**(c)** Conditions for group and role membership are enforced by the RBAC model. Users must be explicitly invited to an organization (via invite token or SCIM provisioning) and explicitly granted workspace access. The auth interceptor enforces an **org membership gate** — users not belonging to any organization are rejected with `PermissionDenied` on all non-AuthService RPCs.
+**(c)** Conditions for group and role membership are enforced by the RBAC model. Users must be explicitly invited to a tenant (via invite token or SCIM provisioning) and explicitly granted workspace access. The auth interceptor enforces a **tenant membership gate** — users not belonging to any tenant are rejected with `PermissionDenied` on all non-AuthService RPCs.
 
-**(d)** Authorized users, group and role membership, and access authorizations are specified per-organization by the `master_admin` through the admin API (`InviteMember`, `UpdateMemberRole`, `RemoveMember` RPCs). For SCIM-enabled organizations, user lifecycle is managed automatically by the customer IdP.
+**(d)** Authorized users, group and role membership, and access authorizations are specified per-tenant by the `master_admin` through the admin API (`InviteMember`, `UpdateMemberRole`, `RemoveMember` RPCs). For SCIM-enabled tenants, user lifecycle is managed automatically by the customer IdP.
 
-**(e)** Account creation requires approval by an org admin (explicit invite) or automated provisioning via SCIM 2.0 from an authorized customer IdP. JIT (Just-In-Time) provisioning automatically creates accounts for federated users on first SSO login when an SSO configuration exists for the organization.
+**(e)** Account creation requires approval by a tenant admin (explicit invite) or automated provisioning via SCIM 2.0 from an authorized customer IdP. JIT (Just-In-Time) provisioning automatically creates accounts for federated users on first SSO login when an SSO configuration exists for the tenant.
 
 **(f)** Accounts are created via invite tokens (time-limited), SCIM 2.0 provisioning, or JIT provisioning. Accounts are modified via admin API RPCs. Accounts are disabled via Firebase Admin SDK `DisableUser()` or SCIM DELETE. Accounts are removed via `RemoveMember` RPC or self-service `CloseAccount` RPC (requires step-up MFA). Automated 90-day data purge runs via Cloud Scheduler (FedRAMP High mgmt project) → Pub/Sub push → ops Cloud Run for closed accounts.
 
@@ -95,13 +95,15 @@ All Assured Workloads configurations are defined in Terraform (`infra/gcp/module
 
 **(h)** Account managers (org `master_admin`) are notified of account changes via real-time security email notifications. Notifications cover: role escalation, auth failures, member changes, SCIM events, and deletions.
 
-**(i)** Authorization to access the system requires: (1) valid Firebase Auth JWT, (2) MFA verification, (3) organization membership, (4) appropriate RBAC role, and (5) workspace membership for data access.
+**(i)** Authorization to access the system requires: (1) valid Firebase Auth JWT, (2) MFA verification, (3) tenant membership, (4) appropriate RBAC role, and (5) workspace membership for data access.
 
 **(j)** All accounts are reviewed by the org `master_admin` through the admin dashboard. Latent Archon recommends quarterly access reviews. Compliance with review schedules is tracked via Drata.
 
-**(k)** When personnel are transferred within an organization, org admins update role assignments via the admin API. SCIM-enabled organizations handle transfers automatically through IdP group-to-role mapping.
+**(k)** When personnel are transferred within a tenant, tenant admins update role assignments via the admin API. SCIM-enabled tenants handle transfers automatically through IdP group-to-role mapping.
 
-**(l)** Accounts are deprovisioned within 24 hours of notification via SCIM DELETE (automated) or manual removal by org admin. Self-service account closure is available via `CloseAccount` RPC with step-up MFA.
+**(l)** Accounts are deprovisioned within 24 hours of notification via SCIM DELETE (automated) or manual removal by tenant admin. Self-service account closure is available via `CloseAccount` RPC with step-up MFA.
+
+**(m)** GCP infrastructure access is managed via **Cloud Identity groups** defined in Terraform (`org/groups.tf`). Group membership is role-based (e.g., engineering, security, billing) and controls IAM role bindings across all projects. Group definitions are version-controlled and applied via `terragrunt apply` — no manual Cloud Identity Admin console changes are permitted.
 
 **Customer Responsibility**: Customers are responsible for timely notification of personnel transfers, terminations, and role changes. For SCIM-enabled organizations, this is automated through the customer IdP.
 
@@ -124,21 +126,21 @@ All Assured Workloads configurations are defined in Terraform (`infra/gcp/module
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: Accounts are disabled via: (1) Firebase Admin SDK `DisableUser()` called by org admins or platform operations, (2) SCIM DELETE from customer IdP, (3) self-service `CloseAccount` RPC requiring step-up MFA. Disabled accounts cannot authenticate — the Firebase Auth SDK rejects tokens from disabled accounts before they reach the application. Automated 90-day data purge via Cloud Scheduler (FedRAMP High mgmt project) → Pub/Sub push removes personal data from closed accounts.
+**Implementation**: Accounts are disabled via: (1) Firebase Admin SDK `DisableUser()` called by tenant admins or platform operations, (2) SCIM DELETE from customer IdP, (3) self-service `CloseAccount` RPC requiring step-up MFA. Disabled accounts cannot authenticate — the Firebase Auth SDK rejects tokens from disabled accounts before they reach the application. Automated 90-day data purge via Cloud Scheduler (FedRAMP High mgmt project) → Pub/Sub push removes personal data from closed accounts.
 
 ### AC-2(4): Automated Audit Actions
 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: All account lifecycle events are automatically audit-logged via `internal/audit/logger.go`. Events include: `user.created`, `user.invited`, `user.joined`, `user.removed`, `user.disabled`, `user.role_changed`, `user.account_closed`, `scim.user_created`, `scim.user_deleted`, `scim.user_updated`. Each event records: user_id, org_id, action, status (success/failure), IP address, user agent, timestamp, and JSONB metadata including idp_pool_id, request_id, trace_id.
+**Implementation**: All account lifecycle events are automatically audit-logged via `internal/audit/logger.go`. Events include: `user.created`, `user.invited`, `user.joined`, `user.removed`, `user.disabled`, `user.role_changed`, `user.account_closed`, `scim.user_created`, `scim.user_deleted`, `scim.user_updated`. Each event records: user_id, tenant_id, action, status (success/failure), IP address, user agent, timestamp, and JSONB metadata including idp_pool_id, request_id, trace_id.
 
 ### AC-2(5): Inactivity Logout
 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The auth interceptor (`cmd/server/connect_interceptors.go`) enforces server-side session timeouts on every request. Idle timeout defaults to 25 minutes; absolute timeout defaults to 12 hours. Both are calculated from JWT `auth_time` and `iat` claims. Per-organization configurable timeouts allow agencies to set stricter values (idle: 5-480 minutes, absolute: 60-1440 minutes) via `UpdateOrganizationSettings` RPC. Expired sessions receive `Unauthenticated` responses requiring re-authentication.
+**Implementation**: The auth interceptor (`cmd/server/connect_interceptors.go`) enforces server-side session timeouts on every request. Idle timeout defaults to 25 minutes; absolute timeout defaults to 12 hours. Both are calculated from JWT `auth_time` and `iat` claims. Per-tenant configurable timeouts allow agencies to set stricter values (idle: 5-480 minutes, absolute: 60-1440 minutes) via `UpdateTenantSettings` RPC. Expired sessions receive `Unauthenticated` responses requiring re-authentication.
 
 ### AC-3: Access Enforcement
 
@@ -147,15 +149,15 @@ All Assured Workloads configurations are defined in Terraform (`infra/gcp/module
 
 **Implementation**: Access enforcement operates at five layers:
 
-1. **Auth Interceptor**: Every RPC (except `/health` and CORS preflight) passes through the auth interceptor which verifies the Firebase JWT, enforces IDP pool isolation, validates MFA status, checks session timeouts, enforces org membership, and validates subdomain-to-org routing.
+1. **Auth Interceptor**: Every RPC (except `/health` and CORS preflight) passes through the auth interceptor which verifies the Firebase JWT, enforces IDP pool isolation, validates MFA status, checks session timeouts, enforces tenant membership, and validates subdomain-to-tenant routing.
 
-2. **RBAC**: Each RPC handler performs explicit role-based authorization checks before executing business logic. Organization operations require `IsOrgAdmin()` or `IsMasterAdmin()`. Workspace operations require `CanUserAccessWorkspace()` (explicit membership or master_admin).
+2. **RBAC**: Each RPC handler performs explicit role-based authorization checks before executing business logic. Tenant operations require `IsTenantAdmin()` or `IsMasterAdmin()`. Workspace operations require `CanUserAccessWorkspace()` (explicit membership or master_admin).
 
-3. **PostgreSQL RLS**: Row-Level Security policies on all data tables scope queries to the authenticated user's organization and workspace. RLS is fail-closed: missing session variables return zero rows. The `app_ro` role cannot INSERT/UPDATE/DELETE data tables.
+3. **PostgreSQL RLS**: Row-Level Security policies on all data tables scope queries to the authenticated user's tenant and workspace. RLS is fail-closed: missing session variables return zero rows. The `app_ro` role cannot INSERT/UPDATE/DELETE data tables.
 
 4. **Vector Store Scoping**: Vertex AI vector search queries are restricted by workspace-scoped token filters, preventing cross-workspace semantic search.
 
-5. **Subdomain→Org Validation**: The auth interceptor resolves Host header subdomains against the `organizations` table via `GetOrgIDBySlug`. Unknown subdomains are rejected (`PermissionDenied: "unknown organization"`). Cross-org mismatches (user's org ≠ subdomain org) are rejected (`PermissionDenied: "organization mismatch"`).
+5. **Subdomain→Tenant Validation**: The auth interceptor resolves Host header subdomains against the `tenants` table via `GetTenantIDBySlug`. Unknown subdomains are rejected (`PermissionDenied: "unknown tenant"`). Cross-tenant mismatches (user's tenant ≠ subdomain tenant) are rejected (`PermissionDenied: "tenant mismatch"`).
 
 ### AC-4: Information Flow Enforcement
 
@@ -167,7 +169,7 @@ All Assured Workloads configurations are defined in Terraform (`infra/gcp/module
 - **Network**: VPC with private IP only (no public IPs on any service). FQDN-based egress firewall with default-deny-all and explicit allowlist for Google APIs and Microsoft Graph API (`graph.microsoft.com`, `login.microsoftonline.com` for SharePoint/OneDrive document sync). Cloud Armor WAF with OWASP Core Rule Set.
 - **Org policy enforcement**: Cloud Run VPC egress is locked to `ALL_TRAFFIC` via `run.allowedVPCEgress` org policy, ensuring all outbound traffic traverses the VPC where firewall rules and VPC Service Controls apply. Internet NEGs are prohibited (`compute.disableInternetNetworkEndpointGroup`), preventing load balancer backends from routing to arbitrary external endpoints. Protocol forwarding is restricted to INTERNAL only (`compute.restrictProtocolForwardingCreationForTypes`).
 - **Application**: RLS enforces workspace-scoped data access. Vector store token restrictions prevent cross-workspace search. The auth interceptor prevents cross-org request routing via DB-backed subdomain validation.
-- **Per-Org IP Allowlisting**: Organization administrators configure CIDR-based IP allowlists via `UpdateOrganizationSettings`. Allowlists are synced to Cloud Armor WAF rules using CEL expressions matching org hostname + IP range. This enables agencies to restrict access to government/VPN IP ranges.
+- **Per-Tenant IP Allowlisting**: Tenant administrators configure CIDR-based IP allowlists via `UpdateTenantSettings`. Allowlists are synced to Cloud Armor WAF rules using CEL expressions matching tenant hostname + IP range. This enables agencies to restrict access to government/VPN IP ranges.
 - **Google Workspace Information Flow**: External Drive sharing is disabled (no sharing outside latentarchon.com). Third-party OAuth app access is blocked by default with allowlist-only access. Content distribution outside the organization is blocked. These controls prevent unauthorized data flows from corporate systems to external parties.
 
 **Customer Responsibility**: Customers are responsible for configuring IP allowlists appropriate for their network environment.
@@ -183,6 +185,7 @@ All Assured Workloads configurations are defined in Terraform (`infra/gcp/module
 - **Project Isolation**: Three GCP projects (app, ops, admin) with separate Identity Platform pools (app and admin), Cloud Armor policies, and IAM configurations. The ops project has no identity pool and no public ingress — it is a pure data tier. Cross-pool identity bridging is explicitly prohibited (see `docs/POOL_ISOLATION.md`).
 - **RBAC**: Only `master_admin` can promote others to `master_admin`. Self-MFA-reset is blocked. Last-admin guard prevents lockout.
 - **CI/CD**: Production deploys require PR approval. Terraform plans are posted as PR comments for review before apply.
+- **Cloud Identity Groups**: GCP IAM role bindings use Cloud Identity groups managed via Terraform (`org/groups.tf`). Group membership enforces role-based access — personnel are added to appropriate groups based on function, and IAM bindings reference groups rather than individual identities.
 
 ### AC-6: Least Privilege
 
@@ -191,17 +194,17 @@ All Assured Workloads configurations are defined in Terraform (`infra/gcp/module
 
 **Implementation**:
 
-- **GCP IAM**: The Terraform service account has 20 IAM roles including `roles/editor` for broad infrastructure management (no `roles/owner`). Each Cloud Run service account has scoped permissions: `archon-ops` has 12 roles for document processing, `archon-admin` and `archon-app` receive cross-project grants for Cloud SQL, Cloud Tasks, GCS, and Vertex AI access only. Workload Identity Federation eliminates static service account keys.
+- **GCP IAM**: The Terraform service account has 20 IAM roles including `roles/editor` for broad infrastructure management (no `roles/owner`). Each Cloud Run service account has scoped permissions: `archon-ops` has 12 roles for document processing, `archon-admin` and `archon-app` receive cross-project grants for Cloud SQL, Cloud Tasks, GCS, and Vertex AI access only. Cloud Build SAs have per-project deployment permissions plus read-only cross-project viewer roles on auth projects (`firebase.viewer`, `identityplatform.viewer`) for deployment validation. Cloud Identity groups managed via Terraform (`org/groups.tf`) provide role-based IAM bindings — personnel are assigned to groups by function, and project-level IAM references groups rather than individual identities. Workload Identity Federation eliminates static service account keys.
 - **Database**: Four distinct PostgreSQL roles with minimum necessary grants, enforced via Atlas migration. Default `PUBLIC` privileges are revoked on all tables and sequences. `archon_app_ro` is read-only on reference data (SELECT + INSERT only for app persistence). `archon_ops_rw` is scoped to document processing tables (cannot touch org/member/invite data). Audit table is INSERT-only for non-admin roles. Schema migrations run under an `archon_migrator` role assumed via IAM auth (`SET ROLE`) — no static credentials are used in the normal migration path. A `postgres` superuser password exists in Secret Manager as a break-glass mechanism, accessible only to human security administrators and not mounted on any service or job by default.
 - **Application**: RBAC enforces per-RPC authorization. Viewers cannot modify data. Editors cannot manage members. Only admins can manage workspaces. Service accounts used for system functions (e.g., transactional email sending) are explicitly blocked from interactive authentication and auto-provisioning via a configurable blocklist (`SERVICE_ACCOUNT_EMAILS`) enforced in the auth interceptor and magic link handler.
-- **Microsoft Graph**: Connection management (create, list, revoke) restricted to org admins. Sync source configuration requires workspace admin permission. Source-level sync history queries require workspace document-edit permission. OAuth refresh tokens encrypted via Cloud KMS before storage.
+- **Microsoft Graph**: Connection management (create, list, revoke) restricted to tenant admins. Sync source configuration requires workspace admin permission. Source-level sync history queries require workspace document-edit permission. OAuth refresh tokens encrypted via Cloud KMS before storage.
 
 ### AC-6(1): Authorize Access to Security Functions
 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Security functions are restricted to the `master_admin` role: promoting/demoting admin roles, configuring SSO/SCIM, managing IP allowlists, configuring session timeouts. MFA reset is restricted to org admins, with self-MFA-reset explicitly blocked. All security function invocations are audit-logged at WARN level.
+**Implementation**: Security functions are restricted to the `master_admin` role: promoting/demoting admin roles, configuring SSO/SCIM, managing IP allowlists, configuring session timeouts. MFA reset is restricted to tenant admins, with self-MFA-reset explicitly blocked. All security function invocations are audit-logged at WARN level.
 
 ### AC-6(2): Non-Privileged Access for Nonsecurity Functions
 
@@ -215,14 +218,14 @@ All Assured Workloads configurations are defined in Terraform (`infra/gcp/module
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Privileged accounts include: (1) GCP Organization Owner — restricted to CEO, used for break-glass only; (2) Terraform service account — used only by CI/CD via WIF, 20 IAM roles including `roles/editor`; (3) `master_admin` application role — per-customer org admin. All privileged actions are audit-logged. No shared accounts are used.
+**Implementation**: Privileged accounts include: (1) GCP Organization Owner — restricted to CEO, used for break-glass only; (2) Terraform service account — used only by CI/CD via WIF, 20 IAM roles including `roles/editor`; (3) `master_admin` application role — per-customer tenant admin. All privileged actions are audit-logged. No shared accounts are used.
 
 ### AC-6(9): Log Use of Privileged Functions
 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: All privileged operations are logged via `internal/audit/logger.go` at WARN level, including: role changes, member removal, org settings changes, SSO/SCIM configuration, MFA reset. GCP Cloud Audit Logs capture all IAM and infrastructure changes. Logs are exported to Cloud Logging (30-day retention) with optional SIEM export via Pub/Sub.
+**Implementation**: All privileged operations are logged via `internal/audit/logger.go` at WARN level, including: role changes, member removal, tenant settings changes, SSO/SCIM configuration, MFA reset. GCP Cloud Audit Logs capture all IAM and infrastructure changes. Logs are exported to Cloud Logging (30-day retention) with optional SIEM export via Pub/Sub.
 
 ### AC-6(10): Prohibit Non-Privileged Users from Executing Privileged Functions
 
@@ -270,10 +273,10 @@ All Assured Workloads configurations are defined in Terraform (`infra/gcp/module
 
 **Implementation**: The auth interceptor enforces two server-side session timeout checks on every request:
 
-1. **Idle Timeout**: Calculated from JWT `auth_time` claim. Default: 25 minutes. Configurable per-org: 5-480 minutes.
-2. **Absolute Timeout**: Calculated from JWT `iat` (issued-at) claim. Default: 12 hours. Configurable per-org: 60-1440 minutes.
+1. **Idle Timeout**: Calculated from JWT `auth_time` claim. Default: 25 minutes. Configurable per-tenant: 5-480 minutes.
+2. **Absolute Timeout**: Calculated from JWT `iat` (issued-at) claim. Default: 12 hours. Configurable per-tenant: 60-1440 minutes.
 
-Organization administrators configure timeouts via `UpdateOrganizationSettings` RPC. The timeouts are stored in the organization settings JSONB and loaded on each request. Expired sessions receive `Unauthenticated` responses. The client SPAs detect this and redirect to the login page.
+Tenant administrators configure timeouts via `UpdateTenantSettings` RPC. The timeouts are stored in the tenant settings JSONB and loaded on each request. Expired sessions receive `Unauthenticated` responses. The client SPAs detect this and redirect to the login page.
 
 For corporate Google Cloud access, Google Workspace enforces 24-hour RAPT (Reauthentication Policy for Access Tokens) session control. All GCP Console and gcloud CLI sessions require reauthentication every 24 hours, limiting the window of access from stale sessions.
 
@@ -289,7 +292,7 @@ For corporate Google Cloud access, Google Workspace enforces 24-hour RAPT (Reaut
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: All access to Latent Archon is remote by design (cloud-native SaaS). Remote access protections include: TLS 1.2+ enforced on all connections, HSTS with 2-year max-age and preload, Cloudflare edge WAF (Managed + OWASP rulesets, threat score challenges, path probing protection, IP/ASN blocking, rate limiting), Cloud Armor origin WAF with OWASP CRS, per-org IP allowlisting, Cloudflare Zero Trust Access for admin endpoints (identity gate at edge), and MFA enforcement. No VPN or direct infrastructure access is provided to customers. Infrastructure access for Latent Archon engineers uses GCP IAM with WIF (no static credentials). Cloud Shell is disabled on all projects via org constraint, preventing browser-based console access to the environment.
+**Implementation**: All access to Latent Archon is remote by design (cloud-native SaaS). Remote access protections include: TLS 1.2+ enforced on all connections, HSTS with 2-year max-age and preload, Cloudflare edge WAF (Managed + OWASP rulesets, threat score challenges, path probing protection, IP/ASN blocking, rate limiting), Cloud Armor origin WAF with OWASP CRS, per-tenant IP allowlisting, Cloudflare Zero Trust Access for admin endpoints (identity gate at edge), and MFA enforcement. No VPN or direct infrastructure access is provided to customers. Infrastructure access for Latent Archon engineers uses GCP IAM with WIF (no static credentials). Cloud Shell is disabled on all projects via org constraint, preventing browser-based console access to the environment.
 
 ### AC-17(1): Monitoring and Control of Remote Access
 
@@ -331,7 +334,7 @@ For corporate Google Cloud access, Google Workspace enforces 24-hour RAPT (Reaut
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: No customer content is publicly accessible. All document access requires authentication (valid JWT), MFA verification, organization membership, and workspace membership. Per-org IP allowlisting via Cloud Armor CEL expressions provides additional network-level access restriction. The system has no public-facing content pages — both SPAs require authentication before rendering any data.
+**Implementation**: No customer content is publicly accessible. All document access requires authentication (valid JWT), MFA verification, tenant membership, and workspace membership. Per-org IP allowlisting via Cloud Armor CEL expressions provides additional network-level access restriction. The system has no public-facing content pages — both SPAs require authentication before rendering any data.
 
 ---
 
@@ -391,11 +394,11 @@ For corporate Google Cloud access, Google Workspace enforces 24-hour RAPT (Reaut
 **Implementation**: The following event categories are logged:
 
 - **Authentication**: Login success/failure, MFA verification, token refresh, session timeout
-- **Authorization**: RBAC check pass/fail, workspace access grant/deny, org membership validation
+- **Authorization**: RBAC check pass/fail, workspace access grant/deny, tenant membership validation
 - **Account Lifecycle**: User creation, invitation, join, removal, role change, account closure, SCIM provisioning/deprovisioning
 - **Data Access**: Document upload, download, delete, search queries, conversation messages
 - **Administrative**: Org settings changes, SSO/SCIM configuration, IP allowlist updates, member management
-- **Security**: Failed auth attempts, cross-org access attempts, rate limit hits, WAF blocks
+- **Security**: Failed auth attempts, cross-tenant access attempts, rate limit hits, WAF blocks
 
 The event types are reviewed annually and updated as new features are added.
 
@@ -404,7 +407,7 @@ The event types are reviewed annually and updated as new features are added.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Each audit event record contains: `user_id` (actor), `organization_id` (org scope), `workspace_id` (workspace scope, where applicable), `action` (event type string), `status` (success/failure), `resource_type` and `resource_id` (target), `ip_address` (source IP), `user_agent` (client identifier), `trace_id` (distributed tracing correlation), `correlation_id` (multi-event correlation), `session_id` (session identification), `mfa_method` (MFA method used, e.g., TOTP), and `created_at` (UTC timestamp).
+**Implementation**: Each audit event record contains: `user_id` (actor), `tenant_id` (tenant scope), `workspace_id` (workspace scope, where applicable), `action` (event type string), `status` (success/failure), `resource_type` and `resource_id` (target), `ip_address` (source IP), `user_agent` (client identifier), `trace_id` (distributed tracing correlation), `correlation_id` (multi-event correlation), `session_id` (session identification), `mfa_method` (MFA method used, e.g., TOTP), and `created_at` (UTC timestamp).
 
 ### AU-3(1): Additional Audit Information
 
@@ -439,14 +442,14 @@ The event types are reviewed annually and updated as new features are added.
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: Audit records are reviewed through multiple mechanisms: (1) Cloud Logging dashboards with pre-configured filters for security events; (2) Cloud Monitoring alert policies triggered on WARN-level audit events (role escalation, auth failures, cross-org attempts); (3) Real-time security email notifications to org admins for critical events; (4) Pub/Sub SIEM export pipeline enabling customer agencies to ingest audit data into their Splunk/Sentinel/Chronicle instances for agency-specific analysis.
+**Implementation**: Audit records are reviewed through multiple mechanisms: (1) Cloud Logging dashboards with pre-configured filters for security events; (2) Cloud Monitoring alert policies triggered on WARN-level audit events (role escalation, auth failures, cross-org attempts); (3) Real-time security email notifications to tenant admins for critical events; (4) Pub/Sub SIEM export pipeline enabling customer agencies to ingest audit data into their Splunk/Sentinel/Chronicle instances for agency-specific analysis.
 
 ### AU-6(1): Automated Process Integration
 
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: Audit review is automated through: Cloud Monitoring alert policies that trigger on specific event patterns, real-time email notifications to org admins, and the Pub/Sub SIEM export pipeline for automated ingestion by agency security tools. The Drata integration provides continuous compliance monitoring against control requirements.
+**Implementation**: Audit review is automated through: Cloud Monitoring alert policies that trigger on specific event patterns, real-time email notifications to tenant admins, and the Pub/Sub SIEM export pipeline for automated ingestion by agency security tools. The Drata integration provides continuous compliance monitoring against control requirements.
 
 ### AU-7: Audit Record Reduction and Report Generation
 
@@ -522,7 +525,15 @@ At the infrastructure level, GCP Data Access audit logging is enabled for all cr
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The only cross-project system interconnection is a single IAM grant: the app project service account receives `roles/cloudsql.client` and `roles/cloudsql.instanceUser` on the admin project for Cloud SQL database access. All other services are project-isolated. External interconnections (customer IdP SAML/SCIM, Cloudflare DNS) are documented in Section 4 of the SSP.
+**Implementation**: Cross-project IAM grants are scoped to minimum-necessary permissions and managed via Terragrunt:
+
+- **App SA → ops project**: `cloudsql.client`, `cloudsql.instanceUser` (database read access), `storage.objectViewer` (document retrieval), `aiplatform.user` (vector search and LLM inference)
+- **Admin SA → ops project**: `cloudtasks.enqueuer` (async task dispatch), `storage.objectAdmin` (document upload/management), `cloudsql.client`, `cloudsql.instanceUser` (database read-write access)
+- **Cloud Build SAs → auth projects**: `firebase.viewer`, `identityplatform.viewer` (read-only access for deployment validation of Identity Platform configuration)
+- **Cross-project Pub/Sub**: Cloud Scheduler (mgmt project) publishes to Pub/Sub topics; push subscriptions in the ops project deliver cron events to ops Cloud Run
+- **VPC Service Controls**: Egress policies permit `identitytoolkit.googleapis.com` calls to auth projects and `serviceusage.googleapis.com` to the billing project; ingress policies permit Pub/Sub push delivery from the scheduler bridge
+
+External interconnections (customer IdP SAML/SCIM, Microsoft Graph, Cloudflare DNS) are documented in Section 4 of the SSP.
 
 ### CA-5: Plan of Action and Milestones
 
@@ -557,7 +568,7 @@ At the infrastructure level, GCP Data Access audit logging is enabled for all cr
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Internal system connections include: (1) Cloud Tasks → Cloud Run ops service (OIDC-authenticated); (2) Cloud Run services → Cloud SQL (IAM-authenticated, private VPC); (3) Cloud Run services → Vertex AI (service account IAM, PSC endpoint); (4) Cloud Run admin → ClamAV Cloud Run (internal-only, archon-admin invoker IAM). All internal connections use TLS and IAM authentication.
+**Implementation**: Internal system connections include: (1) Cloud Tasks → Cloud Run ops service (OIDC-authenticated — the admin SA holds `iam.serviceAccounts.actAs` on the ops SA, enabling Cloud Tasks to generate OIDC tokens for authenticated dispatch); (2) Cloud Run services → Cloud SQL (IAM-authenticated, private VPC); (3) Cloud Run services → Vertex AI (service account IAM, Private Service Connect endpoint); (4) Cloud Run admin → ClamAV Cloud Run (internal-only, archon-admin invoker IAM). All internal connections use TLS and IAM authentication.
 
 ---
 
@@ -871,7 +882,7 @@ Password complexity and rotation policies are enforced by Identity Platform for 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Re-authentication is required: (1) After idle timeout expiration (default 25 minutes, per-org configurable); (2) After absolute session timeout (default 12 hours, per-org configurable); (3) For step-up operations (member management, document deletion, role changes) — requires MFA verification within last 5 minutes. Re-authentication forces full JWT refresh through Identity Platform.
+**Implementation**: Re-authentication is required: (1) After idle timeout expiration (default 25 minutes, per-tenant configurable); (2) After absolute session timeout (default 12 hours, per-tenant configurable); (3) For step-up operations (member management, document deletion, role changes) — requires MFA verification within last 5 minutes. Re-authentication forces full JWT refresh through Identity Platform.
 
 ---
 
@@ -1458,7 +1469,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Security engineering principles applied include: (1) **Defense in depth**: 5-layer org isolation (interceptor → RLS → DB roles → vector scoping → audit); (2) **Fail-closed**: RLS returns zero rows if session variables unset, ClamAV rejects uploads if endpoint unavailable in production; (3) **Least privilege**: Scoped IAM roles, minimal DB grants, RBAC; (4) **Separation of duties**: Three services with distinct DB roles; (5) **Zero trust**: Every request authenticated and authorized regardless of network origin.
+**Implementation**: Security engineering principles applied include: (1) **Defense in depth**: 5-layer tenant isolation (interceptor → RLS → DB roles → vector scoping → audit); (2) **Fail-closed**: RLS returns zero rows if session variables unset, ClamAV rejects uploads if endpoint unavailable in production; (3) **Least privilege**: Scoped IAM roles, minimal DB grants, RBAC; (4) **Separation of duties**: Three services with distinct DB roles; (5) **Zero trust**: Every request authenticated and authorized regardless of network origin.
 
 ### SA-9: External System Services
 
@@ -1518,7 +1529,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: DoS/DDoS protection is provided at multiple layers: (1) **Cloudflare Edge WAF**: DDoS absorption at Cloudflare's global anycast network with Managed + OWASP rulesets, threat score challenges, and edge rate limiting (global 500/min, auth 30/min, login 10/min); (2) **Cloud Armor WAF**: Origin-layer DDoS protection with OWASP CRS v3.3, Cloudflare-only origin restriction (non-CF traffic denied), per-org IP allowlisting, and per-endpoint rate limiting; (3) **Rate Limiting**: Per-IP rate limits enforced at both Cloudflare edge and Cloud Armor, plus per-user rate limits at the application layer; (4) **Cloud Run Auto-scaling**: Automatic scaling with configurable max instances prevents resource exhaustion; (5) **FQDN Egress Firewall**: Prevents the system from being used as a DDoS amplifier.
+**Implementation**: DoS/DDoS protection is provided at multiple layers: (1) **Cloudflare Edge WAF**: DDoS absorption at Cloudflare's global anycast network with Managed + OWASP rulesets, threat score challenges, and edge rate limiting (global 500/min, auth 30/min, login 10/min); (2) **Cloud Armor WAF**: Origin-layer DDoS protection with OWASP CRS v3.3, Cloudflare-only origin restriction (non-CF traffic denied), per-tenant IP allowlisting, and per-endpoint rate limiting; (3) **Rate Limiting**: Per-IP rate limits enforced at both Cloudflare edge and Cloud Armor, plus per-user rate limits at the application layer; (4) **Cloud Run Auto-scaling**: Automatic scaling with configurable max instances prevents resource exhaustion; (5) **FQDN Egress Firewall**: Prevents the system from being used as a DDoS amplifier.
 
 ### SC-7: Boundary Protection
 
@@ -1527,11 +1538,11 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 
 **Implementation**: System boundary protection includes:
 
-- **External boundary**: Cloudflare Edge WAF (Managed + OWASP rulesets, rate limiting, threat score challenges, path probing protection, IP/ASN blocking, Zero Trust Access for admin endpoints) → Cloud Armor origin WAF (OWASP CRS, HTTP method enforcement, origin restriction, bot blocking, per-org IP allowlisting, Cloudflare-only origin restriction) → Regional HTTPS Load Balancer → Cloud Run (private IP only). Admin API requests from the SPA are routed through a Cloudflare Worker proxy (`/_api/*` on SPA domains) that injects CF Access service token headers at the edge — credentials never reach the browser. The Worker forwards to the CF Access-protected API origin, which validates the service token and adds a signed JWT (`Cf-Access-Jwt-Assertion`). The backend verifies this JWT against Cloudflare's JWKS endpoint (FQDN-allowed via egress firewall). Origin load balancers only accept traffic from Cloudflare IP ranges (auto-updated via `data.cloudflare_ip_ranges`); client IP identified via CF-Connecting-IP header. Internet NEGs are prohibited by org policy (`compute.disableInternetNetworkEndpointGroup`), preventing load balancer backends from routing traffic to external endpoints.
+- **External boundary**: Cloudflare Edge WAF (Managed + OWASP rulesets, rate limiting, threat score challenges, path probing protection, IP/ASN blocking, Zero Trust Access for admin endpoints) → Cloud Armor origin WAF (OWASP CRS, HTTP method enforcement, origin restriction, bot blocking, per-tenant IP allowlisting, Cloudflare-only origin restriction) → Regional HTTPS Load Balancer → Cloud Run (private IP only). Admin API requests from the SPA are routed through a Cloudflare Worker proxy (`/_api/*` on SPA domains) that injects CF Access service token headers at the edge — credentials never reach the browser. The Worker forwards to the CF Access-protected API origin, which validates the service token and adds a signed JWT (`Cf-Access-Jwt-Assertion`). The backend verifies this JWT against Cloudflare's JWKS endpoint (FQDN-allowed via egress firewall). Origin load balancers only accept traffic from Cloudflare IP ranges (auto-updated via `data.cloudflare_ip_ranges`); client IP identified via CF-Connecting-IP header. Internet NEGs are prohibited by org policy (`compute.disableInternetNetworkEndpointGroup`), preventing load balancer backends from routing traffic to external endpoints.
 - **Internal boundary**: VPC with no public IPs on any service (`compute.vmExternalIpAccess` deny-all). FQDN-based egress firewall with default-deny-all. Only explicitly allowlisted endpoints are reachable outbound: Google API domains, Microsoft Graph API (`graph.microsoft.com`, `login.microsoftonline.com`), Cloudflare Access JWKS (`latentarchon.cloudflareaccess.com`), and internal service domains. Cloud Run VPC egress is locked to `ALL_TRAFFIC` via org policy (`run.allowedVPCEgress`), ensuring all outbound traverses the VPC where VPC Service Controls and firewall rules apply. Protocol forwarding restricted to INTERNAL only (`compute.restrictProtocolForwardingCreationForTypes`).
-- **Cross-project boundary**: Scoped cross-project IAM grants: `archon-admin` SA receives `cloudtasks.enqueuer` and `storage.objectAdmin` on the ops project; `archon-app` SA receives `aiplatform.user` and `storage.objectViewer` on the ops project; Cloud SQL access via `cloudsql.client` and `cloudsql.instanceUser`. Each grant is minimum-necessary for the service's function.
+- **Cross-project boundary**: Scoped cross-project IAM grants: `archon-admin` SA receives `cloudtasks.enqueuer` and `storage.objectAdmin` on the ops project (with `iam.serviceAccounts.actAs` on the ops SA for Cloud Tasks OIDC token generation); `archon-app` SA receives `aiplatform.user` and `storage.objectViewer` on the ops project; Cloud SQL access via `cloudsql.client` and `cloudsql.instanceUser`; Cloud Build SAs receive `firebase.viewer` and `identityplatform.viewer` on auth projects (read-only, for deployment validation). Each grant is minimum-necessary for the service's function.
 - **VPC Service Controls perimeter**: An Access Context Manager service perimeter (`infra/gcp/modules/vpc-service-controls/`) wraps all IL5 projects (admin, ops, app, KMS) per environment. The perimeter auto-discovers all ACTIVE projects in the IL5 Assured Workloads folder, ensuring new projects are automatically protected. 13 GCP services are restricted at the perimeter boundary: Vertex AI, Artifact Registry, BigQuery, Cloud Build, Cloud KMS, Cloud Tasks, Compute Engine, Cloud Logging, Pub/Sub, Cloud Run, Secret Manager, Cloud SQL Admin, and Cloud Storage. VPC-accessible services are additionally restricted — only 15 explicitly allowlisted services can be reached from within the VPC. Auth projects (Identity Platform) are explicitly excluded from the perimeter because they use global services incompatible with VPC-SC. Cross-perimeter access is controlled via: (a) egress policies permitting `identitytoolkit.googleapis.com` calls to auth projects and `serviceusage.googleapis.com` to the billing project; (b) ingress policies permitting Pub/Sub push delivery from the scheduler bridge and Terraform state access. VPC SC violation alerts are enabled with log-based metrics and Cloud Monitoring alert policies. The perimeter is enforced (`dry_run_mode = false`) — violations produce HTTP 403 errors, not just audit log entries.
-- **Org boundary**: 5-layer org isolation in auth interceptor prevents cross-org request routing via DB-backed subdomain validation. IAM policy members restricted to `latentarchon.com` domain via `iam.allowedPolicyMemberDomains`. Essential contacts restricted to `@latentarchon.com` via `essentialcontacts.allowedContactDomains`.
+- **Org boundary**: 5-layer tenant isolation in auth interceptor prevents cross-org request routing via DB-backed subdomain validation. IAM policy members restricted to `latentarchon.com` domain via `iam.allowedPolicyMemberDomains`. Essential contacts restricted to `@latentarchon.com` via `essentialcontacts.allowedContactDomains`.
 
 ### SC-7(3): Access Points
 
@@ -1587,14 +1598,14 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The auth interceptor enforces server-side session disconnection: idle timeout (default 25 minutes, per-org configurable 5-480 min) and absolute timeout (default 12 hours, per-org configurable 60-1440 min). Expired sessions are rejected with `Unauthenticated` on the next API request. No persistent network connections are maintained — all communication is request-response over HTTPS.
+**Implementation**: The auth interceptor enforces server-side session disconnection: idle timeout (default 25 minutes, per-tenant configurable 5-480 min) and absolute timeout (default 12 hours, per-tenant configurable 60-1440 min). Expired sessions are rejected with `Unauthenticated` on the next API request. No persistent network connections are maintained — all communication is request-response over HTTPS.
 
 ### SC-12: Cryptographic Key Establishment and Management
 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Key management uses Cloud KMS with HSM-backed keys (FIPS 140-2 Level 3) and automatic 90-day rotation: (1) CMEK keys encrypt data at rest for Cloud SQL, Cloud Storage, BigQuery (audit logs), Cloud Logging, Vertex AI, Artifact Registry, Cloud Tasks, and application-level secrets — all using AES-256-GCM with 90-day automatic rotation and 30-day destroy-scheduled safety windows; (2) Per-tenant CMEK keys anchored via `organizations.kms_key_name` column — used for application-level envelope encryption of document chunks, chat messages, GCS objects, and Microsoft Graph OAuth tokens; (3) JWT signing keys managed by Google Identity Platform (automatic rotation); (4) SCIM tokens are random 32-byte values, SHA-256 hashed before storage; (5) No static service account keys — all service authentication uses Workload Identity Federation; (6) TLS certificate keys are self-managed regional SSL certificates uploaded to the regional LB; (7) Cloud KMS `app_secrets` key (AES-256-GCM, HSM-backed, 90-day rotation) encrypts Microsoft Graph OAuth refresh tokens before database storage; (8) KMS key lifecycle alerts monitor for key disable, destroy, and version state changes with notifications to security operations; (9) DEK lifecycle: random 256-bit DEK generated per encrypt operation, wrapped by tenant KMS key, stored alongside ciphertext; crypto-shredding supported by destroying tenant KMS key versions (24-hour scheduled destruction delay).
+**Implementation**: Key management uses Cloud KMS with HSM-backed keys (FIPS 140-2 Level 3) and automatic 90-day rotation: (1) CMEK keys encrypt data at rest for Cloud SQL, Cloud Storage, BigQuery (audit logs), Cloud Logging, Vertex AI, Artifact Registry, Cloud Tasks, and application-level secrets — all using AES-256-GCM with 90-day automatic rotation and 30-day destroy-scheduled safety windows; (2) Per-tenant CMEK keys anchored via `tenants.kms_key_name` column — used for application-level envelope encryption of document chunks, chat messages, GCS objects, and Microsoft Graph OAuth tokens; (3) JWT signing keys managed by Google Identity Platform (automatic rotation); (4) SCIM tokens are random 32-byte values, SHA-256 hashed before storage; (5) No static service account keys — all service authentication uses Workload Identity Federation; (6) TLS certificate keys are self-managed regional SSL certificates uploaded to the regional LB; (7) Cloud KMS `app_secrets` key (AES-256-GCM, HSM-backed, 90-day rotation) encrypts Microsoft Graph OAuth refresh tokens before database storage; (8) KMS key lifecycle alerts monitor for key disable, destroy, and version state changes with notifications to security operations; (9) DEK lifecycle: random 256-bit DEK generated per encrypt operation, wrapped by tenant KMS key, stored alongside ciphertext; crypto-shredding supported by destroying tenant KMS key versions (24-hour scheduled destruction delay).
 
 ### SC-12(1): Availability
 
@@ -1657,7 +1668,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Session authenticity is verified through: (1) JWT-based sessions with cryptographic signature verification against Google's public keys; (2) TOTP MFA provides a second authentication factor; (3) Five-layer org isolation: IDP pool presence, IDP pool header match, org membership gate, subdomain→org DB validation, cross-org check; (4) Firebase ID tokens are short-lived (1 hour) reducing the window for session hijacking.
+**Implementation**: Session authenticity is verified through: (1) JWT-based sessions with cryptographic signature verification against Google's public keys; (2) TOTP MFA provides a second authentication factor; (3) Five-layer tenant isolation: IDP pool presence, IDP pool header match, tenant membership gate, subdomain→tenant DB validation, cross-tenant check; (4) Firebase ID tokens are short-lived (1 hour) reducing the window for session hijacking.
 
 ### SC-28: Protection of Information at Rest
 
@@ -1678,7 +1689,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: Inherited (GCP) + CSP
 - **Status**: Implemented
 
-**Implementation**: Process isolation operates at multiple levels: (1) **Container isolation**: Cloud Run uses gVisor sandboxing for container isolation (GCP); (2) **Service isolation**: Three separate Cloud Run services with distinct service accounts and database roles; (3) **Project isolation**: Three GCP projects (app, ops, admin) with separate IAM boundaries; (4) **Data isolation**: PostgreSQL RLS provides row-level data isolation between organizations.
+**Implementation**: Process isolation operates at multiple levels: (1) **Container isolation**: Cloud Run uses gVisor sandboxing for container isolation (GCP); (2) **Service isolation**: Three separate Cloud Run services with distinct service accounts and database roles; (3) **Project isolation**: Three GCP projects (app, ops, admin) with separate IAM boundaries; (4) **Data isolation**: PostgreSQL RLS provides row-level data isolation between tenants.
 
 ---
 
@@ -1715,6 +1726,8 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **File upload scanning**: ClamAV REST service (`benzino77/clamav-rest` on Cloud Run, internal-only) scans all uploaded documents before storage. In production admin/ops mode, the system is **fail-closed** — uploads are rejected if the ClamAV endpoint is not available. ClamAV signature database updates automatically.
 - **Magic-byte validation**: File type is verified by inspecting file content magic bytes, not relying on client-provided Content-Type or file extension.
 - **File type allowlisting**: Only explicitly permitted document types are accepted for upload.
+- **SVG short-circuit**: SVG files are detected and short-circuited before entering the document extraction pipeline, preventing XXE and SSRF attack vectors that exploit SVG's XML-based format.
+- **Vector post-condition validation**: After embedding generation and vector index upsert, a post-condition check validates that the vector operation completed successfully, ensuring document integrity through the processing pipeline.
 - **Container security**: Distroless base images with no package manager or shell prevent installation of malicious code at the container level.
 - **Dependency scanning**: Trivy, GoSec, and govulncheck detect known malicious or vulnerable dependencies.
 
@@ -1735,7 +1748,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Infrastructure**: Cloud Monitoring dashboards for CPU, memory, request latency, error rates, Cloud SQL connections. Alert policies for anomalies.
 - **WAF**: Cloud Armor analytics for blocked requests, OWASP CRS matches, DDoS events, bot traffic.
 - **Application**: Structured audit logging capturing all authentication, authorization, and data access events. WARN-level logging for security-critical operations.
-- **Security**: Real-time email notifications to org admins for: role escalation, auth failures exceeding thresholds, cross-org access attempts, SCIM token events, member changes. Pub/Sub SIEM export pipeline for customer agency security tools.
+- **Security**: Real-time email notifications to tenant admins for: role escalation, auth failures exceeding thresholds, cross-tenant access attempts, SCIM token events, member changes. Pub/Sub SIEM export pipeline for customer agency security tools.
 
 ### SI-4(1): System-Wide Intrusion Detection System
 
@@ -1805,7 +1818,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Input validation is performed at multiple layers: (1) **Protobuf**: Strong typing and schema validation for all API requests via Connect-RPC; (2) **Application**: Business logic validation (CIDR format for IP allowlists, DNS-safe regex for org slugs, reserved-slug blocklist, session timeout range validation); (3) **Database**: PostgreSQL type constraints and foreign key integrity; (4) **Cloud Armor**: OWASP CRS for injection detection (SQLi, XSS, etc.); (5) **File upload**: Magic-byte validation, file type allowlisting, size limits (50 MB).
+**Implementation**: Input validation is performed at multiple layers: (1) **Protobuf**: Strong typing and schema validation for all API requests via Connect-RPC; (2) **Application**: Business logic validation (CIDR format for IP allowlists, DNS-safe regex for tenant slugs, reserved-slug blocklist, session timeout range validation); (3) **Database**: PostgreSQL type constraints and foreign key integrity; (4) **Cloud Armor**: OWASP CRS for injection detection (SQLi, XSS, etc.); (5) **File upload**: Magic-byte validation, file type allowlisting, size limits (50 MB), SVG short-circuit (blocks XML-based attack vectors before extraction); (6) **Vector integrity**: Post-condition validation on embedding operations ensures document processing pipeline integrity.
 
 ### SI-11: Error Handling
 
@@ -1922,7 +1935,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Latent Archon enforces dynamic privilege management — no static or permanent elevated access exists. Organization administrators adjust RBAC role assignments (`master_admin`, `admin`, `editor`, `viewer`) in real time via the `UpdateMemberRole` RPC. SCIM 2.0 provisioning (`internal/sso/scim_handler.go`) auto-provisions and auto-deprovisions accounts based on customer IdP group membership changes. Role changes take effect on the next RPC call — the auth interceptor (`cmd/server/connect_interceptors.go`) evaluates current role from the database on every request, not from cached JWT claims. All role modifications are audit-logged with before/after values and trigger real-time security email notifications to org administrators.
+**Implementation**: Latent Archon enforces dynamic privilege management — no static or permanent elevated access exists. Organization administrators adjust RBAC role assignments (`master_admin`, `admin`, `editor`, `viewer`) in real time via the `UpdateMemberRole` RPC. SCIM 2.0 provisioning (`internal/sso/scim_handler.go`) auto-provisions and auto-deprovisions accounts based on customer IdP group membership changes. Role changes take effect on the next RPC call — the auth interceptor (`cmd/server/connect_interceptors.go`) evaluates current role from the database on every request, not from cached JWT claims. All role modifications are audit-logged with before/after values and trigger real-time security email notifications to tenant administrators.
 
 ### AC-2(7): Privileged User Accounts
 
@@ -1936,7 +1949,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: The system enforces the following usage conditions at the auth interceptor level (`cmd/server/connect_interceptors.go`): (1) **Session timeouts** — idle timeout (default 25 minutes, configurable 5–480 minutes) and absolute timeout (default 12 hours, configurable 60–1440 minutes) are enforced server-side on every RPC, (2) **IP allowlisting** — per-organization CIDR-based IP restrictions are synced to Cloud Armor WAF rules, restricting access to authorized network ranges, (3) **ROB acceptance** — users must accept the current version of the Rules of Behavior (`rob_acceptances` table); version changes trigger mandatory re-acceptance before access is granted, (4) **MFA enforcement** — TOTP MFA is mandatory for all users; the interceptor verifies `mfa_verified` status on every request. These conditions are evaluated collectively on every authenticated request — failure of any condition results in rejection.
+**Implementation**: The system enforces the following usage conditions at the auth interceptor level (`cmd/server/connect_interceptors.go`): (1) **Session timeouts** — idle timeout (default 25 minutes, configurable 5–480 minutes) and absolute timeout (default 12 hours, configurable 60–1440 minutes) are enforced server-side on every RPC, (2) **IP allowlisting** — per-tenant CIDR-based IP restrictions are synced to Cloud Armor WAF rules, restricting access to authorized network ranges, (3) **ROB acceptance** — users must accept the current version of the Rules of Behavior (`rob_acceptances` table); version changes trigger mandatory re-acceptance before access is granted, (4) **MFA enforcement** — TOTP MFA is mandatory for all users; the interceptor verifies `mfa_verified` status on every request. These conditions are evaluated collectively on every authenticated request — failure of any condition results in rejection.
 
 **Customer Responsibility**: Customers configure organization-specific session timeout values and IP allowlists appropriate for their security posture.
 
@@ -1945,7 +1958,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Atypical usage is monitored through multiple channels: (1) **Real-time security email notifications** alert org administrators on authentication failures, role escalation attempts, cross-org access attempts, SCIM provisioning events, and member removal actions, (2) **Cloud Monitoring alerts** (`infra/gcp/modules/monitoring/main.tf`) detect WAF block spikes, rate-limit ban events, Cloud SQL authentication failures, and adaptive DDoS protection triggers, (3) **IAM privilege escalation alerts** detect unauthorized `SetIamPolicy` calls in GCP, (4) **Audit log analysis** — all events are written to three stores (Cloud SQL `audit_events`, BigQuery, GCS WORM buckets) enabling retrospective analysis for anomalous patterns such as unusual login times, geographic anomalies, or rapid privilege changes, (5) **Pub/Sub SIEM export pipeline** enables customer agencies to ingest security events into their own SIEM for agency-specific correlation and alerting.
+**Implementation**: Atypical usage is monitored through multiple channels: (1) **Real-time security email notifications** alert tenant administrators on authentication failures, role escalation attempts, cross-tenant access attempts, SCIM provisioning events, and member removal actions, (2) **Cloud Monitoring alerts** (`infra/gcp/modules/monitoring/main.tf`) detect WAF block spikes, rate-limit ban events, Cloud SQL authentication failures, and adaptive DDoS protection triggers, (3) **IAM privilege escalation alerts** detect unauthorized `SetIamPolicy` calls in GCP, (4) **Audit log analysis** — all events are written to three stores (Cloud SQL `audit_events`, BigQuery, GCS WORM buckets) enabling retrospective analysis for anomalous patterns such as unusual login times, geographic anomalies, or rapid privilege changes, (5) **Pub/Sub SIEM export pipeline** enables customer agencies to ingest security events into their own SIEM for agency-specific correlation and alerting.
 
 ### AC-2(13): Disable Accounts for High-Risk Individuals
 
@@ -1961,7 +1974,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: PostgreSQL Row-Level Security (RLS) policies on all data tables enforce mandatory, workspace-scoped access control. RLS policies are not discretionary — users cannot override, relax, or delegate access beyond their assigned workspace scope. The RLS implementation is fail-closed: if session variables (`app.current_org_id`, `app.current_workspace_id`) are missing or invalid, queries return zero rows. Three database roles (`archon_app_ro`, `archon_admin_rw`, `archon_ops_rw`) further constrain operations — the app role is read-only and cannot modify data tables. Default `PUBLIC` privileges are revoked via migration, ensuring no implicit grants exist. This mandatory access model ensures that even if application-layer authorization is bypassed, the database enforces tenant isolation independently.
+**Implementation**: PostgreSQL Row-Level Security (RLS) policies on all data tables enforce mandatory, workspace-scoped access control. RLS policies are not discretionary — users cannot override, relax, or delegate access beyond their assigned workspace scope. The RLS implementation is fail-closed: if session variables (`app.tenant_id`, `app.workspace_id`) are missing or invalid, queries return zero rows. Three database roles (`archon_app_ro`, `archon_admin_rw`, `archon_ops_rw`) further constrain operations — the app role is read-only and cannot modify data tables. Default `PUBLIC` privileges are revoked via migration, ensuring no implicit grants exist. This mandatory access model ensures that even if application-layer authorization is bypassed, the database enforces tenant isolation independently.
 
 ### AC-6(3): Network Access to Privileged Commands
 
@@ -1991,14 +2004,14 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The system associates security and privacy attributes with information at multiple levels: (1) **Data classification** — the Data Classification Policy (POL-DC-001, `policies/data-classification.md`) defines four tiers: CUI, Sensitive, Internal, and Public, with handling requirements for each, (2) **Tenant isolation attributes** — every data record is scoped to an organization and workspace via RLS. The `org_id` and `workspace_id` columns serve as mandatory security attributes enforced at the database layer, (3) **Identity pool separation** — Firebase Identity Platform maintains separate pools for admin and app contexts, preventing cross-pool identity bridging, (4) **Audit event attributes** — each audit record carries security-relevant attributes including user_id, org_id, ip_address, user_agent, session_id, trace_id, mfa_method, and idp_pool_id, enabling attribute-based analysis and correlation. Classification labels are applied to infrastructure resources via Terraform labels and to code repositories via automated SCN classification.
+**Implementation**: The system associates security and privacy attributes with information at multiple levels: (1) **Data classification** — the Data Classification Policy (POL-DC-001, `policies/data-classification.md`) defines four tiers: CUI, Sensitive, Internal, and Public, with handling requirements for each, (2) **Tenant isolation attributes** — every data record is scoped to a tenant and workspace via RLS. The `tenant_id` and `workspace_id` columns serve as mandatory security attributes enforced at the database layer, (3) **Identity pool separation** — Firebase Identity Platform maintains separate pools for admin and app contexts, preventing cross-pool identity bridging, (4) **Audit event attributes** — each audit record carries security-relevant attributes including user_id, tenant_id, ip_address, user_agent, session_id, trace_id, mfa_method, and idp_pool_id, enabling attribute-based analysis and correlation. Classification labels are applied to infrastructure resources via Terraform labels and to code repositories via automated SCN classification.
 
 ### AC-17(9): Disconnect / Disable Access
 
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: The system provides the capability to immediately disconnect or disable remote access: (1) **Session termination** — the auth interceptor (`cmd/server/connect_interceptors.go`) enforces idle and absolute session timeouts on every request, disconnecting users who exceed configured limits, (2) **Account disablement** — Firebase Admin SDK `DisableUser()` immediately invalidates all active sessions for a user; subsequent requests are rejected at the Firebase token verification layer before reaching the application, (3) **SCIM-triggered revocation** — SCIM DELETE from customer IdPs (`internal/sso/scim_handler.go`) triggers immediate account deactivation and session invalidation, (4) **Admin member removal** — org administrators can instantly remove members via the `RemoveMember` RPC, revoking all access, (5) **IP allowlist enforcement** — changes to per-org IP allowlists are synced to Cloud Armor WAF rules, immediately blocking connections from unauthorized networks.
+**Implementation**: The system provides the capability to immediately disconnect or disable remote access: (1) **Session termination** — the auth interceptor (`cmd/server/connect_interceptors.go`) enforces idle and absolute session timeouts on every request, disconnecting users who exceed configured limits, (2) **Account disablement** — Firebase Admin SDK `DisableUser()` immediately invalidates all active sessions for a user; subsequent requests are rejected at the Firebase token verification layer before reaching the application, (3) **SCIM-triggered revocation** — SCIM DELETE from customer IdPs (`internal/sso/scim_handler.go`) triggers immediate account deactivation and session invalidation, (4) **Admin member removal** — tenant administrators can instantly remove members via the `RemoveMember` RPC, revoking all access, (5) **IP allowlist enforcement** — changes to per-tenant IP allowlists are synced to Cloud Armor WAF rules, immediately blocking connections from unauthorized networks.
 
 **Customer Responsibility**: Customers initiate disconnect actions via their IdP (SCIM) or admin dashboard for their organization's users.
 
@@ -2049,7 +2062,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 
 **Implementation**: Data transfers between Latent Archon and external systems are explicitly authorized and controlled: (1) **SCIM integration** — data transfers with customer IdPs are authorized via SCIM bearer token authentication with SHA-256 hashed tokens stored in the `scim_tokens` table, (2) **Microsoft Graph integration** — document sync with SharePoint/OneDrive is authorized via OAuth 2.0 authorization code grant with per-connection consent; refresh tokens are encrypted via Cloud KMS before database storage, (3) **Internal service-to-service** — Cloud Tasks uses OIDC tokens for authenticated task dispatch between Cloud Run services, (4) **SIEM export** — Pub/Sub export pipeline delivers security events to customer-controlled subscriptions; customers authorize and manage their subscription endpoints, (5) **Egress control** — VPC FQDN egress firewall enforces default-deny-all with explicit allowlist for authorized external endpoints (Google APIs, Microsoft Graph). No unapproved outbound data transfers are possible.
 
-**Customer Responsibility**: Customers authorize SCIM connections, Microsoft Graph OAuth grants, and SIEM subscription endpoints for their organizations.
+**Customer Responsibility**: Customers authorize SCIM connections, Microsoft Graph OAuth grants, and SIEM subscription endpoints for their tenants.
 
 ### CA-8: Penetration Testing
 
@@ -2517,7 +2530,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: All boundary protection mechanisms fail secure (closed). Cloud Armor WAF defaults to `deny(403)` in production — if WAF policy evaluation fails, traffic is blocked rather than permitted. VPC FQDN egress firewall uses a default-deny rule — if egress rules fail to load, all outbound traffic is blocked. The auth interceptor (`backend/cmd/server/connect_interceptors.go`) is fail-closed — any exception during authentication or authorization processing results in request rejection. PostgreSQL RLS policies are fail-closed — missing session variables (org_id, workspace_id) cause queries to return zero rows rather than unscoped data.
+**Implementation**: All boundary protection mechanisms fail secure (closed). Cloud Armor WAF defaults to `deny(403)` in production — if WAF policy evaluation fails, traffic is blocked rather than permitted. VPC FQDN egress firewall uses a default-deny rule — if egress rules fail to load, all outbound traffic is blocked. The auth interceptor (`backend/cmd/server/connect_interceptors.go`) is fail-closed — any exception during authentication or authorization processing results in request rejection. PostgreSQL RLS policies are fail-closed — missing session variables (tenant_id, workspace_id) cause queries to return zero rows rather than unscoped data.
 
 ### SC-7(21): Isolation of System Components
 
@@ -2537,7 +2550,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The system fails to a known secure state: (1) **RLS fail-closed**: If PostgreSQL session variables are not set, RLS policies return zero rows — no data leakage on auth failure; (2) **ClamAV fail-closed**: In production, document uploads are rejected if the ClamAV endpoint is unavailable — no unscanned files enter the system; (3) **Auth interceptor fail-closed**: Missing or invalid JWT → `Unauthenticated`; missing MFA → `Unauthenticated`; missing org membership → `PermissionDenied`; (4) **Distroless containers**: No shell or package manager — container compromise yields minimal attack surface; (5) **FQDN egress deny-all**: Default egress policy blocks all outbound — only explicitly allowlisted domains are reachable.
+**Implementation**: The system fails to a known secure state: (1) **RLS fail-closed**: If PostgreSQL session variables are not set, RLS policies return zero rows — no data leakage on auth failure; (2) **ClamAV fail-closed**: In production, document uploads are rejected if the ClamAV endpoint is unavailable — no unscanned files enter the system; (3) **Auth interceptor fail-closed**: Missing or invalid JWT → `Unauthenticated`; missing MFA → `Unauthenticated`; missing tenant membership → `PermissionDenied`; (4) **Distroless containers**: No shell or package manager — container compromise yields minimal attack surface; (5) **FQDN egress deny-all**: Default egress policy blocks all outbound — only explicitly allowlisted domains are reachable.
 
 ### SC-45: System Time Synchronization
 
@@ -2562,7 +2575,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Automated security alerts are generated across application and infrastructure layers. Real-time email notifications to org admins cover role changes, authentication failures, SCIM provisioning events, and member modifications. Cloud Monitoring alert policies (`infra/gcp/modules/monitoring/main.tf`) detect WAF blocks, 5xx error rate spikes (MQL-based), Cloud SQL authentication failures, rate-limit bans, and IAM privilege escalation (SetIamPolicy). Break-glass secret access triggers a CRITICAL severity alert. KMS key lifecycle events generate notifications. Dependabot vulnerability alerts are configured on all 6 classified repositories. All alert policies are defined in IaC and version-controlled.
+**Implementation**: Automated security alerts are generated across application and infrastructure layers. Real-time email notifications to tenant admins cover role changes, authentication failures, SCIM provisioning events, and member modifications. Cloud Monitoring alert policies (`infra/gcp/modules/monitoring/main.tf`) detect WAF blocks, 5xx error rate spikes (MQL-based), Cloud SQL authentication failures, rate-limit bans, and IAM privilege escalation (SetIamPolicy). Break-glass secret access triggers a CRITICAL severity alert. KMS key lifecycle events generate notifications. Dependabot vulnerability alerts are configured on all 6 classified repositories. All alert policies are defined in IaC and version-controlled.
 
 ### SI-4(14): Wireless Intrusion Detection
 
@@ -2576,7 +2589,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Privileged user actions are subject to enhanced monitoring. All master_admin operations are audit-logged via `backend/internal/audit/logger.go` with user_id, IP address, user_agent, session_id, trace_id, and action details. Role escalation events trigger real-time security email notifications to affected org admins. SCIM provisioning events for privileged accounts are logged with full detail. IAM privilege escalation alerts in Cloud Monitoring (`infra/gcp/modules/monitoring/main.tf`) detect SetIamPolicy changes at the infrastructure level. Break-glass database access triggers a CRITICAL severity alert and is restricted to security admin role holders only. All privileged actions flow to the three-store audit pipeline (Cloud SQL, BigQuery, GCS WORM).
+**Implementation**: Privileged user actions are subject to enhanced monitoring. All master_admin operations are audit-logged via `backend/internal/audit/logger.go` with user_id, IP address, user_agent, session_id, trace_id, and action details. Role escalation events trigger real-time security email notifications to affected tenant admins. SCIM provisioning events for privileged accounts are logged with full detail. IAM privilege escalation alerts in Cloud Monitoring (`infra/gcp/modules/monitoring/main.tf`) detect SetIamPolicy changes at the infrastructure level. Break-glass database access triggers a CRITICAL severity alert and is restricted to security admin role holders only. All privileged actions flow to the three-store audit pipeline (Cloud SQL, BigQuery, GCS WORM).
 
 ### SI-6(3): Report Verification Results
 

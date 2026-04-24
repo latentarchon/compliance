@@ -167,7 +167,7 @@ The auth projects communicate with the data plane via JWT public key validation 
 | Component | GCP Service | IL5 Boundary | Description |
 |-----------|-------------|---------------|-------------|
 | App API | Cloud Run (`archon-app`) | IL5 | User-facing API: conversation, search, auth, streaming |
-| Admin API | Cloud Run (`archon-admin`) | IL5 | Admin API: org management, document ingestion, settings |
+| Admin API | Cloud Run (`archon-admin`) | IL5 | Admin API: tenant management, document ingestion, settings |
 | Ops Service | Cloud Run (`archon-ops`) | IL5 | Background processing: embeddings, cron, document processing |
 | App SPA | Cloud Run (nginx) | IL5 | React single-page application for end users |
 | Admin SPA | Cloud Run (nginx) | IL5 | React single-page application for administrators |
@@ -210,9 +210,9 @@ Latent Archon uses a **multi-project architecture** with IL5 Assured Workloads f
 
 #### FedRAMP High Projects (outside IL5 boundary)
 
-- **Auth Admin** (`archon-fed-auth-admin-*`): Identity Platform (Firebase Auth) for the admin tenant pool. Runs under a FedRAMP High Assured Workloads folder because Identity Platform is not IL5-supported. The IL5 data-plane validates admin JWTs offline via JWKS public keys — no direct service calls cross the boundary.
+- **Auth Admin** (`archon-fed-auth-admin-*`): Identity Platform (Firebase Auth) for the admin tenant pool. Runs under a FedRAMP High Assured Workloads folder because Identity Platform is not IL5-supported. Dedicated service accounts manage Identity Platform operations. KMS APIs are enabled for key management. The IL5 data-plane validates admin JWTs offline via JWKS public keys — no direct service calls cross the boundary.
 
-- **Auth App** (`archon-fed-auth-app-*`): Identity Platform (Firebase Auth) for the app tenant pool. Same FedRAMP High AW isolation as auth-admin. JWT validation is offline via JWKS.
+- **Auth App** (`archon-fed-auth-app-*`): Identity Platform (Firebase Auth) for the app tenant pool. Same FedRAMP High AW isolation, dedicated service accounts, and KMS configuration as auth-admin. JWT validation is offline via JWKS.
 
 - **Management Scheduler** (`archon-mgmt-scheduler-*`): Cloud Scheduler for cron jobs. Cloud Scheduler is not IL5-supported, so cron triggers are published to a Pub/Sub topic in this project. Push subscriptions in the ops project (within the IL5 boundary) deliver messages to the ops Cloud Run service, satisfying Cloud Run's `ingress = "internal"` policy. Scheduler projects reside in the **Mgmt FedRAMP High AW** folder under Management/.
 
@@ -344,7 +344,7 @@ VPC-SC complements the FQDN egress firewall — the firewall controls network-la
 | User Type | Description | Auth Method | Privileges | Count |
 |-----------|-------------|-------------|------------|-------|
 | **Customer End User** | Agency staff using app search/conversation | Magic link + MFA | viewer, editor roles within assigned workspaces | Variable per customer |
-| **Customer Org Admin** | Agency administrator | SSO preferred + MFA | master_admin or admin role; org management, user lifecycle, settings | 1-5 per customer org |
+| **Customer Tenant Admin** | Agency administrator | SSO preferred + MFA | master_admin or admin role; tenant management, user lifecycle, settings | 1-5 per customer tenant |
 | **Latent Archon Founder / ISSO** | CEO — directs engineering, operations, and security; automation workforce handles execution (see SOD-LA-001) | GitHub SSO + cloud IAM (WIF/OIDC) | CI/CD deployment via automation; break-glass DB access (emergency only) | 1 |
 | **Automated CI/CD** | GitHub Actions runners | Workload Identity Federation / OIDC (keyless) | Deploy containers, run migrations; no static keys | N/A |
 | **Ops Service (Machine)** | Background processing | Cloud IAM (service-to-service) | Document processing, embeddings, cron; OIDC-authenticated task dispatch | N/A |
@@ -354,17 +354,17 @@ VPC-SC complements the FQDN egress firewall — the firewall controls network-la
 | Requirement | Implementation |
 |-------------|----------------|
 | **Multi-Factor Authentication** | TOTP-based MFA enforced on all data endpoints via auth interceptor; step-up MFA for sensitive operations. |
-| **Session Management** | Global idle timeout: 25 min (default). Global absolute timeout: 12 hr (default). Per-org configurable: idle 5-480 min, absolute 60-1440 min. Enforced server-side via JWT `auth_time` and `iat` claims. |
+| **Session Management** | Global idle timeout: 25 min (default). Global absolute timeout: 12 hr (default). Per-tenant configurable: idle 5-480 min, absolute 60-1440 min. Enforced server-side via JWT `auth_time` and `iat` claims. |
 | **Password Policy** | Managed by Identity Platform; magic link (passwordless) preferred, delivered via Gmail API with domain-wide delegation (no SMTP relay). SSO/SAML available with password policy delegated to customer IdP. |
 | **Account Lockout** | Identity provider built-in brute-force protection. Application-level rate limiting at IP + per-user levels. |
 
 ### 7.3 Role-Based Access Control (RBAC)
 
-#### Organization Roles
+#### Tenant Roles
 
 | Role | Capabilities |
 |------|-------------|
-| `master_admin` | Full organization management; promote/demote admins; configure org settings (session timeouts, IP allowlists); manage SSO/SCIM |
+| `master_admin` | Full tenant management; promote/demote admins; configure tenant settings (session timeouts, IP allowlists); manage SSO/SCIM |
 | `admin` | Workspace management; invite/remove members; upload/delete documents; view audit logs |
 | `editor` | Document upload and metadata editing within assigned workspaces |
 | `viewer` | Read-only access to documents and conversations within assigned workspaces |
@@ -383,7 +383,7 @@ Default `PUBLIC` privileges are revoked on all tables and sequences. Only the th
 
 <!-- MULTI-CLOUD: Original also referenced RDS IAM (AWS) and Azure AD auth (Azure). --> This role owns all tables in the public schema and has DDL privileges (CREATE/ALTER/DROP). No static credentials are used in the normal migration path. A `postgres` superuser password exists in secrets management as a break-glass mechanism, accessible only to human security administrators — it is not mounted on any container service or job by default.
 
-All database roles operate under PostgreSQL Row-Level Security (RLS). RLS policies scope queries to the authenticated user's organization and workspace. RLS is **fail-closed**: if `app.organization_id` or `app.workspace_id` session variables are not set, queries return zero rows (not all rows). Roles are granted to IAM service accounts dynamically by naming convention (`archon-app@*`, `archon-admin@*`, `archon-ops@*`), ensuring environment-agnostic enforcement across staging and production.
+All database roles operate under PostgreSQL Row-Level Security (RLS). RLS policies scope queries to the authenticated user's tenant and workspace. RLS is **fail-closed**: if `app.tenant_id` or `app.workspace_id` session variables are not set, queries return zero rows (not all rows). Roles are granted to IAM service accounts dynamically by naming convention (`archon-app@*`, `archon-admin@*`, `archon-ops@*`), ensuring environment-agnostic enforcement across staging and production.
 
 ---
 
@@ -477,7 +477,7 @@ Cloudflare Edge (proxied DNS):
     ▼
 Cloud Armor (origin WAF — Cloudflare IPs only):
     ├─► OWASP CRS, rate limiting, bot blocking
-    ├─► Per-org IP allowlisting
+    ├─► Per-tenant IP allowlisting
     ├─► Client IP from CF-Connecting-IP header
     │
     ▼
@@ -504,13 +504,15 @@ Object Storage (AES-256-GCM + CMEK, workspace-scoped path)
     │
     ▼
 Task Queue → Ops Service (container):
-    ├─► Document text extraction (cloud-agnostic: AWS Textract, Azure AI Doc Intelligence)
+    ├─► SVG short-circuit (blocks XML-based vectors before extraction)
+    ├─► Document text extraction
     ├─► Text chunking
     ├─► Embedding generation
     ├─► Vector index upsert (workspace-scoped)
+    ├─► Vector post-condition validation (integrity check)
     │
     ▼
-Audit event logged (user_id, org_id, workspace_id, action,
+Audit event logged (user_id, tenant_id, workspace_id, action,
                     ip_address, user_agent, metadata JSONB)
 ```
 
@@ -520,7 +522,7 @@ Audit event logged (user_id, org_id, workspace_id, action,
 Admin Console (HTTPS/TLS 1.2+)
     │
     ▼
-Admin API — Org Admin authorization check
+Admin API — Tenant Admin authorization check
     │
     ├─► Generate HMAC-signed OAuth state token (nonce:timestamp:orgID:tenantID:hmac)
     │   (SHA-256 derived key, 10-minute TTL)
@@ -606,7 +608,7 @@ Cloud Armor (origin WAF — Cloudflare IPs only):
     ├─► HTTP method enforcement (GET, POST, OPTIONS only)
     ├─► Origin header restriction
     ├─► Bot/scanner blocking (User-Agent rules)
-    ├─► Per-org IP allowlisting
+    ├─► Per-tenant IP allowlisting
     ├─► Rate limiting (per-endpoint tiers)
     ├─► Cloudflare-only origin restriction (non-CF traffic denied)
     ├─► Client IP via CF-Connecting-IP + X-Forwarded-For headers
