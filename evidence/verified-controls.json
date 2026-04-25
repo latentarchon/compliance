@@ -7,8 +7,8 @@
     "component-uuids": [
       "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80"
     ],
-    "narrative-length": 2533,
-    "narrative": "(a) Latent Archon defines four organization-level account types: `master_admin`, `admin`, `editor`, and `viewer`. Each account type has specific privileges enforced per-RPC in the Connect-RPC interceptor chain. Service accounts (e.g., noreply@latentarchon.com) are a distinct non-interactive type blocked from authentication.\n(b) Account managers are designated per customer organization. The `master_admin` role serves as the organization account manager.\n(c) Conditions for group and role membership are enforced by the RBAC model. Users must be explicitly invited to an organization (via invite token or SCIM provisioning) and granted workspace access. The auth interceptor enforces an org membership gate.\n(d) Authorized users and role membership are specified per-organization by the `master_admin` through the admin API (`InviteMember`, `UpdateMemberRole`, `RemoveMember` RPCs). For SCIM-enabled organizations, user lifecycle is managed automatically by the customer IdP.\n(e) Account creation requires approval by an org admin (explicit invite) or automated provisioning via SCIM 2.0 from an authorized customer IdP. JIT provisioning auto-creates accounts on first SSO login.\n(f) Accounts are created via invite tokens (time-limited), SCIM 2.0, or JIT provisioning. Accounts are disabled via Firebase Admin SDK `DisableUser()` or SCIM DELETE. Accounts are removed via `RemoveMember` RPC or self-service `CloseAccount` RPC (requires step-up MFA). Automated 90-day data purge runs via Cloud Scheduler.\n(g) System access is monitored through comprehensive audit logging (`internal/audit/logger.go`). All authentication events, role changes, and SCIM actions are recorded with user ID, IP, user agent, timestamp, and correlation ID.\n(h) Account managers (org `master_admin`) are notified of account changes via real-time security email notifications covering: role escalation, auth failures, member changes, SCIM events, and deletions.\n(i) Authorization requires: (1) valid Firebase Auth JWT, (2) MFA verification, (3) organization membership, (4) appropriate RBAC role, and (5) workspace membership for data access.\n(j) All accounts are reviewed by the org `master_admin` through the admin dashboard. Quarterly access reviews tracked via Drata.\n(k) Role transfers handled via admin API or SCIM group-to-role mapping.\n(l) Accounts deprovisioned within 24 hours via SCIM DELETE or manual removal. Self-service closure via `CloseAccount` RPC with step-up MFA. Row-level security on archon enforces data isolation post-deprovisioning."
+    "narrative-length": 2500,
+    "narrative": "(a) Latent Archon defines four tenant-level account types: `master_admin`, `admin`, `editor`, and `viewer`. Each account type has specific privileges enforced per-RPC in the Connect-RPC interceptor chain. Service accounts (e.g., noreply@latentarchon.com) are a distinct non-interactive type blocked from authentication.\n(b) Account managers are designated per customer tenant. The `master_admin` role serves as the tenant account manager.\n(c) Conditions for group and role membership are enforced by the RBAC model. Users must be explicitly invited to a tenant (via invite token or SCIM provisioning) and granted workspace access. The auth interceptor enforces a tenant membership gate.\n(d) Authorized users and role membership are specified per-tenant by the `master_admin` through the admin API (`InviteMember`, `UpdateMemberRole`, `RemoveMember` RPCs). For SCIM-enabled tenants, user lifecycle is managed automatically by the customer IdP.\n(e) Account creation requires approval by a tenant admin (explicit invite) or automated provisioning via SCIM 2.0 from an authorized customer IdP. JIT provisioning auto-creates accounts on first SSO login.\n(f) Accounts are created via invite tokens (time-limited), SCIM 2.0, or JIT provisioning. Accounts are disabled via Firebase Admin SDK `DisableUser()` or SCIM DELETE. Accounts are removed via `RemoveMember` RPC or self-service `CloseAccount` RPC (requires step-up MFA). Automated 90-day data purge runs via Cloud Scheduler.\n(g) System access is monitored through comprehensive audit logging (`internal/audit/logger.go`). All authentication events, role changes, and SCIM actions are recorded with user ID, IP, user agent, timestamp, and correlation ID.\n(h) Account managers (tenant `master_admin`) are notified of account changes via real-time security email notifications covering: role escalation, auth failures, member changes, SCIM events, and deletions.\n(i) Authorization requires: (1) valid Firebase Auth JWT, (2) MFA verification, (3) tenant membership, (4) appropriate RBAC role, and (5) workspace membership for data access.\n(j) All accounts are reviewed by the tenant `master_admin` through the admin dashboard. Quarterly access reviews tracked via Drata.\n(k) Role transfers handled via admin API or SCIM group-to-role mapping.\n(l) Accounts deprovisioned within 24 hours via SCIM DELETE or manual removal. Self-service closure via `CloseAccount` RPC with step-up MFA. Row-level security on archon enforces data isolation post-deprovisioning."
   },
   {
     "control-id": "ac-3",
@@ -33,8 +33,8 @@
       "a2b3c4d5-e6f7-4a8b-9c0d-1e2f3a4b5c6d",
       "e1f2a3b4-c5d6-4e7f-8091-021324354657"
     ],
-    "narrative-length": 671,
-    "narrative": "Information flow is controlled at multiple layers: (1) Cloudflare Edge WAF with managed rulesets, OWASP CRS, threat score challenges, path probing protection, and IP/ASN blocking (active); (2) Cloud Armor origin WAF restricts traffic to Cloudflare IPs only (Cloudflare-only rule active); (3) VPC egress firewall is deny-all by default with FQDN allowlist for GCP APIs only; (4) Cloud Run services configured with ingress=internal-and-cloud-load-balancing restricting to internal + load-balancer traffic; (5) Cloud SQL has no public IP (public_ip=false, enforced by org policy sql.restrictPublicIp); (6) Vertex AI accessed via Private Service Connect (PSC) within the VPC."
+    "narrative-length": 744,
+    "narrative": "Information flow is controlled at multiple layers: (1) Cloudflare Edge WAF with managed rulesets, OWASP CRS, threat score challenges (threshold=14), path probing protection (15 paths blocked), and IP/ASN blocking (active); (2) Cloud Armor origin WAF restricts traffic to Cloudflare IPs only (Cloudflare-only rule active); (3) VPC egress firewall is deny-all by default with FQDN allowlist for GCP APIs only (org policy enforces ALL_TRAFFIC egress=true); (4) Cloud Run services configured with ingress=internal-and-cloud-load-balancing restricting to internal + load-balancer traffic; (5) Cloud SQL has no public IP (public_ip=false, org policy sql.restrictPublicIp=true); (6) Vertex AI accessed via Private Service Connect (PSC) within the VPC."
   },
   {
     "control-id": "ac-5",
@@ -45,8 +45,8 @@
       "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
       "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091"
     ],
-    "narrative-length": 578,
-    "narrative": "Separation of duties is enforced through: (1) Three-project GCP architecture (archon-admin-staging for admin, archon-ops-staging for ops/data, archon-app-staging for app) with separate IAM policies; (2) RBAC with four distinct roles — viewer cannot modify, editor cannot manage users, admin cannot change org settings, master_admin has full org scope; (3) CI/CD pipeline uses Workload Identity Federation with per-project service accounts — no single identity spans all projects; (4) KMS keys in dedicated project archon-kms-staging with separate IAM grants."
+    "narrative-length": 720,
+    "narrative": "Separation of duties is enforced through: (1) Three-project GCP architecture (archon-admin-staging for admin, archon-ops-staging for ops/data, archon-app-staging for app) with separate IAM policies; (2) RBAC with four distinct roles — viewer cannot modify, editor cannot manage users, admin cannot change tenant settings, master_admin has full tenant scope; (3) CI/CD pipeline uses Workload Identity Federation with per-project service accounts — no single identity spans all projects; (4) KMS keys in dedicated project archon-kms-staging with separate IAM grants; (5) 8 org-level IAM groups with role-based access (org policy: domain restricted=true, SA key creation disabled=true, default SA grants disabled=true)."
   },
   {
     "control-id": "ac-17",
@@ -56,8 +56,8 @@
     "component-uuids": [
       "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80"
     ],
-    "narrative-length": 448,
-    "narrative": "All access to the system is remote access — there is no physical console access. Remote access is controlled through: (1) HTTPS/TLS 1.2+ for all user-facing connections via Cloudflare and Cloud Armor; (2) Cloudflare Zero Trust Access for admin endpoints (admin.staging.latentarchon.com); (3) GCP IAP or IAM Conditions for infrastructure access; (4) GitHub with SSO for code repository access; (5) Workload Identity Federation for CI/CD (keyless)."
+    "narrative-length": 509,
+    "narrative": "All access to the system is remote access — there is no physical console access. Remote access is controlled through: (1) HTTPS/TLS 1.2+ for all user-facing connections via Cloudflare and Cloud Armor; (2) Cloudflare Zero Trust Access for admin endpoints (admin.staging.latentarchon.com); (3) GCP IAP or IAM Conditions for infrastructure access; (4) GitHub with SSO for code repository access; (5) Workload Identity Federation for CI/CD (keyless); (6) Cloud Shell disabled on all projects via org constraint."
   },
   {
     "control-id": "ac-17.1",
@@ -93,7 +93,7 @@
       "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091",
       "f2a3b4c5-d6e7-4f80-9102-132435465768"
     ],
-    "narrative-length": 475,
+    "narrative-length": 471,
     "narrative": "Audit information is protected from unauthorized access, modification, and deletion: (1) Cloud Logging logs are encrypted with CMEK (Cloud KMS in archon-kms-staging); (2) GCS audit export bucket uses locked retention policy (WORM) preventing deletion; (3) IAM policies restrict log access to Security Lead and authorized personnel only; (4) No application code has permission to delete or modify audit logs; (5) Cloud Audit Logs for GCP admin activity cannot be disabled."
   },
   {
@@ -104,7 +104,7 @@
     "component-uuids": [
       "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80"
     ],
-    "narrative-length": 304,
+    "narrative-length": 300,
     "narrative": "Audit logs are written to a separate GCP project (archon-ops-staging) from the application workloads, ensuring that compromise of the application tier does not provide access to modify audit records. The ops project service accounts do not have IAM permissions on the audit log sink or export bucket."
   },
   {
@@ -162,7 +162,7 @@
       "d0e1f2a3-b4c5-4d6e-8f80-910213243546",
       "f2a3b4c5-d6e7-4f80-9102-132435465768"
     ],
-    "narrative-length": 614,
+    "narrative-length": 606,
     "narrative": "Backup strategy by component:\n- Cloud SQL (archon): Automated daily backups (14 retained) + point-in-time recovery (PITR) with 7-day transaction log retention. Backups encrypted with CMEK (Cloud KMS in archon-kms-staging). Availability type: ZONAL.\n- Cloud Storage (archon-ops-staging-documents): Object versioning enabled (all versions preserved indefinitely). Soft delete with 90-day recovery window. CMEK encryption.\n- Terraform State: Stored in GCS with versioning.\n- Vertex AI Indexes: Rebuilt from source documents via ops service.\n- Configuration: All configuration in Git with full version history."
   },
   {
@@ -197,7 +197,7 @@
     "component-uuids": [
       "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80"
     ],
-    "narrative-length": 326,
+    "narrative-length": 322,
     "narrative": "Access to digital media is restricted: (1) Cloud SQL data encrypted with CMEK via Cloud KMS (archon-kms-staging); (2) GCS objects encrypted with CMEK; (3) IAM policies restrict access to authorized service accounts only; (4) No data is stored on removable media; (5) Laptop full-disk encryption required for all personnel."
   },
   {
@@ -221,8 +221,8 @@
       "a2b3c4d5-e6f7-4a8b-9c0d-1e2f3a4b5c6d",
       "e1f2a3b4-c5d6-4e7f-8091-021324354657"
     ],
-    "narrative-length": 372,
-    "narrative": "Denial-of-service protection is provided at multiple layers: (1) Cloudflare DDoS protection (automatic L3/L4/L7 mitigation); (2) Cloudflare tiered rate limiting (auth, login, admin, global API); (3) Cloud Armor rate-based bans and OWASP rules; (4) Cloud Run auto-scaling (max 3 instances) with request timeouts; (5) Application-level rate limiting for sensitive endpoints."
+    "narrative-length": 408,
+    "narrative": "Denial-of-service protection is provided at multiple layers: (1) Cloudflare DDoS protection (automatic L3/L4/L7 mitigation); (2) Cloudflare tiered rate limiting; (3) Cloud Armor rate-based bans and OWASP rules; (4) Cloud Run auto-scaling (max 3 instances) with request timeouts; (5) Application-level rate limiting for sensitive endpoints. Login brute-force protection: 3 requests per 10 seconds at the edge."
   },
   {
     "control-id": "sc-7",
@@ -234,8 +234,8 @@
       "a2b3c4d5-e6f7-4a8b-9c0d-1e2f3a4b5c6d",
       "e1f2a3b4-c5d6-4e7f-8091-021324354657"
     ],
-    "narrative-length": 512,
-    "narrative": "Boundary protection is implemented at: (1) Cloudflare Edge WAF — first-layer defense with managed rulesets, OWASP CRS, rate limiting, threat score challenges, path probing protection, IP/ASN blocking; (2) Cloud Armor Origin WAF — Cloudflare-only origin restriction (active), OWASP CRS, rate-based bans; (3) Regional HTTPS Load Balancer; (4) VPC egress firewall — deny-all with FQDN allowlist; (5) Cloud Run ingress restricted to internal-and-cloud-load-balancing; (6) No public IP addresses on any service."
+    "narrative-length": 631,
+    "narrative": "Boundary protection is implemented at: (1) Cloudflare Edge WAF — managed ruleset=true, OWASP CRS=true, threat score challenges (threshold=14), path probing protection (15 blocked paths), Worker proxy for same-origin API gateway; (2) Cloud Armor Origin WAF — Cloudflare-only origin restriction (active), OWASP CRS, rate-based bans; (3) Regional HTTPS Load Balancer; (4) VPC egress firewall — deny-all with FQDN allowlist; (5) Cloud Run ingress restricted to internal-and-cloud-load-balancing (org policy enforced=true); (6) No public IP addresses on any service (org policy: VM external IP deny=true, SQL public IP deny=true)."
   },
   {
     "control-id": "sc-7.4",
@@ -256,8 +256,8 @@
     "component-uuids": [
       "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80"
     ],
-    "narrative-length": 285,
-    "narrative": "Cryptographic protection for transmission: (1) TLS 1.2+ with FIPS-approved cipher suites; (2) GOEXPERIMENT=boringcrypto (BoringSSL) for FIPS 140-2 validated TLS; (3) Cloudflare enforces minimum TLS 1.2 with modern cipher suites; (4) GCP internal networking uses Google's ALTS protocol."
+    "narrative-length": 309,
+    "narrative": "Cryptographic protection for transmission: (1) TLS 1.2+ with FIPS-approved cipher suites; (2) GOEXPERIMENT=boringcrypto (BoringSSL) for FIPS 140-2 validated TLS; (3) Cloudflare enforces minimum TLS 1.2, SSL mode=strict, always HTTPS=true, TLS 1.3=true; (4) GCP internal networking uses Google's ALTS protocol."
   },
   {
     "control-id": "sc-12",
@@ -268,8 +268,8 @@
       "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
       "f2a3b4c5-d6e7-4f80-9102-132435465768"
     ],
-    "narrative-length": 367,
-    "narrative": "Cryptographic key management: (1) Cloud KMS in dedicated project archon-kms-staging provides centralized key management; (2) Key rotation every 90 days (automated); (3) HSM-backed keys (FIPS 140-2 Level 3); (4) Separate key rings for each data type (SQL, GCS, logging, secrets); (5) Key access controlled via IAM — only authorized service accounts can use keys."
+    "narrative-length": 797,
+    "narrative": "Cryptographic key management: (1) Cloud KMS in dedicated project archon-kms-staging provides centralized key management; (2) Key rotation every 90 days (automated); (3) HSM-backed keys (FIPS 140-2 Level 3); (4) Separate key rings for each data type (SQL, GCS, logging, secrets); (5) Key access controlled via IAM — only authorized service accounts can use keys; (6) Per-tenant CMEK keys anchored via tenants.kms_key_name column — used for application-level envelope encryption of document chunks, chat messages, GCS objects, and Microsoft Graph OAuth tokens; (7) DEK lifecycle: random 256-bit DEK generated per encrypt operation, wrapped by tenant KMS key, stored alongside ciphertext; (8) Crypto-shredding supported by destroying tenant KMS key versions (24-hour scheduled destruction delay)."
   },
   {
     "control-id": "sc-13",
@@ -280,8 +280,8 @@
       "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
       "f2a3b4c5-d6e7-4f80-9102-132435465768"
     ],
-    "narrative-length": 320,
-    "narrative": "FIPS-validated cryptography: (1) GOEXPERIMENT=boringcrypto provides FIPS 140-2 validated TLS in the Go backend; (2) Cloud KMS uses FIPS 140-2 Level 3 HSMs; (3) AES-256-GCM for data at rest (CMEK); (4) TLS 1.2+ with FIPS-approved cipher suites for data in transit; (5) Algorithm: GOOGLE_SYMMETRIC_ENCRYPTION for KMS keys."
+    "narrative-length": 529,
+    "narrative": "FIPS-validated cryptography: (1) GOEXPERIMENT=boringcrypto provides FIPS 140-2 validated TLS in the Go backend; (2) Cloud KMS uses FIPS 140-2 Level 3 HSMs; (3) AES-256-GCM for data at rest (CMEK and application-level envelope encryption); (4) TLS 1.2+ with FIPS-approved cipher suites for data in transit; (5) Algorithm: GOOGLE_SYMMETRIC_ENCRYPTION for KMS keys; (6) Application-level envelope encryption uses Go crypto/aes + crypto/cipher (AES-256-GCM via BoringCrypto FIPS module) with crypto/rand for DEK and nonce generation."
   },
   {
     "control-id": "sc-28",
@@ -294,32 +294,8 @@
       "d0e1f2a3-b4c5-4d6e-8f80-910213243546",
       "f2a3b4c5-d6e7-4f80-9102-132435465768"
     ],
-    "narrative-length": 369,
-    "narrative": "Protection of information at rest: all data at rest is encrypted with AES-256-GCM using CMEK via Cloud KMS (archon-kms-staging). Encrypted data stores: (1) Cloud SQL (archon) — CMEK; (2) Cloud Storage (archon-ops-staging-documents) — CMEK; (3) Cloud Logging — CMEK; (4) Artifact Registry — CMEK; (5) Cloud Tasks — CMEK; (6) Vertex AI indexes — CMEK."
-  },
-  {
-    "control-id": "sc-28.1",
-    "evidence-tier": "verified",
-    "implementation-status": "implemented",
-    "baseline": "moderate",
-    "component-uuids": [
-      "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
-      "f2a3b4c5-d6e7-4f80-9102-132435465768"
-    ],
-    "narrative-length": 291,
-    "narrative": "Cryptographic protection for data at rest uses CMEK (Customer-Managed Encryption Keys) via Cloud KMS with 90-day automatic rotation. Algorithm: GOOGLE_SYMMETRIC_ENCRYPTION. HSM-backed (FIPS 140-2 Level 3). Keys stored in dedicated project (archon-kms-staging) with separate IAM policies."
-  },
-  {
-    "control-id": "si-3",
-    "evidence-tier": "verified",
-    "implementation-status": "implemented",
-    "baseline": "moderate",
-    "component-uuids": [
-      "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
-      "d6e7f809-1021-4324-b546-57687989abbc"
-    ],
-    "narrative-length": 353,
-    "narrative": "Malicious code protection: (1) ClamAV malware scanner (Cloud Run service) provides real-time malware scanning for all uploaded documents; (2) ClamAV is configured as fail-closed in production — upload rejected if scan fails; (3) Container images scanned by Trivy for known malware signatures; (4) gitleaks scans for secrets/credentials in source code."
+    "narrative-length": 927,
+    "narrative": "Protection of information at rest: all data at rest is encrypted with AES-256-GCM using CMEK via Cloud KMS (archon-kms-staging). Encrypted data stores: (1) Cloud SQL (archon) — CMEK; (2) Cloud Storage (archon-ops-staging-documents) — CMEK; (3) Cloud Logging — CMEK; (4) Artifact Registry — CMEK; (5) Cloud Tasks — CMEK; (6) Vertex AI indexes — CMEK. Per-tenant envelope encryption: tenants with a kms_key_name receive application-level AES-256-GCM envelope encryption for document chunk content, chat message content, and GCS-stored objects. Each write generates a random 256-bit DEK, encrypts the data, wraps the DEK with the tenant's Cloud KMS key, and stores ciphertext + nonce + wrapped DEK alongside the record. Per-object CMEK is applied to GCS uploads for tenants with a configured key. Crypto-shredding: destroying the tenant's KMS key versions renders all envelope-encrypted data permanently irrecoverable."
   },
   {
     "control-id": "ac-4.4",
@@ -353,5 +329,184 @@
     ],
     "narrative-length": 252,
     "narrative": "Alternate storage site is separated from primary: (1) GitHub (source code, IaC) is geographically separate from GCP us-east4; (2) Cloud SQL backups can be restored to alternate region; (3) Container images available in Artifact Registry across regions."
+  },
+  {
+    "control-id": "sc-7.24",
+    "evidence-tier": "verified",
+    "implementation-status": "implemented",
+    "baseline": "high",
+    "component-uuids": [
+      "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+      "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091"
+    ],
+    "narrative-length": 335,
+    "narrative": "Personally identifiable information — data residency: (1) Assured Workloads (IL5 regime) constrains all data and processing to US territory; (2) GCP region restricted to us-east4 (CONUS); (3) DLP inspect template detects 9 PII info types; (4) RLS prevents cross-tenant PII disclosure; (5) Cloudflare TLS 1.2+ protects PII in transit."
+  },
+  {
+    "control-id": "sc-28.2",
+    "evidence-tier": "verified",
+    "implementation-status": "implemented",
+    "baseline": "high",
+    "component-uuids": [
+      "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+      "f2a3b4c5-d6e7-4f80-9102-132435465768"
+    ],
+    "narrative-length": 297,
+    "narrative": "Offline storage encryption: all data at rest uses CMEK with 90-day automatic rotation via Cloud KMS (archon-kms-staging). Offline backups (Cloud SQL automated backups=true, GCS versions=true) inherit CMEK encryption. Audit logs protected by WORM=true retention. No unencrypted data exists at rest."
+  },
+  {
+    "control-id": "ac-4.21",
+    "evidence-tier": "verified",
+    "implementation-status": "implemented",
+    "baseline": "high",
+    "component-uuids": [
+      "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+      "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091"
+    ],
+    "narrative-length": 361,
+    "narrative": "Physical/logical separation of information flows: (1) Assured Workloads (IL5) provides logical separation from commercial GCP; (2) VPC Service Controls perimeter \"archon_staging\" restricts API access to 4 authorized projects; (3) CMEK keys in dedicated KMS project ensure cryptographic separation; (4) three-project architecture provides blast-radius isolation."
+  },
+  {
+    "control-id": "sc-13.1",
+    "evidence-tier": "verified",
+    "implementation-status": "implemented",
+    "baseline": "high",
+    "component-uuids": [
+      "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80"
+    ],
+    "narrative-length": 329,
+    "narrative": "FIPS 140-2 validated cryptography for IL5: (1) GOEXPERIMENT=boringcrypto (BoringSSL) provides FIPS 140-2 validated TLS in Go backend; (2) Cloud KMS HSMs are FIPS 140-2 Level 3 certified; (3) All cryptographic operations (encryption, hashing, signing) use FIPS-approved algorithms; (4) Non-FIPS cryptographic modules are not used."
+  },
+  {
+    "control-id": "sc-7.21",
+    "evidence-tier": "verified",
+    "implementation-status": "implemented",
+    "baseline": "high",
+    "component-uuids": [
+      "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+      "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091"
+    ],
+    "narrative-length": 308,
+    "narrative": "VPC Service Controls isolate GCP API access: perimeter \"archon_staging\" protects 4 projects, enforcement=true, violation alerts=true. Ingress/egress policies scope cross-perimeter access to specific APIs (identitytoolkit, storage). Auth projects excluded by design (Identity Platform requires global access)."
+  },
+  {
+    "control-id": "sc-28.1",
+    "evidence-tier": "verified",
+    "implementation-status": "implemented",
+    "baseline": "moderate",
+    "component-uuids": [
+      "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+      "f2a3b4c5-d6e7-4f80-9102-132435465768",
+      "c9d0e1f2-a3b4-4c5d-8e7f-809102132435",
+      "d0e1f2a3-b4c5-4d6e-8f80-910213243546"
+    ],
+    "narrative-length": 630,
+    "narrative": "CMEK encryption verified across data stores: Cloud SQL=true, GCS=true, BigQuery audit logs=true, Secrets Manager=true, Artifact Registry=true. All keys in dedicated project archon-kms-staging with 90-day rotation, HSM-backed (FIPS 140-2 Level 3). Application-level envelope encryption: per-tenant AES-256-GCM with random DEK per write, DEK wrapped by tenant's Cloud KMS key (HSM-backed). DEK cache (SHA-256 fingerprint → plaintext DEK, 5-minute TTL) reduces KMS API calls during read-heavy workloads. Envelope-encrypted fields: chunks.content_ciphertext, messages.content_ciphertext, plus GCS per-object CMEK for document files."
+  },
+  {
+    "control-id": "sa-10",
+    "evidence-tier": "verified",
+    "implementation-status": "implemented",
+    "baseline": "moderate",
+    "component-uuids": [
+      "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+      "c5d6e7f8-0910-4213-a435-4657687989ab"
+    ],
+    "narrative-length": 318,
+    "narrative": "Developer security testing in CI/CD pipeline (2 Cloud Build triggers): container scanning (Trivy=true), Go vulnerability check (govulncheck=true), SAST (GoSec=true, Semgrep=true), secret detection (Gitleaks=true), SBOM generation=true, Binary Authorization=false. All scans run before deployment to staging/production."
+  },
+  {
+    "control-id": "sa-11",
+    "evidence-tier": "verified",
+    "implementation-status": "implemented",
+    "baseline": "moderate",
+    "component-uuids": [
+      "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+      "c5d6e7f8-0910-4213-a435-4657687989ab"
+    ],
+    "narrative-length": 364,
+    "narrative": "Developer security and privacy testing: (1) SAST via GoSec=true and Semgrep=true in daily Cloud Build security scan; (2) Dependency scanning via govulncheck=true (Go advisory database); (3) Container vulnerability scanning via Trivy=true; (4) Secret detection via Gitleaks=true in PR checks; (5) SBOM generation=true (CycloneDX+SPDX) for supply chain transparency."
+  },
+  {
+    "control-id": "si-3",
+    "evidence-tier": "verified",
+    "implementation-status": "implemented",
+    "baseline": "moderate",
+    "component-uuids": [
+      "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+      "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091"
+    ],
+    "narrative-length": 503,
+    "narrative": "Malicious code protection: (1) ClamAV malware scanner scans all uploaded documents before ingestion (fail-closed); (2) SVG files short-circuited before document extraction to prevent XXE/SSRF vectors; (3) Vector post-condition validation ensures embedding pipeline integrity; (4) Cloud DLP inspect template detects 9 PII types and 10 credential types in document content; (5) Trivy=true scans container images for known CVEs; (6) GoSec=true/Semgrep=true perform static analysis for code vulnerabilities."
+  },
+  {
+    "control-id": "ac-3.8",
+    "evidence-tier": "verified",
+    "implementation-status": "implemented",
+    "baseline": "high",
+    "component-uuids": [
+      "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+      "c9d0e1f2-a3b4-4c5d-8e7f-809102132435"
+    ],
+    "narrative-length": 313,
+    "narrative": "Role-based access control at the database level: PostgreSQL Row-Level Security enforced on 17 tables with 36 policies. Database roles enforce least privilege: archon_admin_rw. RLS policies scope all queries to the authenticated workspace, preventing cross-tenant data access even if application logic is bypassed."
+  },
+  {
+    "control-id": "ac-6.10",
+    "evidence-tier": "verified",
+    "implementation-status": "implemented",
+    "baseline": "high",
+    "component-uuids": [
+      "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+      "e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091"
+    ],
+    "narrative-length": 330,
+    "narrative": "Org-level guardrails prevent privilege escalation: 25 org policies enforced including SA key creation disabled=true, SA key upload disabled=true, VM external IP denied=true, default SA grants disabled=true, domain restriction=true. Access Approval requires explicit authorization before Google support accesses customer data=true."
+  },
+  {
+    "control-id": "ia-2.1",
+    "evidence-tier": "verified",
+    "implementation-status": "implemented",
+    "baseline": "moderate",
+    "component-uuids": [
+      "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+      "a3b4c5d6-e7f8-4091-8213-243546576879"
+    ],
+    "narrative-length": 271,
+    "narrative": "MFA for privileged accounts: Identity Platform MFA state=ENABLED across 4 tenants. TOTP (RFC 6238) is the second factor. Magic link (email) provides passwordless first factor. App Check=false provides bot protection. All admin operations require step-up MFA verification."
+  },
+  {
+    "control-id": "ia-2.2",
+    "evidence-tier": "verified",
+    "implementation-status": "implemented",
+    "baseline": "moderate",
+    "component-uuids": [
+      "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
+      "a3b4c5d6-e7f8-4091-8213-243546576879"
+    ],
+    "narrative-length": 286,
+    "narrative": "MFA for non-privileged accounts: all users require TOTP MFA regardless of role. MFA enforcement is set at the Identity Platform project level (state=ENABLED) and inherited by all 4 tenants. Email link sign-in=true provides the passwordless first factor; TOTP provides the second factor."
+  },
+  {
+    "control-id": "au-6.1",
+    "evidence-tier": "verified",
+    "implementation-status": "implemented",
+    "baseline": "high",
+    "component-uuids": [
+      "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80"
+    ],
+    "narrative-length": 269,
+    "narrative": "Automated audit analysis: 15 monitoring alert policies, 10 audit-specific alert policies, 4 uptime checks, 8 log sinks per project routing to BigQuery/GCS for analysis. VPC-SC violation alerts=true. Cloudflare WAF and rate limiting provide edge-layer anomaly detection."
+  },
+  {
+    "control-id": "cm-7.2",
+    "evidence-tier": "verified",
+    "implementation-status": "implemented",
+    "baseline": "high",
+    "component-uuids": [
+      "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80"
+    ],
+    "narrative-length": 568,
+    "narrative": "Least functionality — Cloud Run services configured with minimal exposure: archon-admin(ingress=internal-and-cloud-load-balancing,unauth=true); admin-spa(ingress=internal-and-cloud-load-balancing,unauth=true); archon-app(ingress=internal-and-cloud-load-balancing,unauth=true); app-spa(ingress=internal-and-cloud-load-balancing,unauth=true); archon-ops(ingress=internal,unauth=false); ops(ingress=default,unauth=false); ops(ingress=default,unauth=false). Org policy restricts ingress=true, enforces ALL_TRAFFIC egress=true. No services expose *.run.app URLs directly."
   }
 ]

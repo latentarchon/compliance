@@ -1,6 +1,6 @@
 # Manual Controls
 
-Generated: 2026-04-17
+Generated: 2026-04-25
 
 Total: 25 controls
 

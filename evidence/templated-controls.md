@@ -1,8 +1,8 @@
 # Templated Controls
 
-Generated: 2026-04-17
+Generated: 2026-04-25
 
-Total: 196 controls
+Total: 315 controls
 
 
 ## AC Family
@@ -83,7 +83,7 @@ Non-privileged accounts are used for all non-security functions. Engineers use p
 
 **Status:** implemented | **Baseline:** moderate
 
-Privileged accounts are restricted to authorized personnel: (1) GCP organization-level roles limited to CEO/CTO; (2) Project Owner roles not assigned — Terraform SA uses custom roles; (3) `master_admin` application role assigned only to designated org administrators; (4) SCIM token management restricted to `master_admin` role.
+Privileged accounts are restricted to authorized personnel: (1) GCP organization-level roles limited to CEO/CTO; (2) Project Owner roles not assigned — Terraform SA uses custom roles; (3) `master_admin` application role assigned only to designated tenant administrators; (4) SCIM token management restricted to `master_admin` role.
 
 ---
 
@@ -92,14 +92,6 @@ Privileged accounts are restricted to authorized personnel: (1) GCP organization
 **Status:** implemented | **Baseline:** moderate
 
 All privileged function executions are logged: (1) Application audit log captures all admin mutations (role changes, member management, SSO config, IP allowlist changes) with actor, action, timestamp, IP, and correlation ID; (2) GCP Cloud Audit Logs capture all Admin Activity and Data Access events; (3) Cloudflare audit logs capture all configuration changes.
-
----
-
-### AC-6.10
-
-**Status:** implemented | **Baseline:** moderate
-
-Non-privileged users cannot execute privileged functions. The Connect-RPC interceptor chain enforces RBAC checks before every RPC handler. Attempts to invoke admin-only RPCs with insufficient role are rejected with `PermissionDenied` and logged. GCP IAM prevents non-authorized identities from accessing infrastructure APIs.
 
 ---
 
@@ -163,7 +155,7 @@ All remote access sessions are encrypted using TLS 1.2+ (FIPS 140-2 validated vi
 
 **Status:** implemented | **Baseline:** moderate
 
-External information systems connecting to Latent Archon are limited to: (1) Customer IdPs via SAML 2.0 SSO and SCIM 2.0 — connections require explicit configuration by org admin; (2) Customer browsers via HTTPS. No direct system-to-system API access is provided to external systems without explicit authorization. All external connections traverse the full WAF stack.
+External information systems connecting to Latent Archon are limited to: (1) Customer IdPs via SAML 2.0 SSO and SCIM 2.0 — connections require explicit configuration by tenant admin; (2) Customer browsers via HTTPS. No direct system-to-system API access is provided to external systems without explicit authorization. All external connections traverse the full WAF stack.
 
 ---
 
@@ -198,7 +190,7 @@ Latent Archon maintains an Audit and Accountability Policy (POL-AU-001) defining
 
 **Status:** implemented | **Baseline:** moderate
 
-The system generates audit records for: (a) authentication events (login success/failure, MFA, SSO, logout); (b) authorization decisions (RBAC checks, RLS enforcement); (c) account lifecycle (create, modify, disable, delete, role change); (d) data access (document upload, download, search, conversation); (e) admin actions (org settings, SSO config, IP allowlist, SCIM); (f) system events (deployment, configuration change, error); (g) security events (WAF blocks, rate limit triggers, threat score challenges).
+The system generates audit records for: (a) authentication events (login success/failure, MFA, SSO, logout); (b) authorization decisions (RBAC checks, RLS enforcement); (c) account lifecycle (create, modify, disable, delete, role change); (d) data access (document upload, download, search, conversation); (e) admin actions (tenant settings, SSO config, IP allowlist, SCIM); (f) system events (deployment, configuration change, error); (g) security events (WAF blocks, rate limit triggers, threat score challenges).
 
 ---
 
@@ -242,14 +234,6 @@ Audit records are reviewed weekly via an automated audit-review tool (cmd/audit-
 
 ---
 
-### AU-6.1
-
-**Status:** implemented | **Baseline:** moderate
-
-Automated analysis of audit records is performed using: (1) Cloud Logging log-based metrics for authentication failures, authorization denials, and WAF blocks; (2) Cloudflare Security Analytics for edge-layer threat detection; (3) Custom Cloud Monitoring dashboards correlating application and infrastructure events.
-
----
-
 ### AU-7
 
 **Status:** implemented | **Baseline:** moderate
@@ -270,7 +254,7 @@ Timestamps in audit records use UTC with millisecond precision, synchronized to 
 
 **Status:** implemented | **Baseline:** moderate
 
-Audit record generation is provided at: (1) Application layer via `internal/audit/logger.go` for all business logic events; (2) GCP Cloud Audit Logs for all infrastructure API calls; (3) Cloudflare audit logs for edge configuration changes; (4) Cloud Build logs for CI/CD pipeline execution. Audit generation is enabled by default and cannot be disabled by non-privileged users.
+Audit record generation is provided at: (1) Application layer via `internal/audit/logger.go` for all business logic events; (2) GCP Cloud Audit Logs for all infrastructure API calls; (3) Cloudflare audit logs for edge configuration changes; (4) Cloud Build logs for CI/CD pipeline execution; (5) VPC flow logs on all subnets with 100% sampling rate for complete network traffic metadata. Audit generation is enabled by default and cannot be disabled by non-privileged users.
 
 ---
 
@@ -305,7 +289,7 @@ Independent assessors (3PAO) conduct annual security assessments. Automated asse
 
 **Status:** implemented | **Baseline:** moderate
 
-System interconnections are authorized and documented: (1) Customer IdP connections via SAML/SCIM require explicit admin configuration; (2) GCP service interconnections managed via Terragrunt IAM modules; (3) Cloudflare-to-origin connections secured via Cloud Armor Cloudflare-only restriction; (4) GitHub-to-GCP connections via Workload Identity Federation.
+System interconnections are authorized, documented, and managed via Terragrunt: (1) Cross-project IAM — app SA receives cloudsql.client, storage.objectViewer, and aiplatform.user on the ops project; admin SA receives cloudtasks.enqueuer, storage.objectAdmin, and cloudsql.client on the ops project; Cloud Build SAs receive firebase.viewer and identityplatform.viewer on auth projects for deployment validation; (2) Cross-project Pub/Sub — Cloud Scheduler publishes cron events to ops project via push subscriptions; (3) Customer IdP connections via SAML/SCIM require explicit admin configuration; (4) Cloudflare-to-origin connections secured via Cloud Armor Cloudflare-only restriction; (5) GitHub-to-GCP connections via Workload Identity Federation.
 
 ---
 
@@ -345,7 +329,7 @@ Penetration testing is conducted annually by qualified assessors and includes: (
 
 **Status:** implemented | **Baseline:** moderate
 
-Internal system connections are documented and authorized: (1) Cloud Run to Cloud SQL via VPC peering (private IP only); (2) Cloud Run to Vertex AI via Private Service Connect; (3) Cloud Run to GCS via GCP internal networking; (4) Cloud Run to Cloud KMS via GCP internal networking; (5) Cloud Run to Cloud Tasks via GCP internal networking. All connections defined in Terragrunt IaC.
+Internal system connections are documented and authorized: (1) Cloud Tasks to Cloud Run ops service via OIDC-authenticated dispatch (admin SA holds iam.serviceAccounts.actAs on ops SA for token generation); (2) Cloud Run to Cloud SQL via VPC peering (private IP only, IAM-authenticated); (3) Cloud Run to Vertex AI via Private Service Connect; (4) Cloud Run to GCS via GCP internal networking; (5) Cloud Run to Cloud KMS via GCP internal networking. All connections defined in Terragrunt IaC.
 
 ---
 
@@ -380,7 +364,7 @@ Baseline configurations are reviewed and updated: (1) with every Terragrunt appl
 
 **Status:** implemented | **Baseline:** moderate
 
-Configuration changes are controlled through: (1) Git-based PR workflow requiring review and approval; (2) Terragrunt plan output reviewed before apply; (3) FedRAMP SCN classification on all PRs (GitHub Actions); (4) CI/CD pipeline validation (lint, test, security scan) before merge; (5) Cloud Build deployment with container signing (Binary Authorization on ops project).
+Configuration changes are controlled through: (1) Git-based PR workflow requiring review and approval; (2) Terragrunt plan output reviewed before apply; (3) FedRAMP SCN classification on all PRs (GitHub Actions); (4) CI/CD pipeline validation (lint, test, security scan) before merge; (5) Cloud Build deployment with digest-pinned container images.
 
 ---
 
@@ -523,22 +507,6 @@ Recovery procedures documented for five failure scenarios: (1) Database failure 
 **Status:** implemented | **Baseline:** moderate
 
 Latent Archon maintains an Identification and Authentication Policy (POL-IA-001) defining authenticator requirements, identity proofing, and credential management procedures. The policy is reviewed annually.
-
----
-
-### IA-2.1
-
-**Status:** implemented | **Baseline:** moderate
-
-Multi-factor authentication (MFA) is required for all privileged and non-privileged network access. TOTP-based MFA (RFC 6238) is enforced at the application layer via the auth interceptor. Users who have not enrolled in MFA are blocked from accessing any functionality. MFA enrollment is mandatory during first login.
-
----
-
-### IA-2.2
-
-**Status:** implemented | **Baseline:** moderate
-
-MFA is required for all non-privileged network access. The same TOTP MFA requirement applies to all user roles (viewer through master_admin). No exemptions are granted.
 
 ---
 
@@ -795,7 +763,7 @@ Media transport is controlled: (1) all data in transit encrypted with TLS 1.2+; 
 
 **Status:** implemented | **Baseline:** moderate
 
-Media sanitization is inherited from GCP's FedRAMP High authorization for physical media. Digital sanitization: (1) account closure triggers 90-day automated data purge; (2) document deletion removes from GCS and purges embeddings; (3) Cloud SQL row-level deletion with vacuum for space reclamation; (4) KMS key destruction after data retention period.
+Media sanitization is inherited from GCP's FedRAMP High authorization for physical media. Digital sanitization: (1) account closure triggers 90-day automated data purge; (2) document deletion removes from GCS and purges embeddings; (3) Cloud SQL row-level deletion with vacuum for space reclamation; (4) KMS key destruction after data retention period; (5) Per-tenant crypto-shredding: destroying a tenant's Cloud KMS key versions renders all envelope-encrypted data (document chunks, chat messages, GCS objects, OAuth tokens) permanently irrecoverable without requiring individual record deletion.
 
 ---
 
@@ -1107,22 +1075,6 @@ External system services: (1) GCP — FedRAMP High authorized, IL5 available; (2
 
 ---
 
-### SA-10
-
-**Status:** implemented | **Baseline:** moderate
-
-Configuration management in development: (1) all code in Git with full history; (2) PR-based workflow with required reviews; (3) branch protection rules; (4) CI/CD pipeline validates all changes; (5) infrastructure changes require Terragrunt plan review.
-
----
-
-### SA-11
-
-**Status:** implemented | **Baseline:** moderate
-
-Developer security testing: (1) SAST via GoSec and Semgrep (daily + PR-time); (2) dependency scanning via govulncheck and npm audit; (3) container scanning via Trivy; (4) secret scanning via gitleaks; (5) unit and integration testing; (6) manual security review for sensitive changes.
-
----
-
 ### SA-11.1
 
 **Status:** implemented | **Baseline:** moderate
@@ -1194,7 +1146,7 @@ Traffic is routed to authenticated proxy: all inbound traffic is proxied through
 
 **Status:** implemented | **Baseline:** moderate
 
-Transmission confidentiality and integrity: all data in transit is encrypted with TLS 1.2+ (minimum enforced by Cloudflare and GCP). HSTS headers enforce HTTPS. Internal GCP service-to-service communication uses mTLS via Cloud Run's built-in service mesh.
+Transmission confidentiality and integrity: all data in transit is encrypted with TLS 1.2+ (minimum enforced by Cloudflare and GCP). HSTS headers enforce HTTPS. Internal GCP service-to-service communication uses mTLS via Cloud Run's built-in service mesh. Transactional email uses Gmail API with domain-wide delegation over Google's internal API transport rather than external SMTP relay.
 
 ---
 
@@ -1341,7 +1293,7 @@ Automated monitoring tools: (1) Cloud Monitoring alerting policies for SLO viola
 
 **Status:** implemented | **Baseline:** moderate
 
-Inbound and outbound traffic monitoring: (1) Cloudflare provides full visibility into inbound HTTP traffic (requests, responses, WAF actions, threat scores); (2) VPC flow logs capture network-level traffic metadata; (3) Cloud Armor logs capture origin-layer WAF decisions; (4) VPC egress firewall logs capture outbound connection attempts.
+Inbound and outbound traffic monitoring: (1) Cloudflare provides full visibility into inbound HTTP traffic (requests, responses, WAF actions, threat scores); (2) VPC flow logs capture network-level traffic metadata (100% sampling); (3) Cloud Armor logs capture origin-layer WAF decisions; (4) VPC egress firewall logs capture outbound connection attempts.
 
 ---
 
@@ -1373,7 +1325,7 @@ Security function verification: (1) `cmd/verify-controls` validates NIST control
 
 **Status:** implemented | **Baseline:** moderate
 
-Software and information integrity: (1) container images built in Cloud Build with deterministic builds; (2) container image digests (SHA-256) used for deployment (not mutable tags); (3) Binary Authorization attests images on ops project; (4) Git commit signing for source code integrity; (5) SBOM generation tracks all components.
+Software and information integrity: (1) container images built in Cloud Build with deterministic builds; (2) container image digests (SHA-256) used for deployment (not mutable tags); (3) Artifact Registry immutable tags prevent tag overwrite after publication; (4) Git commit signing for source code integrity; (5) SBOM generation tracks all components. Binary Authorization attestation is not currently enabled — the IL5 gcp.restrictServiceUsage org policy blocks containeranalysis.googleapis.com. Compensating controls: digest-pinned deploys, Trivy scan gating, Cosign-signed digests, immutable AR tags.
 
 ---
 
@@ -1397,7 +1349,7 @@ Spam protection: (1) reCAPTCHA Enterprise on registration and login endpoints; (
 
 **Status:** implemented | **Baseline:** moderate
 
-Information input validation: (1) Connect-RPC/Protobuf enforces type-safe API contracts; (2) Server-side validation for all user inputs; (3) SQL injection prevented by parameterized queries (no string interpolation); (4) XSS prevented by React's automatic escaping and CSP headers; (5) File upload validation (MIME type, size limits, malware scan).
+Information input validation: (1) Connect-RPC/Protobuf enforces type-safe API contracts; (2) Server-side validation for all user inputs; (3) SQL injection prevented by parameterized queries (no string interpolation); (4) XSS prevented by React's automatic escaping and CSP headers; (5) File upload validation (MIME type, size limits, malware scan, SVG short-circuit to block XML-based attack vectors); (6) Vector post-condition validation ensures embedding pipeline integrity.
 
 ---
 
@@ -1507,7 +1459,7 @@ Component disposal: (1) deprecated dependencies removed via `go mod tidy` and PR
 
 **Status:** implemented | **Baseline:** high
 
-Usage conditions are enforced: (1) sessions limited to authorized time windows when configured by org admin; (2) IP allowlisting restricts access to approved networks; (3) Cloudflare Access policies enforce device posture requirements for admin endpoints.
+Usage conditions are enforced: (1) sessions limited to authorized time windows when configured by tenant admin; (2) IP allowlisting restricts access to approved networks; (3) Cloudflare Access policies enforce device posture requirements for admin endpoints.
 
 ---
 
@@ -1625,14 +1577,6 @@ Fail secure: if boundary protection mechanisms fail, the system defaults to deny
 
 ---
 
-### SC-7.21
-
-**Status:** implemented | **Baseline:** high
-
-Isolation of system components: (1) three-project GCP architecture provides blast-radius isolation; (2) separate service accounts per Cloud Run service; (3) VPC peering with restricted routes; (4) KMS keys in dedicated project with separate IAM.
-
----
-
 
 ## SI Family
 
@@ -1641,6 +1585,1092 @@ Isolation of system components: (1) three-project GCP architecture provides blas
 **Status:** implemented | **Baseline:** high
 
 Automated organization-generated alerts: security events from Cloud Monitoring, Cloudflare, and application audit logs generate automated alerts to security personnel via email and PagerDuty.
+
+---
+
+
+## PE Family
+
+### PE-1
+
+**Status:** inherited | **Baseline:** moderate
+
+Physical and environmental protection policy and procedures are fully inherited from Google Cloud Platform's FedRAMP High authorization. GCP maintains comprehensive physical security policies covering all data center facilities. Assured Workloads regime: IL5.
+
+---
+
+### PE-2
+
+**Status:** inherited | **Baseline:** moderate
+
+Physical access authorizations are fully inherited from GCP. Google maintains authorized personnel lists for all data center facilities with approval from data center management.
+
+---
+
+### PE-3.1
+
+**Status:** inherited | **Baseline:** high
+
+Physical access control — guard all entry points. Inherited from GCP. Google data centers employ 24/7 security guards at all facility entry points with badge-based access control.
+
+---
+
+### PE-4
+
+**Status:** inherited | **Baseline:** moderate
+
+Access control for transmission is fully inherited from GCP. Google controls physical access to information system distribution and transmission lines within data center facilities.
+
+---
+
+### PE-5
+
+**Status:** inherited | **Baseline:** moderate
+
+Access control for output devices is fully inherited from GCP. Google controls physical access to output devices (monitors, printers) in data center facilities.
+
+---
+
+### PE-6
+
+**Status:** inherited | **Baseline:** moderate
+
+Physical access monitoring is fully inherited from GCP. Google monitors physical access to data center facilities using CCTV, badge readers, and intrusion detection systems. Access logs reviewed continuously.
+
+---
+
+### PE-6.1
+
+**Status:** inherited | **Baseline:** high
+
+Intrusion alarms and surveillance equipment monitoring is inherited from GCP. Google maintains 24/7 monitoring of intrusion detection systems and surveillance cameras at all data center facilities.
+
+---
+
+### PE-8
+
+**Status:** inherited | **Baseline:** moderate
+
+Visitor access records are fully inherited from GCP. Google maintains visitor logs for all data center facilities including name, organization, date/time, escort, and purpose of visit.
+
+---
+
+### PE-9
+
+**Status:** inherited | **Baseline:** moderate
+
+Power equipment and cabling protection is fully inherited from GCP. Google protects power equipment and cabling from damage and destruction in all data center facilities.
+
+---
+
+### PE-10
+
+**Status:** inherited | **Baseline:** moderate
+
+Emergency shutoff capability is fully inherited from GCP. Google provides emergency shutoff switches for power in data center facilities.
+
+---
+
+### PE-11
+
+**Status:** inherited | **Baseline:** moderate
+
+Emergency power is fully inherited from GCP. Google provides UPS and diesel generators at all data center facilities with automatic failover to maintain operations during power outages.
+
+---
+
+### PE-12
+
+**Status:** inherited | **Baseline:** moderate
+
+Emergency lighting is fully inherited from GCP. Google provides automatic emergency lighting in all data center facilities.
+
+---
+
+### PE-13
+
+**Status:** inherited | **Baseline:** moderate
+
+Fire protection is fully inherited from GCP. Google employs fire detection and suppression systems in all data center facilities.
+
+---
+
+### PE-13.1
+
+**Status:** inherited | **Baseline:** high
+
+Fire detection — automatic notification. Inherited from GCP. Fire detection systems automatically notify local fire departments and Google security operations.
+
+---
+
+### PE-13.2
+
+**Status:** inherited | **Baseline:** high
+
+Fire suppression — automatic activation. Inherited from GCP. Google data centers use automatic fire suppression systems that activate without manual intervention.
+
+---
+
+### PE-14
+
+**Status:** inherited | **Baseline:** moderate
+
+Environmental controls (temperature and humidity) are fully inherited from GCP. Google maintains temperature and humidity controls within acceptable ranges in all data center facilities with continuous monitoring.
+
+---
+
+### PE-15
+
+**Status:** inherited | **Baseline:** moderate
+
+Water damage protection is fully inherited from GCP. Google protects data center facilities from water damage using leak detection sensors and raised flooring.
+
+---
+
+### PE-16
+
+**Status:** inherited | **Baseline:** moderate
+
+Delivery and removal of equipment is fully inherited from GCP. Google authorizes, monitors, and controls delivery and removal of information system components at data center facilities.
+
+---
+
+### PE-17
+
+**Status:** inherited | **Baseline:** moderate
+
+Alternate work site security controls are not applicable — Latent Archon is a SaaS platform with no alternate work sites processing CUI. All data processing occurs within GCP data centers.
+
+---
+
+### PE-18
+
+**Status:** inherited | **Baseline:** high
+
+Location of system components — positioning to minimize damage. Inherited from GCP. Google positions data center equipment to minimize potential damage from physical and environmental hazards and to reduce unauthorized access opportunities.
+
+---
+
+
+## CP Family
+
+### CP-7.2
+
+**Status:** inherited | **Baseline:** high
+
+Alternate processing site accessibility is inherited from GCP. Google Cloud regions provide geographically diverse processing sites accessible during disruptions. Terraform IaC enables rapid redeployment to alternate regions.
+
+---
+
+### CP-7.3
+
+**Status:** inherited | **Baseline:** high
+
+Priority of service at alternate processing site is inherited from GCP. Google Cloud maintains capacity commitments and SLAs that provide priority service provisions.
+
+---
+
+### CP-8.1
+
+**Status:** inherited | **Baseline:** high
+
+Priority of service for telecommunications is inherited from GCP. Google Cloud maintains diverse telecommunications infrastructure with redundant connectivity providers.
+
+---
+
+### CP-8.2
+
+**Status:** inherited | **Baseline:** high
+
+Single points of failure in telecommunications are mitigated by GCP. Google Cloud provides multiple independent network paths to all data center facilities.
+
+---
+
+### CP-8.3
+
+**Status:** inherited | **Baseline:** high
+
+Separation of primary and alternate telecommunications services is inherited from GCP. Google maintains physically separated network paths for primary and backup connectivity.
+
+---
+
+### CP-8.4
+
+**Status:** inherited | **Baseline:** high
+
+Provider contingency plan is inherited from GCP. Google maintains telecommunications service provider contingency plans as part of their FedRAMP authorization.
+
+---
+
+### CP-8.5
+
+**Status:** inherited | **Baseline:** high
+
+Alternate telecommunication service testing is inherited from GCP. Google tests alternate telecommunications services as part of their contingency plan testing.
+
+---
+
+
+## MA Family
+
+### MA-3.1
+
+**Status:** inherited | **Baseline:** high
+
+Maintenance tools — inspect tools. Inherited from GCP. Google inspects maintenance tools brought into data center facilities for improper or unauthorized modifications.
+
+---
+
+### MA-3.2
+
+**Status:** inherited | **Baseline:** high
+
+Maintenance tools — inspect media. Inherited from GCP. Google inspects media containing diagnostic and test programs for malicious code before use in data center facilities.
+
+---
+
+### MA-4.3
+
+**Status:** inherited | **Baseline:** high
+
+Comparable security for nonlocal maintenance is inherited from GCP. Google provides comparable security for nonlocal maintenance sessions as established for local maintenance.
+
+---
+
+### MA-5.1
+
+**Status:** inherited | **Baseline:** high
+
+Individuals without required access authorizations are escorted during maintenance. Inherited from GCP. Google escorts all non-authorized maintenance personnel within data center facilities.
+
+---
+
+
+## MP Family
+
+### MP-6.1
+
+**Status:** inherited | **Baseline:** high
+
+Media sanitization — review, approve, track, document, verify. Inherited from GCP. Google reviews, approves, tracks, documents, and verifies media sanitization and disposal actions for data center equipment.
+
+---
+
+### MP-6.2
+
+**Status:** inherited | **Baseline:** high
+
+Equipment testing for media sanitization is inherited from GCP. Google tests sanitization equipment and procedures to verify correct performance.
+
+---
+
+### MP-6.3
+
+**Status:** inherited | **Baseline:** high
+
+Nondestructive techniques for portable storage devices: not applicable — Latent Archon does not use portable storage devices. All data resides within GCP managed storage (Cloud SQL, Cloud Storage, Cloud Logging).
+
+---
+
+
+## SC Family
+
+### SC-3
+
+**Status:** inherited | **Baseline:** high
+
+Security function isolation is provided by GCP's infrastructure. Cloud Run uses gVisor kernel-level sandboxing for workload isolation. VPC Service Controls (archon_staging) isolate API access. Separate GCP projects provide blast-radius isolation between admin (archon-admin-staging), ops (archon-ops-staging), and app (archon-app-staging) tiers.
+
+---
+
+
+## AC Family
+
+### AC-6.3
+
+**Status:** implemented | **Baseline:** high
+
+Network access to privileged commands is restricted: (1) GCP IAM restricts administrative API access to authorized service accounts and break-glass personnel; (2) Cloudflare Access enforces identity-based access to admin endpoints; (3) no SSH/RDP access to production — Cloud Run is serverless; (4) database access restricted to VPC-peered service accounts only.
+
+---
+
+### AC-6.7
+
+**Status:** implemented | **Baseline:** high
+
+Review of user privileges: (1) quarterly access reviews via automated access-review tool; (2) GCP IAM Recommender identifies excess permissions; (3) application RBAC roles reviewed by org master_admin; (4) SCIM-managed accounts automatically reflect IdP group changes.
+
+---
+
+### AC-11.1
+
+**Status:** implemented | **Baseline:** high
+
+Session lock — pattern-hiding displays: the SPA renders a full-screen re-authentication overlay when a session times out, hiding all previously displayed CUI content. The session state is cleared client-side; resumption requires full re-authentication including MFA.
+
+---
+
+### AC-18
+
+**Status:** implemented | **Baseline:** moderate
+
+Wireless access: not applicable — Latent Archon is a SaaS platform hosted entirely on GCP Cloud Run (serverless). There are no organization-controlled wireless access points. End-user wireless connectivity is the responsibility of the customer agency. GCP data center wireless controls are inherited.
+
+---
+
+### AC-19
+
+**Status:** implemented | **Baseline:** moderate
+
+Access control for mobile devices: (1) Cloudflare Access device posture checks enforce OS version, disk encryption, and screen lock for admin access; (2) application enforces session timeouts and re-authentication on all devices; (3) no organization-issued mobile devices — access is via standard web browser with MFA required.
+
+---
+
+### AC-20.1
+
+**Status:** implemented | **Baseline:** high
+
+Limits on authorized use of external systems: (1) the system does not permit connections from external information systems to process, store, or transmit CUI; (2) external system access is limited to API integrations authenticated via SCIM tokens or SAML/OIDC federation; (3) all external integrations documented and reviewed quarterly.
+
+---
+
+
+## AU Family
+
+### AU-6.5
+
+**Status:** implemented | **Baseline:** high
+
+Integrated analysis of audit records: audit logs from application (15 alert policies), GCP Cloud Audit Logs, and Cloudflare security events are aggregated in Cloud Logging (8 log sinks/project). Cross-source correlation uses request IDs and timestamps for unified analysis.
+
+---
+
+### AU-6.6
+
+**Status:** implemented | **Baseline:** high
+
+Correlation with physical monitoring: not applicable for SaaS — physical monitoring is inherited from GCP. Application-level correlation integrates: (1) authentication events with IP geolocation; (2) Cloudflare threat scores with access patterns; (3) rate limiting triggers with user accounts.
+
+---
+
+### AU-9.2
+
+**Status:** implemented | **Baseline:** high
+
+Audit logs stored in separate system: audit logs are exported to a dedicated logging project via 8 log sinks per project. Log buckets use CMEK encryption and are in a separate GCP project from the application workloads, with independent IAM policies preventing application service accounts from modifying audit records.
+
+---
+
+### AU-9.3
+
+**Status:** implemented | **Baseline:** high
+
+Cryptographic protection of audit information: (1) audit logs encrypted at rest with CMEK via Cloud KMS; (2) audit logs encrypted in transit with TLS 1.2+; (3) WORM (Write Once Read Many) retention prevents deletion or modification of audit records.
+
+---
+
+### AU-12.1
+
+**Status:** implemented | **Baseline:** high
+
+System-wide audit trail compiled from individual records: Cloud Logging aggregates audit records from all Cloud Run services, Cloud SQL, Cloud Storage, Identity Platform, and application audit logs into a unified, time-ordered trail queryable via Cloud Logging API and BigQuery.
+
+---
+
+### AU-12.3
+
+**Status:** implemented | **Baseline:** high
+
+Changes to logging configuration require privileged access and are logged: (1) Cloud Logging sink configuration managed exclusively via Terragrunt; (2) changes require PR approval; (3) GCP Admin Activity audit logs capture all logging configuration changes; (4) org policies prevent service accounts from modifying org-level sinks.
+
+---
+
+### AU-16
+
+**Status:** implemented | **Baseline:** high
+
+Cross-organizational audit logging: (1) Cloudflare provides edge-layer audit events (WAF, rate limiting, Access) via Logpush; (2) GCP Cloud Audit Logs provide infrastructure events; (3) application audit logs provide business-logic events. All three sources are aggregated in Cloud Logging for cross-organizational audit trail.
+
+---
+
+
+## CA Family
+
+### CA-7.1
+
+**Status:** implemented | **Baseline:** high
+
+Independent assessor for continuous monitoring: automated monitoring tools (Cloud Monitoring, Cloudflare analytics, OSCAL SSP-IaC drift detection) provide independent assessment data. 3PAO engagement planned for initial authorization assessment.
+
+---
+
+
+## CM Family
+
+### CM-3.1
+
+**Status:** implemented | **Baseline:** high
+
+Automated change control: (1) GitHub PR-based workflow with required approvals; (2) CI/CD pipeline automatically runs tests, security scans, and Terragrunt plan; (3) 2 Cloud Build triggers enforce automated build/deploy pipeline; (4) FedRAMP SCN classifier labels PRs by security impact.
+
+---
+
+### CM-3.3
+
+**Status:** implemented | **Baseline:** high
+
+Security representative for change control: FedRAMP SCN classifier automatically flags security-impacting changes. Critical/significant changes require explicit security review documented in PR comments.
+
+---
+
+### CM-3.6
+
+**Status:** implemented | **Baseline:** high
+
+Cryptographic integrity verification: (1) Go module checksums verified via go.sum; (2) container image digests ensure immutable references; (3) Cosign-signed container image digests verify provenance; (4) Terraform provider checksums verified by HashiCorp's registry.
+
+---
+
+### CM-3.7
+
+**Status:** implemented | **Baseline:** high
+
+Changes reviewed and approved before implementation: (1) Terragrunt plan output must be reviewed before apply; (2) GitHub branch protection enforces PR approvals; (3) CI pipeline must pass before merge is allowed; (4) no direct pushes to staging or main branches.
+
+---
+
+### CM-3.8
+
+**Status:** implemented | **Baseline:** high
+
+Prevent or restrict unverified changes: (1) branch protection prevents direct commits; (2) all changes must pass CI pipeline; (3) Terragrunt apply requires prior plan approval; (4) org policies prevent console-based infrastructure changes for restricted resources.
+
+---
+
+### CM-7.5
+
+**Status:** implemented | **Baseline:** high
+
+Authorized software allowlisting: (1) 25 org policies restrict which GCP services can be used; (2) Cloud Run only executes container images from authorized Artifact Registry repositories; (3) Binary Authorization (binauthz=false) enforces attestation-based image allowlisting; (4) Go module proxy and checksum database verify authorized packages.
+
+---
+
+### CM-12
+
+**Status:** implemented | **Baseline:** high
+
+Information location: CUI is stored exclusively within: (1) Cloud SQL PostgreSQL (structured data, CMEK-encrypted); (2) Cloud Storage (documents, CMEK-encrypted); (3) Vertex AI Vector Search (embeddings, no raw CUI). All storage within US regions enforced by Assured Workloads location constraints.
+
+---
+
+### CM-14
+
+**Status:** implemented | **Baseline:** high
+
+Signed components: (1) container images signed via Cosign with digest pinning; (2) Go binaries built with verified module checksums; (3) Terraform providers verified via HashiCorp GPG signatures; (4) SBOMs generated for component provenance.
+
+---
+
+
+## CP Family
+
+### CP-2.5
+
+**Status:** implemented | **Baseline:** high
+
+Contingency plan continues essential missions: Terragrunt IaC enables full environment rebuild in an alternate GCP region within hours. Assured Workloads constraints apply to all US regions. Cloud SQL automated backups and Cloud Storage multi-region replication ensure data availability.
+
+---
+
+### CP-2.8
+
+**Status:** implemented | **Baseline:** high
+
+Identify critical assets: critical assets documented in SSP authorization boundary: Cloud SQL (CUI data), Cloud Storage (CUI documents), Cloud KMS (encryption keys), Identity Platform (authentication). Recovery priority: (1) auth, (2) database, (3) storage, (4) application services.
+
+---
+
+### CP-4.1
+
+**Status:** implemented | **Baseline:** high
+
+Contingency plan testing coordination: monthly automated CP-4 exercises run via Cloud Build cron. Tests coordinate recovery of Cloud SQL, Cloud Storage, and Cloud Run services. Results uploaded to Drata as evidence.
+
+---
+
+### CP-4.2
+
+**Status:** implemented | **Baseline:** high
+
+Alternate processing site testing: Terragrunt IaC supports deployment to any US GCP region. Contingency plan testing includes validation that IaC applies cleanly to alternate regions with Assured Workloads compliance constraints.
+
+---
+
+### CP-6.2
+
+**Status:** implemented | **Baseline:** high
+
+Recovery time and consistency objectives for alternate storage: Cloud SQL automated backups provide RPO < 24 hours. Cloud Storage objects replicated with versioning. Backup encryption uses same CMEK keys (Cloud KMS in archon-kms-staging). RTO target: 4 hours for full service restoration.
+
+---
+
+### CP-6.3
+
+**Status:** implemented | **Baseline:** high
+
+Accessibility of alternate storage site: Cloud SQL backups and Cloud Storage objects accessible from any authorized GCP region via IAM. No physical access required. Assured Workloads ensures alternate storage remains within US boundaries.
+
+---
+
+### CP-9.1
+
+**Status:** implemented | **Baseline:** high
+
+Testing backups: monthly CP-4 exercises include backup restoration verification: (1) Cloud SQL backup restored to test instance; (2) Cloud Storage objects verified for integrity; (3) results documented and uploaded to Drata.
+
+---
+
+### CP-9.5
+
+**Status:** implemented | **Baseline:** high
+
+Transfer to alternate storage: Cloud SQL automated backups stored in GCP-managed backup infrastructure. Cloud Storage objects can be replicated to alternate regions via gsutil. All backups encrypted with CMEK from archon-kms-staging.
+
+---
+
+### CP-9.8
+
+**Status:** implemented | **Baseline:** high
+
+Cryptographic protection of backup information: all backups encrypted at rest with AES-256 via CMEK (Cloud KMS). Backup transmission encrypted with TLS 1.2+. KMS keys for backup encryption stored in dedicated project with independent IAM.
+
+---
+
+### CP-10.2
+
+**Status:** implemented | **Baseline:** high
+
+Transaction recovery: Cloud SQL supports point-in-time recovery (PITR) using write-ahead logs. Application uses database transactions with rollback on failure. No partial transaction commits reach persistent state.
+
+---
+
+### CP-10.4
+
+**Status:** implemented | **Baseline:** high
+
+Restore within time period: RTO target is 4 hours. Terragrunt IaC enables infrastructure rebuild. Cloud SQL PITR enables database recovery to any point within the backup window. Cloud Storage versioning enables document recovery. Monthly CP-4 exercises validate recovery time.
+
+---
+
+
+## IA Family
+
+### IA-2.5
+
+**Status:** implemented | **Baseline:** high
+
+Group authentication — individual identification first: all authentication is individual (no shared accounts). Firebase Identity Platform issues per-user JWTs with unique UID. TOTP MFA bound to individual user accounts. MFA state: ENABLED across 4 tenants.
+
+---
+
+### IA-2.6
+
+**Status:** implemented | **Baseline:** high
+
+Multi-factor authentication for network access to privileged accounts: (1) all admin API access requires MFA (magic link + TOTP); (2) GCP console access requires Google MFA; (3) Cloudflare Access enforces MFA for admin dashboard; (4) GitHub requires 2FA for repository access.
+
+---
+
+### IA-8.4
+
+**Status:** implemented | **Baseline:** high
+
+Use of defined profiles for identity verification: customer agencies use SAML/OIDC federation with their authoritative IdP (Okta, Azure AD, ADFS, PingFederate). Identity assertions conform to SAML 2.0 and OpenID Connect profiles. Latent Archon does not issue credentials — relies on customer IdP assertions.
+
+---
+
+### IA-9
+
+**Status:** implemented | **Baseline:** high
+
+Service identification and authentication: (1) Cloud Run services authenticate to each other via GCP service account identity tokens; (2) SCIM clients authenticate via SHA-256 hashed bearer tokens; (3) Cloudflare Workers authenticate to origin via CF Access JWT; (4) Cloud Build authenticates via Workload Identity Federation (keyless).
+
+---
+
+### IA-10
+
+**Status:** implemented | **Baseline:** high
+
+Adaptive authentication: the system adjusts authentication requirements based on context: (1) new device/IP triggers additional logging and security notification; (2) admin operations require step-up MFA re-verification; (3) account closure requires explicit MFA confirmation; (4) Cloudflare Access enforces device posture checks for admin endpoints.
+
+---
+
+### IA-12
+
+**Status:** implemented | **Baseline:** moderate
+
+Identity proofing: for federated users, identity proofing is delegated to the customer agency's IdP which performs initial identity verification. For direct users, identity is established through organizational email verification (magic link to verified domain email) and admin-approved invitations.
+
+---
+
+### IA-12.2
+
+**Status:** implemented | **Baseline:** moderate
+
+Identity evidence validation: identity evidence is validated through: (1) SAML/OIDC assertions from trusted customer IdPs with verified metadata; (2) email domain verification via magic link; (3) SCIM provisioning from authoritative HR/IdP systems with pre-established trust.
+
+---
+
+### IA-12.3
+
+**Status:** implemented | **Baseline:** moderate
+
+Identity evidence verification: for federated authentication, the customer IdP serves as the authoritative identity source. SAML assertions and OIDC tokens are cryptographically verified against the IdP's published certificates/JWKS. For direct accounts, email link verification serves as identity evidence.
+
+---
+
+### IA-12.4
+
+**Status:** implemented | **Baseline:** moderate
+
+In-person identity proofing: not applicable — Latent Archon is a SaaS platform. In-person identity proofing is performed by the customer agency as part of their personnel security process before users are provisioned via SCIM or admin invite.
+
+---
+
+### IA-12.5
+
+**Status:** implemented | **Baseline:** moderate
+
+Address confirmation: identity address confirmation is delegated to the customer agency's personnel security process. The system confirms organizational email addresses via magic link verification to the registered email domain.
+
+---
+
+
+## IR Family
+
+### IR-4.11
+
+**Status:** implemented | **Baseline:** high
+
+Integrated incident response team: the same engineering team handles development, operations, and security incident response. Incident handling procedures include coordination with GCP support (infrastructure), Cloudflare support (edge-layer), and customer agency POCs (data breach).
+
+---
+
+### IR-6.1
+
+**Status:** implemented | **Baseline:** high
+
+Automated incident reporting: (1) Cloud Monitoring alerts automatically page on-call via PagerDuty; (2) Cloudflare security events trigger notifications; (3) application security events (auth failures, rate limit triggers) generate automated alerts; (4) FedRAMP incident reporting to CISA within required timeframes.
+
+---
+
+### IR-6.2
+
+**Status:** implemented | **Baseline:** high
+
+Vulnerabilities related to incidents: security vulnerabilities discovered during incident investigation are documented, tracked, and remediated. Post-incident reviews identify root causes and drive security improvements documented in incident response reports.
+
+---
+
+
+## PL Family
+
+### PL-8
+
+**Status:** implemented | **Baseline:** moderate
+
+Security and privacy architecture: the system follows a zero-trust architecture with defense-in-depth: (1) edge WAF (Cloudflare) → origin WAF (Cloud Armor) → application auth → RBAC → RLS; (2) CMEK encryption at rest; (3) TLS 1.2+ in transit; (4) VPC Service Controls for API isolation; (5) separate GCP projects for blast-radius containment.
+
+---
+
+
+## PM Family
+
+### PM-12
+
+**Status:** implemented | **Baseline:** moderate
+
+Insider threat program: (1) principle of least privilege limits blast radius of insider actions; (2) comprehensive audit logging tracks all privileged operations; (3) no standing production access — break-glass only; (4) code changes require PR review; (5) infrastructure changes require Terragrunt plan review.
+
+---
+
+### PM-13
+
+**Status:** implemented | **Baseline:** moderate
+
+Security and privacy workforce: engineering team maintains security skills through: (1) annual security awareness training; (2) secure coding training (OWASP Top 10); (3) hands-on incident response exercises (monthly automated CP-4/IR-3/AT-2); (4) FedRAMP-specific training for compliance personnel.
+
+---
+
+### PM-17
+
+**Status:** implemented | **Baseline:** moderate
+
+Protecting CUI on external systems: CUI is not permitted on external systems. All CUI processing occurs within the FedRAMP-authorized boundary (GCP + Cloudflare). External system access is limited to authenticated API integrations that do not transfer CUI outside the boundary.
+
+---
+
+### PM-18
+
+**Status:** implemented | **Baseline:** moderate
+
+Privacy program plan: Latent Archon maintains a privacy program including: (1) Privacy Policy published and reviewed annually; (2) Privacy Impact Assessment (PIA) for CUI handling; (3) data minimization practices; (4) DLP scanning for PII detection; (5) automated data retention and purge policies.
+
+---
+
+### PM-20
+
+**Status:** implemented | **Baseline:** moderate
+
+Dissemination of privacy program information: privacy program information disseminated through: (1) published Privacy Policy; (2) system use notification banner; (3) personnel onboarding materials; (4) privacy training integrated into security awareness training.
+
+---
+
+### PM-21
+
+**Status:** implemented | **Baseline:** moderate
+
+Accounting of disclosures: the system maintains records of CUI disclosures through: (1) comprehensive audit logging of all data access; (2) RLS-enforced workspace isolation prevents unauthorized cross-tenant disclosure; (3) API access logs track all data retrieval with user identity and timestamp.
+
+---
+
+### PM-22
+
+**Status:** implemented | **Baseline:** moderate
+
+Personally identifiable information quality: (1) SCIM 2.0 synchronization ensures user attributes reflect authoritative IdP data; (2) email verification via magic link validates contact information; (3) users can update their own profile attributes; (4) stale accounts flagged after 90 days of inactivity.
+
+---
+
+### PM-23
+
+**Status:** implemented | **Baseline:** moderate
+
+Data governance body: the CEO serves as data governance authority responsible for PII handling decisions, privacy policy approval, and data retention decisions. Security Lead serves as operational privacy officer.
+
+---
+
+### PM-24
+
+**Status:** implemented | **Baseline:** moderate
+
+Data integrity board: data integrity is maintained through: (1) PostgreSQL ACID transactions; (2) Cloud SQL automated consistency checks; (3) application-level validation on all inputs; (4) CMEK encryption prevents tampering; (5) audit log integrity protected by WORM retention.
+
+---
+
+### PM-25
+
+**Status:** implemented | **Baseline:** moderate
+
+Minimization of PII: the system collects minimum necessary PII: email address (authentication), display name (UI), IP address (security logging). No SSN, date of birth, or demographic data collected. Customer documents (CUI) are the customer's data — the platform processes but does not extract PII from documents except for DLP scanning.
+
+---
+
+### PM-26
+
+**Status:** implemented | **Baseline:** moderate
+
+Complaint management: privacy complaints are handled through: (1) support email published in Privacy Policy; (2) complaints logged and tracked; (3) response within 30 days; (4) escalation path to CEO for unresolved complaints.
+
+---
+
+### PM-27
+
+**Status:** implemented | **Baseline:** moderate
+
+Privacy reporting: privacy metrics reported quarterly including: (1) number of privacy incidents; (2) PII breach notifications issued; (3) privacy complaints received and resolved; (4) DLP scan results summary; (5) data retention compliance status.
+
+---
+
+### PM-28
+
+**Status:** implemented | **Baseline:** moderate
+
+Risk framing: risk management approach aligned with NIST RMF. Risk assessment considers: (1) CUI confidentiality (high impact); (2) system availability for mission-critical operations; (3) supply chain risks (mitigated by FedRAMP-authorized providers). 25 org policies enforce risk boundaries.
+
+---
+
+### PM-30
+
+**Status:** implemented | **Baseline:** moderate
+
+Supply chain risk management plan: documented in SCRMP (supply-chain-risk-management-plan.md). Key elements: (1) use only FedRAMP-authorized IaaS; (2) open-source dependency scanning; (3) SBOM generation for supply chain transparency; (4) container image provenance verification.
+
+---
+
+### PM-31
+
+**Status:** implemented | **Baseline:** moderate
+
+Continuous monitoring strategy: documented in ConMon plan. Automated monitoring includes: (1) daily vulnerability scans; (2) OSCAL SSP-IaC drift detection; (3) Cloud Monitoring infrastructure alerts; (4) Cloudflare security event monitoring; (5) monthly compliance exercises. Results reported to AO monthly.
+
+---
+
+### PM-32
+
+**Status:** implemented | **Baseline:** moderate
+
+Purposing: all system components are dedicated to their authorized purpose. GCP projects scoped to specific functions (admin, ops, app, KMS). No shared-purpose infrastructure. Assured Workloads enforces compliance regime on all resources within the boundary.
+
+---
+
+
+## PS Family
+
+### PS-9
+
+**Status:** implemented | **Baseline:** high
+
+Position descriptions: all positions with system access have documented security responsibilities: (1) engineers responsible for secure coding, PR review, incident response; (2) CEO/CTO responsible for authorization decisions, risk acceptance; (3) Security Lead responsible for control implementation and assessment.
+
+---
+
+
+## PT Family
+
+### PT-5.2
+
+**Status:** implemented | **Baseline:** high
+
+Privacy Act statements: system use notification banner includes privacy notice informing users of: (1) authority for data collection; (2) purpose of collection; (3) routine uses; (4) consequences of not providing information. Published in Privacy Policy and displayed at login.
+
+---
+
+
+## RA Family
+
+### RA-5.4
+
+**Status:** implemented | **Baseline:** high
+
+Discoverable information: (1) Cloudflare proxying hides origin IP addresses; (2) Cloud Run services have no public IP; (3) server headers stripped by Cloud Run; (4) error messages return generic responses (no stack traces); (5) security scanning tools (GoSec=true, Semgrep=true) identify information leakage in source code.
+
+---
+
+### RA-10
+
+**Status:** implemented | **Baseline:** high
+
+Threat hunting: (1) Cloud Logging aggregates all security events for proactive analysis; (2) audit log alert policies detect anomalous patterns; (3) Cloudflare threat intelligence provides real-time threat data; (4) monthly security review includes threat hunting across audit logs and WAF events.
+
+---
+
+
+## SA Family
+
+### SA-15
+
+**Status:** implemented | **Baseline:** high
+
+Development process, standards, and tools: (1) Go backend built with BoringCrypto=true (FIPS 140-2 validated); (2) security scanning integrated into CI/CD (GoSec=true, Semgrep=true, Trivy=true, govulncheck=true, Gitleaks=true); (3) SBOM generation=true for provenance; (4) PR-based development workflow with required reviews.
+
+---
+
+### SA-16
+
+**Status:** implemented | **Baseline:** high
+
+Developer-provided training resources: (1) Go official documentation and security guidelines; (2) OWASP Top 10 reference in secure coding training; (3) internal CLAUDE.md files document security requirements and patterns; (4) PR review process provides ongoing peer training.
+
+---
+
+### SA-17
+
+**Status:** implemented | **Baseline:** high
+
+Developer security and privacy architecture and design: (1) zero-trust architecture documented in SSP; (2) defense-in-depth with multiple WAF layers; (3) multi-tenant isolation via RLS and per-tenant auth pools; (4) CMEK encryption for all data stores; (5) VPC Service Controls for API isolation.
+
+---
+
+### SA-20
+
+**Status:** implemented | **Baseline:** high
+
+Customized development of critical components: all application code is custom-developed by Latent Archon. No COTS components process CUI. Open-source dependencies (Go modules, npm packages) are scanned for vulnerabilities and license compliance before inclusion.
+
+---
+
+### SA-21
+
+**Status:** implemented | **Baseline:** high
+
+Developer screening: all developers undergo background screening per PS-3 requirements before receiving repository or infrastructure access. Access to production systems requires additional authorization. SBOM=true provides transparency into developer-selected components.
+
+---
+
+### SA-22
+
+**Status:** implemented | **Baseline:** high
+
+Unsupported system components: (1) Go version tracked and updated regularly; (2) container base images use Google's distroless (minimal, maintained); (3) npm dependencies audited for end-of-life status; (4) GCP services used are all Generally Available and fully supported; (5) govulncheck identifies components with known vulnerabilities.
+
+---
+
+
+## SC Family
+
+### SC-7.29
+
+**Status:** implemented | **Baseline:** high
+
+Separate subnets for connecting to different security domains: (1) three-project GCP architecture separates admin, ops, and app tiers; (2) VPC peering with restricted routes limits cross-project connectivity; (3) Private Service Connect endpoints for Vertex AI eliminate public network traversal.
+
+---
+
+### SC-16
+
+**Status:** implemented | **Baseline:** high
+
+Transmission of security and privacy attributes: (1) Firebase JWTs carry user identity, tenant, MFA status, and custom claims; (2) Cloudflare Access JWTs carry identity and device posture; (3) GCP service account tokens carry IAM identity and scopes; (4) all security attributes transmitted via cryptographically signed tokens.
+
+---
+
+### SC-24
+
+**Status:** implemented | **Baseline:** high
+
+Fail in known state: (1) Cloud Run services restart automatically on failure in a known-good state from the immutable container image; (2) Cloud SQL maintains ACID consistency through crash recovery; (3) auth middleware fails closed (rejects requests on error); (4) ClamAV fails closed (rejects uploads on scan failure).
+
+---
+
+### SC-25
+
+**Status:** implemented | **Baseline:** high
+
+Thin nodes: Cloud Run containers are stateless thin nodes — all persistent state in Cloud SQL and Cloud Storage. Containers rebuilt from scratch on each deployment. No local persistent storage. Container images use distroless base (minimal OS surface).
+
+---
+
+### SC-38
+
+**Status:** implemented | **Baseline:** high
+
+Operations security: (1) infrastructure-as-code prevents configuration knowledge from being a single point of failure; (2) Terragrunt modules are version-controlled and auditable; (3) no undocumented production changes — all changes via PR; (4) security configurations are deterministic and reproducible.
+
+---
+
+
+## SI Family
+
+### SI-4.10
+
+**Status:** implemented | **Baseline:** high
+
+Visibility of encrypted communications: (1) TLS terminated at Cloudflare edge and GCP load balancer — application sees decrypted traffic for inspection; (2) Cloud Armor WAF inspects decrypted HTTP traffic; (3) application-level audit logging captures business-logic events from decrypted request content.
+
+---
+
+### SI-4.22
+
+**Status:** implemented | **Baseline:** high
+
+Unauthorized network services: (1) Cloud Run only exposes configured ports (8080 for HTTP); (2) VPC firewall deny-all default prevents unauthorized network services; (3) org policies restrict which GCP services can be enabled; (4) Cloud Run ingress restricted to internal + load balancer only.
+
+---
+
+
+## SR Family
+
+### SR-2.1
+
+**Status:** implemented | **Baseline:** high
+
+Establish SCRM team: supply chain risk management responsibilities assigned to the engineering team. CEO provides oversight. Security Lead evaluates new dependencies and infrastructure providers for supply chain risk.
+
+---
+
+### SR-11.1
+
+**Status:** implemented | **Baseline:** high
+
+Component authenticity — public registry verification: (1) Go modules verified against Go checksum database (sum.golang.org); (2) npm packages verified via package-lock.json integrity hashes; (3) container base images from Google's Artifact Registry; (4) SBOM generation=true captures component provenance.
+
+---
+
+### SR-11.2
+
+**Status:** implemented | **Baseline:** high
+
+Component authenticity — component disposal: deprecated or vulnerable components are removed through: (1) `go mod tidy` removes unused modules; (2) npm audit identifies deprecated packages; (3) Trivy=true flags vulnerable container layers; (4) Artifact Registry lifecycle policies remove old image versions.
+
+---
+
+
+## AC Family
+
+### AC-2.7
+
+**Status:** implemented | **Baseline:** high
+
+Privileged role-based access scheme: (1) four application roles (master_admin, admin, editor, viewer) with per-RPC enforcement; (2) three database roles (archon_admin_rw) enforce least-privilege at the PostgreSQL layer; (3) GCP IAM custom roles scoped per service account; (4) no shared or group privileged accounts.
+
+---
+
+### AC-6.8
+
+**Status:** implemented | **Baseline:** high
+
+Privilege levels for code execution: (1) Cloud Run containers execute as non-root with read-only filesystem; (2) gVisor sandbox restricts syscall surface; (3) application code runs under a dedicated service account per service with least-privilege IAM; (4) no privileged containers or host-level access.
+
+---
+
+
+## AU Family
+
+### AU-5.2
+
+**Status:** implemented | **Baseline:** high
+
+Real-time alerts for audit event failures: 15 monitoring alert policies and 10 audit alert policies configured in Cloud Monitoring. Alerts fire within minutes of detection and page on-call via PagerDuty. Log sink failures generate GCP-level alerts.
+
+---
+
+
+## IA Family
+
+### IA-5.13
+
+**Status:** implemented | **Baseline:** high
+
+Expiration of cached authenticators: (1) Firebase ID tokens expire after 1 hour; (2) Firebase refresh tokens can be revoked server-side via Admin SDK; (3) JWKS cache expires after 5 minutes, forcing re-fetch from Cloudflare; (4) session cookies have explicit expiration; (5) SCIM bearer tokens do not expire but can be rotated on demand.
+
+---
+
+
+## SC Family
+
+### SC-7.10
+
+**Status:** implemented | **Baseline:** high
+
+Prevent exfiltration: (1) VPC Service Controls perimeter "archon_staging" prevents unauthorized API-level data extraction from 4 projects; (2) DLP inspect template detects 9 PII types in document content; (3) VPC egress firewall blocks all non-allowlisted outbound; (4) Cloud Storage has no public access; (5) audit logging tracks all data access.
+
+---
+
+### SC-12.6
+
+**Status:** inherited | **Baseline:** high
+
+Physical control of cryptographic keys: inherited from GCP. Cloud KMS HSMs are physically secured within Google data centers. FIPS 140-2 Level 3 certification requires physical tamper evidence and tamper response mechanisms. Key material never leaves the HSM boundary in plaintext.
+
+---
+
+
+## SI Family
+
+### SI-4.14
+
+**Status:** inherited | **Baseline:** high
+
+Wireless intrusion detection: inherited from GCP. Google monitors wireless access within data center facilities. Not applicable at the SaaS layer — Latent Archon has no organization-controlled wireless infrastructure.
+
+---
+
+### SI-7.15
+
+**Status:** implemented | **Baseline:** high
+
+Code authentication: (1) Binary Authorization=false verifies cryptographic attestations before deploying container images to Cloud Run; (2) Go modules authenticated via checksum database (sum.golang.org); (3) npm packages authenticated via package-lock.json integrity hashes; (4) Gitleaks=true prevents credential leakage in code.
 
 ---
 
