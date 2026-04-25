@@ -50,7 +50,7 @@ Sources of risk identification:
 | Red team testing | Monthly | 44-attack automated suite (auth bypass, escalation, exfiltration) |
 | Architecture reviews | On change | New service, new data flow, new vendor |
 | Incident post-mortems | On occurrence | Lessons learned from security incidents |
-| Compliance audits | Annual | Drata monitoring, framework gap analysis |
+| Compliance audits | Annual | OSCAL-based compliance monitoring, framework gap analysis |
 | Personnel input | Ongoing | Bug reports, security suggestions |
 
 ---
@@ -130,7 +130,7 @@ Each treated risk must have:
 
 ### 6.1 Register Location
 
-The authoritative risk register is maintained in **Drata** and synced automatically via the `drata-sync` CLI tool. A local copy is maintained in the compliance repository.
+The authoritative risk register is maintained in the compliance repository below.
 
 ### 6.2 Current Risk Register Summary
 
@@ -145,7 +145,7 @@ The authoritative risk register is maintained in **Drata** and synced automatica
 | 7 | Encryption Key Compromise | Security | 5 (1×5) | 5 (1×5) | Cloud KMS (HSM-backed), auto-rotation, IAM |
 | 8 | Vendor/Third-Party Breach | Third-Party | 10 (2×5) | 6 (2×3) | Per-customer single-cloud, encryption, vendor monitoring |
 | 9 | Data Loss / DR Failure | Operational | 10 (2×5) | 3 (1×3) | PITR, object storage versioning, multi-zone HA |
-| 10 | Regulatory Non-Compliance | Compliance | 8 (2×4) | 4 (1×4) | Drata monitoring, SSP, formal policies |
+| 10 | Regulatory Non-Compliance | Compliance | 8 (2×4) | 4 (1×4) | OSCAL compliance monitoring, SSP, formal policies |
 | 11 | AI/ML Model Misuse / Prompt Injection | Security | 9 (3×3) | 4 (2×2) | Scoped retrieval, input validation, audit |
 | 12 | CI/CD Pipeline Compromise | Security | 10 (2×5) | 4 (1×4) | WIF, branch protection, prod gates |
 
@@ -177,7 +177,7 @@ Latent Archon maintains a **low risk appetite** for customer data security and r
 | New risk identification | Continuous | All personnel |
 | Post-incident risk update | On occurrence | Incident Commander |
 | Vulnerability-driven re-scoring | On critical CVE | Engineering |
-| Drata risk register sync | Weekly (automated) | CI/CD |
+| Risk register review | Monthly | CEO/ISSO |
 | Red team results → risk update | Monthly | Engineering |
 
 ---

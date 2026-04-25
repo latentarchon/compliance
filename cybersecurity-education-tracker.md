@@ -21,7 +21,7 @@ This document tracks completion of security awareness training, role-based train
 
 | Name | Role | Training Module | Completion Date | Certificate/Record | Next Due |
 |------|------|----------------|-----------------|-------------------|----------|
-| Andrew Hendel | CEO / ISSO | Security Awareness Fundamentals | April 2026 | Drata personnel compliance | April 2027 |
+| Andrew Hendel | CEO / ISSO | Security Awareness Fundamentals | April 2026 | Compliance repository | April 2027 |
 
 ### 2.2 Role-Based Training (Annual)
 
@@ -36,7 +36,7 @@ This document tracks completion of security awareness training, role-based train
 
 | Name | Role | Exercise Type | Completion Date | Report Reference | Next Due |
 |------|------|--------------|-----------------|-----------------|----------|
-| Andrew Hendel | Incident Commander | Tabletop Exercise (IR-3) | Monthly (automated) | Red team reports in Drata | Continuous |
+| Andrew Hendel | Incident Commander | Tabletop Exercise (IR-3) | Monthly (automated) | Red team reports in GCS evidence bucket | Continuous |
 
 ### 2.4 Rules of Behavior Acceptance (Annual + Onboarding)
 
@@ -60,7 +60,7 @@ This document tracks completion of security awareness training, role-based train
 1. Simulated phishing emails sent semi-annually (per POL-AT-001 §3.1)
 2. Results tracked: delivered, opened, clicked, reported
 3. Personnel who click receive immediate remediation training
-4. Aggregate results uploaded to Drata evidence library
+4. Aggregate results archived to GCS evidence bucket
 
 ### 3.2 Automated Security Testing Evidence
 
@@ -68,8 +68,8 @@ The following automated tests run on a recurring schedule and serve as persisten
 
 | Test | Frequency | Evidence | NIST Control |
 |------|-----------|----------|--------------|
-| **Red team attack suite** (99 attacks, 6 suites) | Monthly (1st) | MITRE ATT&CK mapped report → Drata | IR-3, CA-8 |
-| **Contingency plan test** (CP-4) | Monthly (1st) | Backup/PITR/health report → Drata | CP-4 |
+| **Red team attack suite** (99 attacks, 6 suites) | Monthly (1st) | MITRE ATT&CK mapped report → GCS | IR-3, CA-8 |
+| **Contingency plan test** (CP-4) | Monthly (1st) | Backup/PITR/health report → GCS | CP-4 |
 | **IaC drift detection** | Weekly | Terraform plan diff | CM-3 |
 | **Vulnerability scanning** (Trivy) | Every build | Scan results in CI logs | RA-5 |
 | **Dependency monitoring** (Dependabot) | Continuous | Auto-PRs for vulnerable deps | RA-5 |
@@ -81,7 +81,7 @@ The following automated tests run on a recurring schedule and serve as persisten
 
 | Assessment | Audience | Frequency | Method | Passing Score | Current Status |
 |-----------|----------|-----------|--------|---------------|----------------|
-| Security awareness quiz | All personnel | Annual (with training) | Online quiz | 80% | CEO self-assessment (Drata) |
+| Security awareness quiz | All personnel | Annual (with training) | Online quiz | 80% | CEO self-assessment (compliance repository) |
 | Incident response drill | IR team | Semi-annual (tabletop) | Documented scenario walkthrough (see IR-TTX-001) | Participation required | CEO walkthrough + automated red team |
 | Secure coding review | Engineers | Per PR | CI security scanning (6 automated scanners) | All checks must pass | Automated — no human reviewer (POA-16) |
 
@@ -94,7 +94,7 @@ The following automated tests run on a recurring schedule and serve as persisten
 - [ ] Security awareness training completed (within 5 business days)
 - [ ] Role-based training completed (within 10 business days)
 - [ ] Rules of Behavior accepted (enforced in-app on first login)
-- [ ] Acceptable Use Policy acknowledged (Drata)
+- [ ] Acceptable Use Policy acknowledged (compliance repository)
 - [ ] NDA signed
 - [ ] Background check initiated (if CJI access required)
 - [ ] Added to this tracker
@@ -105,11 +105,11 @@ The following automated tests run on a recurring schedule and serve as persisten
 
 | Evidence Type | Retention Period | Storage Location |
 |---------------|-----------------|------------------|
-| Training completion records | 3 years minimum | Drata + this document |
-| Phishing simulation results | 3 years minimum | Drata evidence library |
-| Red team reports | 365 days (CI artifacts) + Drata | GitHub Actions + Drata |
+| Training completion records | 3 years minimum | Compliance repository + this document |
+| Phishing simulation results | 3 years minimum | GCS evidence bucket |
+| Red team reports | 365 days (CI artifacts) + GCS | GitHub Actions + GCS evidence bucket |
 | ROB acceptance records | Indefinite | `rob_acceptances` database table |
-| Incident response exercise records | 3 years minimum | Drata evidence library |
+| Incident response exercise records | 3 years minimum | GCS evidence bucket |
 
 ---
 

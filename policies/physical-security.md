@@ -164,7 +164,7 @@ All infrastructure maintenance is performed by the cloud provider and inherited 
 | Device compliance audit | Semi-annual | CEO / ISSO |
 | Endpoint Verification device status review | Monthly | CEO / ISSO |
 | Google Workspace security audit (audit-workspace-security.sh) | Monthly | CEO / ISSO |
-| Policy acknowledgment | Annual | All personnel (via Drata) |
+| Policy acknowledgment | Annual | All personnel (via compliance repository) |
 | Incident review (device loss) | On occurrence | CEO / ISSO |
 
 ---

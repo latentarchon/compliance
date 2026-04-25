@@ -124,7 +124,7 @@ By signing below, I acknowledge that I have read, understand, and agree to compl
 
 ## 9. Annual Re-Acknowledgment
 
-These rules must be re-acknowledged annually. The CEO / ISSO maintains a log of all acknowledgments (via Drata).
+These rules must be re-acknowledged annually. The CEO / ISSO maintains a log of all acknowledgments (via the compliance repository).
 
 | Name | Role | Initial Acknowledgment | Last Re-Acknowledgment |
 |------|------|----------------------|----------------------|

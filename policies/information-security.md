@@ -111,7 +111,7 @@ Latent Archon's security program is based on **NIST SP 800-53 Rev. 5 High** base
 
 | Activity | Frequency | Owner |
 |----------|-----------|-------|
-| Drata automated compliance monitoring | Continuous | Automated (CEO verifies) |
+| OSCAL-based compliance monitoring via 3PAO assessment portal | Continuous | Automated (CEO verifies) |
 | Red team attack suite execution | Monthly | Automated (CEO reviews) |
 | Policy review and update | Annual | CEO / ISSO |
 | Access review | Quarterly | CEO / ISSO + automated drift checker |
@@ -123,7 +123,7 @@ Latent Archon's security program is based on **NIST SP 800-53 Rev. 5 High** base
 
 ## 7. Risk Management
 
-Latent Archon maintains a formal risk register (managed in Drata) with:
+Latent Archon maintains a formal risk register (maintained in the compliance repository) with:
 
 - **12 identified risks** across Security, Operational, Third-Party, and Compliance categories
 - **Quantitative scoring**: Inherent (likelihood × impact) → Controls → Residual (likelihood × impact)
@@ -166,7 +166,7 @@ Exceptions to any security policy require:
 - Compensating controls identified
 - CEO or CTO approval (depending on risk tier)
 - Maximum 90-day exception period (renewable with re-approval)
-- Documentation in Drata with tracking and review
+- Documentation in the compliance repository with tracking and review
 
 ---
 

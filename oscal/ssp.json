@@ -3,8 +3,8 @@
     "uuid": "ca197ba9-13f0-4ba8-8c0a-9c22304fccb6",
     "metadata": {
       "title": "Latent Archon Document Intelligence Platform — System Security Plan",
-      "last-modified": "2026-04-25T12:01:10.542847Z",
-      "version": "1.0.2",
+      "last-modified": "2026-04-25T14:27:55.686124Z",
+      "version": "1.0.3",
       "oscal-version": "1.1.3",
       "props": [
         {
@@ -13,7 +13,7 @@
         },
         {
           "name": "build-sha-compliance",
-          "value": "40332eb61555061cd51881116eb9dea99d569c2f",
+          "value": "eefaef6c6299fa1656be882e3e70cda3f468102e",
           "ns": "https://latentarchon.com/ns/oscal/build"
         },
         {
@@ -23,7 +23,7 @@
         },
         {
           "name": "build-sha-infra",
-          "value": "95c84007f6655ab0862dff8293f58da909a966ce",
+          "value": "72d6b3f194d9f90431e77cce50c49fe1671af9f3",
           "ns": "https://latentarchon.com/ns/oscal/build"
         },
         {
@@ -53,7 +53,7 @@
         },
         {
           "name": "build-timestamp",
-          "value": "2026-04-25T12:01:10Z",
+          "value": "2026-04-25T14:27:55Z",
           "ns": "https://latentarchon.com/ns/oscal/build"
         }
       ],
@@ -525,7 +525,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "91c9e7f2-759f-4d38-8e93-f83e7f6aafea",
-                  "description": "(a) Latent Archon defines four tenant-level account types: `master_admin`, `admin`, `editor`, and `viewer`. Each account type has specific privileges enforced per-RPC in the Connect-RPC interceptor chain. Service accounts (e.g., noreply@latentarchon.com) are a distinct non-interactive type blocked from authentication.\n(b) Account managers are designated per customer tenant. The `master_admin` role serves as the tenant account manager.\n(c) Conditions for group and role membership are enforced by the RBAC model. Users must be explicitly invited to a tenant (via invite token or SCIM provisioning) and granted workspace access. The auth interceptor enforces a tenant membership gate.\n(d) Authorized users and role membership are specified per-tenant by the `master_admin` through the admin API (`InviteMember`, `UpdateMemberRole`, `RemoveMember` RPCs). For SCIM-enabled tenants, user lifecycle is managed automatically by the customer IdP.\n(e) Account creation requires approval by a tenant admin (explicit invite) or automated provisioning via SCIM 2.0 from an authorized customer IdP. JIT provisioning auto-creates accounts on first SSO login.\n(f) Accounts are created via invite tokens (time-limited), SCIM 2.0, or JIT provisioning. Accounts are disabled via Firebase Admin SDK `DisableUser()` or SCIM DELETE. Accounts are removed via `RemoveMember` RPC or self-service `CloseAccount` RPC (requires step-up MFA). Automated 90-day data purge runs via Cloud Scheduler.\n(g) System access is monitored through comprehensive audit logging (`internal/audit/logger.go`). All authentication events, role changes, and SCIM actions are recorded with user ID, IP, user agent, timestamp, and correlation ID.\n(h) Account managers (tenant `master_admin`) are notified of account changes via real-time security email notifications covering: role escalation, auth failures, member changes, SCIM events, and deletions.\n(i) Authorization requires: (1) valid Firebase Auth JWT, (2) MFA verification, (3) tenant membership, (4) appropriate RBAC role, and (5) workspace membership for data access.\n(j) All accounts are reviewed by the tenant `master_admin` through the admin dashboard. Quarterly access reviews tracked via Drata.\n(k) Role transfers handled via admin API or SCIM group-to-role mapping.\n(l) Accounts deprovisioned within 24 hours via SCIM DELETE or manual removal. Self-service closure via `CloseAccount` RPC with step-up MFA. Row-level security on archon enforces data isolation post-deprovisioning.",
+                  "description": "(a) Latent Archon defines four tenant-level account types: `master_admin`, `admin`, `editor`, and `viewer`. Each account type has specific privileges enforced per-RPC in the Connect-RPC interceptor chain. Service accounts (e.g., noreply@latentarchon.com) are a distinct non-interactive type blocked from authentication.\n(b) Account managers are designated per customer tenant. The `master_admin` role serves as the tenant account manager.\n(c) Conditions for group and role membership are enforced by the RBAC model. Users must be explicitly invited to a tenant (via invite token or SCIM provisioning) and granted workspace access. The auth interceptor enforces a tenant membership gate.\n(d) Authorized users and role membership are specified per-tenant by the `master_admin` through the admin API (`InviteMember`, `UpdateMemberRole`, `RemoveMember` RPCs). For SCIM-enabled tenants, user lifecycle is managed automatically by the customer IdP.\n(e) Account creation requires approval by a tenant admin (explicit invite) or automated provisioning via SCIM 2.0 from an authorized customer IdP. JIT provisioning auto-creates accounts on first SSO login.\n(f) Accounts are created via invite tokens (time-limited), SCIM 2.0, or JIT provisioning. Accounts are disabled via Firebase Admin SDK `DisableUser()` or SCIM DELETE. Accounts are removed via `RemoveMember` RPC or self-service `CloseAccount` RPC (requires step-up MFA). Automated 90-day data purge runs via Cloud Scheduler.\n(g) System access is monitored through comprehensive audit logging (`internal/audit/logger.go`). All authentication events, role changes, and SCIM actions are recorded with user ID, IP, user agent, timestamp, and correlation ID.\n(h) Account managers (tenant `master_admin`) are notified of account changes via real-time security email notifications covering: role escalation, auth failures, member changes, SCIM events, and deletions.\n(i) Authorization requires: (1) valid Firebase Auth JWT, (2) MFA verification, (3) tenant membership, (4) appropriate RBAC role, and (5) workspace membership for data access.\n(j) All accounts are reviewed by the tenant `master_admin` through the admin dashboard. Quarterly access reviews tracked in the compliance repository.\n(k) Role transfers handled via admin API or SCIM group-to-role mapping.\n(l) Accounts deprovisioned within 24 hours via SCIM DELETE or manual removal. Self-service closure via `CloseAccount` RPC with step-up MFA. Row-level security on archon enforces data isolation post-deprovisioning.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -642,7 +642,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "9789527a-5152-4be1-813d-db2c4dc162db",
-                  "description": "Inactive accounts are detected via an automated access-review tool (cmd/access-review) that runs weekly via Cloud Build. The tool queries Identity Platform tenants across all projects, enumerates users, and flags accounts with no successful authentication in 90+ days. In dry-run mode (default), it generates a report for administrative review. With --disable, it calls the Identity Platform accounts:update API to disable flagged accounts. Disabled accounts are automatically removed after 90 additional days via the account purge service. Reports are uploaded to Drata as evidence.",
+                  "description": "Inactive accounts are detected via an automated access-review tool (cmd/access-review) that runs weekly via Cloud Build. The tool queries Identity Platform tenants across all projects, enumerates users, and flags accounts with no successful authentication in 90+ days. In dry-run mode (default), it generates a report for administrative review. With --disable, it calls the Identity Platform accounts:update API to disable flagged accounts. Disabled accounts are automatically removed after 90 additional days via the account purge service. Reports are archived to GCS and accessible via the 3PAO assessment portal.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -2301,7 +2301,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "832af78f-c440-4680-8836-59a85ad76edd",
-                  "description": "Latent Archon maintains a Security Awareness and Training Policy (POL-AT-001) requiring annual security awareness training for all personnel and role-based training for privileged users. The policy is reviewed annually and updated as needed. Training completion is tracked via Drata.",
+                  "description": "Latent Archon maintains a Security Awareness and Training Policy (POL-AT-001) requiring annual security awareness training for all personnel and role-based training for privileged users. The policy is reviewed annually and updated as needed. Training completion is tracked in the compliance repository (`cybersecurity-education-tracker.md`).",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -2457,7 +2457,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "a4094665-cd91-46fa-894a-43e0cc28c754",
-                  "description": "Security training records are maintained in Drata. Records include: trainee name, training date, training type, completion status, and expiration date. Records are retained for the duration of employment plus 3 years.",
+                  "description": "Security training records are maintained in the compliance repository (`cybersecurity-education-tracker.md`). Records include: trainee name, training date, training type, completion status, and expiration date. Records are retained for the duration of employment plus 3 years.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -2832,7 +2832,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "d8e34b9d-5f49-4397-8659-900be1d3f6ed",
-                  "description": "Audit records are reviewed weekly via an automated audit-review tool (cmd/audit-review) that queries BigQuery audit_logs datasets across all projects. The tool checks for: (1) failed authentication spikes (\u003e10/hour); (2) IAM policy changes (SetIamPolicy events); (3) privilege escalation attempts (CreateRole, CreateServiceAccountKey); (4) bulk data deletion events; (5) off-hours administrative access by non-service-accounts; (6) application-layer auth failures. Reports are generated weekly via Cloud Build scheduler and uploaded to Drata. Cloud Monitoring alert policies provide real-time anomaly detection in parallel.",
+                  "description": "Audit records are reviewed weekly via an automated audit-review tool (cmd/audit-review) that queries BigQuery audit_logs datasets across all projects. The tool checks for: (1) failed authentication spikes (\u003e10/hour); (2) IAM policy changes (SetIamPolicy events); (3) privilege escalation attempts (CreateRole, CreateServiceAccountKey); (4) bulk data deletion events; (5) off-hours administrative access by non-service-accounts; (6) application-layer auth failures. Reports are generated weekly via Cloud Build scheduler and archived to GCS. Cloud Monitoring alert policies provide real-time anomaly detection in parallel.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -3683,7 +3683,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "e3f51b9d-6eac-480f-8e0c-0dd6bc704a94",
-                  "description": "Plan of Action and Milestones (POA\u0026M) is maintained and tracked via Drata. An automated POA\u0026M report generator (cmd/poam-report) runs daily via Cloud Build, parsing SARIF scan results from GoSec, Semgrep, Trivy, govulncheck, and Gitleaks. Findings are deduplicated by fingerprint (tool + rule + location), tracked with severity-based remediation deadlines (CRITICAL: 15 days, HIGH: 30 days, MEDIUM: 90 days, LOW: 180 days), and automatically closed when resolved. Reports are uploaded to Drata as evidence artifacts.",
+                  "description": "Plan of Action and Milestones (POA\u0026M) is maintained in the SSP (Appendix I) and tracked via automated tooling. An automated POA\u0026M report generator (cmd/poam-report) runs daily via Cloud Build, parsing SARIF scan results from GoSec, Semgrep, Trivy, govulncheck, and Gitleaks. Findings are deduplicated by fingerprint (tool + rule + location), tracked with severity-based remediation deadlines (CRITICAL: 15 days, HIGH: 30 days, MEDIUM: 90 days, LOW: 180 days), and automatically closed when resolved. Reports are archived to GCS and accessible via the 3PAO assessment portal.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -5220,7 +5220,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "de841365-ec02-4b9b-81d7-f1b8368856cf",
-                  "description": "Contingency plan testing is conducted monthly via automated Cloud Build exercises (`cloudbuild-monthly.yaml`). Tests include: (1) Cloud SQL backup restoration; (2) Cloud Run service redeploy from Artifact Registry; (3) GCS object recovery from versions; (4) Terragrunt plan validation for disaster recovery. Results uploaded to Drata.",
+                  "description": "Contingency plan testing is conducted monthly via automated Cloud Build exercises (`cloudbuild-monthly.yaml`). Tests include: (1) Cloud SQL backup restoration; (2) Cloud Run service redeploy from Artifact Registry; (3) GCS object recovery from versions; (4) Terragrunt plan validation for disaster recovery. Results archived to GCS and accessible via the 3PAO assessment portal.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -5259,7 +5259,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "0cf87139-8459-4e02-8ce0-2f3bb469904a",
-                  "description": "Contingency plan testing coordination: monthly automated CP-4 exercises run via Cloud Build cron. Tests coordinate recovery of Cloud SQL, Cloud Storage, and Cloud Run services. Results uploaded to Drata as evidence.",
+                  "description": "Contingency plan testing coordination: monthly automated CP-4 exercises run via Cloud Build cron. Tests coordinate recovery of Cloud SQL, Cloud Storage, and Cloud Run services. Results archived to GCS evidence bucket.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -5946,7 +5946,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "7dab08a3-b11c-4a36-8b55-0b0589ba4550",
-                  "description": "Testing backups: monthly CP-4 exercises include backup restoration verification: (1) Cloud SQL backup restored to test instance; (2) Cloud Storage objects verified for integrity; (3) results documented and uploaded to Drata.",
+                  "description": "Testing backups: monthly CP-4 exercises include backup restoration verification: (1) Cloud SQL backup restored to test instance; (2) Cloud Storage objects verified for integrity; (3) results documented and archived to GCS.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -7524,7 +7524,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "a02c34cd-5bd2-4685-82fb-17ee122b39b8",
-                  "description": "Incident response exercises are conducted monthly via automated Cloud Build exercises (`cloudbuild-monthly.yaml`). Exercises include tabletop scenarios and simulated incident handling. Exercise results are documented and uploaded to Drata.",
+                  "description": "Incident response exercises are conducted monthly via automated Cloud Build exercises (`cloudbuild-monthly.yaml`). Exercises include tabletop scenarios and simulated incident handling. Exercise results are documented and archived to GCS.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -9864,7 +9864,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "7862687b-a770-4ec5-885f-d4f6e05f197a",
-                  "description": "Security and privacy resources are allocated through: (1) dedicated compliance infrastructure (compliance repo, automated tools); (2) engineering time for security controls; (3) third-party security assessment budget; (4) security tooling budget (Drata, scanning tools).",
+                  "description": "Security and privacy resources are allocated through: (1) dedicated compliance infrastructure (compliance repo, automated tools); (2) engineering time for security controls; (3) third-party security assessment budget; (4) security tooling budget (scanning tools, compliance automation).",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -9903,7 +9903,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "53f6ccbb-eea9-403a-84e4-3ed9da862f5e",
-                  "description": "POA\u0026M is maintained in Drata and updated continuously as vulnerabilities are discovered, assessed, and remediated. POA\u0026M items include milestones and completion dates.",
+                  "description": "POA\u0026M is maintained in the SSP (Appendix I) and updated continuously as vulnerabilities are discovered, assessed, and remediated. POA\u0026M items include milestones and completion dates. The 3PAO assessment portal provides real-time POA\u0026M visibility.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -12438,7 +12438,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "879d4dde-bf03-4f74-8e28-4cf0eb4602b0",
-                  "description": "External system services: (1) GCP — FedRAMP High authorized, IL5 available; (2) Cloudflare — FedRAMP Moderate authorized; (3) GitHub — used for source control and CI/CD, no CUI stored; (4) Drata — used for compliance tracking, no CUI stored. All external services evaluated for security posture before adoption.",
+                  "description": "External system services: (1) GCP — FedRAMP High authorized, IL5 available; (2) Cloudflare — FedRAMP Moderate authorized; (3) GitHub — used for source control and CI/CD, no CUI stored; All external services evaluated for security posture before adoption.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -14572,7 +14572,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "1552c52e-e70c-4b09-884b-1af541a5b3e8",
-                  "description": "Flaw remediation: (1) critical vulnerabilities patched within 24 hours; (2) high within 7 days; (3) medium within 30 days; (4) low within 90 days. Vulnerability scanning runs daily via Cloud Build. Patch status tracked in POA\u0026M via Drata.",
+                  "description": "Flaw remediation: (1) critical vulnerabilities patched within 24 hours; (2) high within 7 days; (3) medium within 30 days; (4) low within 90 days. Vulnerability scanning runs daily via Cloud Build. Patch status tracked in POA\u0026M.",
                   "implementation-status": {
                     "state": "implemented"
                   }
@@ -14611,7 +14611,7 @@
                 {
                   "component-uuid": "d4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80",
                   "uuid": "3ce67462-bf6e-4cd7-81df-012597f9a152",
-                  "description": "Automated flaw remediation status monitoring: (1) daily vulnerability scans (GoSec, Semgrep, Trivy, govulncheck) report results to Cloud Build; (2) scan results uploaded to Drata as evidence; (3) Cloud Monitoring alerts on new critical/high findings.",
+                  "description": "Automated flaw remediation status monitoring: (1) daily vulnerability scans (GoSec, Semgrep, Trivy, govulncheck) report results to Cloud Build; (2) scan results archived to GCS evidence bucket; (3) Cloud Monitoring alerts on new critical/high findings.",
                   "implementation-status": {
                     "state": "implemented"
                   }

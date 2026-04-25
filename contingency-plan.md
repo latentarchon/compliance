@@ -57,7 +57,7 @@ All infrastructure is managed via Terraform/Terragrunt, enabling reproducible de
 | **Tier 1 — Critical** | Database (PostgreSQL), Document Storage, Authentication | < 5 min | < 1 hr | Customer data and authentication — any loss is unacceptable |
 | **Tier 2 — Essential** | Container APIs (app, admin, ops), Load Balancers, Cloudflare Edge WAF, Cloud Armor Origin WAF | 0 (stateless) | < 4 hr | Stateless services rebuilt from container images + Terraform; Cloudflare edge config restored via Terragrunt |
 | **Tier 3 — Supporting** | AI services (Vector Search + LLM), Document extraction, Task queue, Ops Service | < 24 hr | < 8 hr | AI/search features; system usable without them (degraded mode) |
-| **Tier 4 — Non-Critical** | CI/CD pipelines, Monitoring dashboards, Drata sync | N/A | < 24 hr | Operational tooling; does not affect customer service |
+| **Tier 4 — Non-Critical** | CI/CD pipelines, Monitoring dashboards | N/A | < 24 hr | Operational tooling; does not affect customer service |
 
 ---
 

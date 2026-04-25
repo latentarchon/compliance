@@ -99,7 +99,7 @@ A person has "access to CJI" if they can:
 
 | Item | Location | Retention |
 |------|----------|-----------|
-| Signed addendum (scan/PDF) | `compliance/cjis/signed-addenda/` (encrypted) or Drata evidence library | Duration of employment + 3 years |
+| Signed addendum (scan/PDF) | `compliance/cjis/signed-addenda/` (encrypted) or GCS evidence bucket | Duration of employment + 3 years |
 | Personnel tracker | `compliance/cjis/personnel-tracker.md` | Active maintenance |
 | State-specific blank forms | `compliance/cjis/forms/` | Current version maintained |
 

@@ -2,7 +2,7 @@
 #
 # Triggered by: Cloud Scheduler (weekly, Monday at 8:00 AM UTC)
 # Queries BigQuery audit_logs datasets for anomalies across all projects.
-# Uploads report to GCS and Drata.
+# Archives report to GCS for 3PAO assessment portal.
 
 substitutions:
   _GO_VERSION: '1.25'
@@ -26,32 +26,6 @@ steps:
           --output-dir /workspace/reports \
           --warn-only
 
-  - id: drata-build
-    name: golang:${_GO_VERSION}
-    dir: drata
-    entrypoint: go
-    args: ['build', '-o', '/workspace/drata-sync', './cmd/drata-sync/']
-
-  - id: drata-upload
-    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    entrypoint: bash
-    secretEnv: ['DRATA_API_KEY', 'DRATA_WORKSPACE_ID', 'DRATA_OWNER_ID']
-    args:
-      - -c
-      - |
-        DATE=$(date +%Y-%m-%d)
-        REPORT=$(ls /workspace/reports/audit-review-*.md 2>/dev/null | head -1)
-        if [ -n "$${REPORT}" ]; then
-          /workspace/drata-sync \
-            --owner-id "$$DRATA_OWNER_ID" \
-            --artifact-name "Audit Log Review — $${DATE}" \
-            --artifact-desc "Weekly audit log anomaly review for AU-6" \
-            --artifact-file "$${REPORT}" \
-            --artifact-controls "DCF-AU-6,DCF-AU-6(1)" \
-            ci-artifact || true
-        fi
-    waitFor: ['audit-review', 'drata-build']
-
   - id: archive
     name: gcr.io/cloud-builders/gsutil
     entrypoint: bash
@@ -61,14 +35,5 @@ steps:
         DATE=$(date +%Y-%m-%d)
         gsutil cp /workspace/reports/audit-review-*.* gs://${PROJECT_ID}-build-artifacts/audit-review/$${DATE}/ || true
     waitFor: ['audit-review']
-
-availableSecrets:
-  secretManager:
-    - versionName: projects/${PROJECT_ID}/secrets/drata-api-key/versions/latest
-      env: DRATA_API_KEY
-    - versionName: projects/${PROJECT_ID}/secrets/drata-workspace-id/versions/latest
-      env: DRATA_WORKSPACE_ID
-    - versionName: projects/${PROJECT_ID}/secrets/drata-owner-id/versions/latest
-      env: DRATA_OWNER_ID
 
 timeout: 600s

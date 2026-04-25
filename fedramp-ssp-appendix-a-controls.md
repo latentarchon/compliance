@@ -97,7 +97,7 @@ All Assured Workloads configurations are defined in Terraform (`infra/gcp/module
 
 **(i)** Authorization to access the system requires: (1) valid Firebase Auth JWT, (2) MFA verification, (3) tenant membership, (4) appropriate RBAC role, and (5) workspace membership for data access.
 
-**(j)** All accounts are reviewed by the org `master_admin` through the admin dashboard. Latent Archon recommends quarterly access reviews. Compliance with review schedules is tracked via Drata.
+**(j)** All accounts are reviewed by the org `master_admin` through the admin dashboard. Latent Archon recommends quarterly access reviews. Compliance with review schedules is tracked in the compliance repository.
 
 **(k)** When personnel are transferred within a tenant, tenant admins update role assignments via the admin API. SCIM-enabled tenants handle transfers automatically through IdP group-to-role mapping.
 
@@ -352,7 +352,7 @@ For corporate Google Cloud access, Google Workspace enforces 24-hour RAPT (Reaut
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: All Latent Archon personnel complete security awareness training upon onboarding and annually thereafter. Training covers: phishing recognition, password/credential hygiene, incident reporting procedures, data handling requirements, social engineering, and CUI handling. Training completion is tracked in Drata. Customer agencies are responsible for end-user security awareness training.
+**Implementation**: All Latent Archon personnel complete security awareness training upon onboarding and annually thereafter. Training covers: phishing recognition, password/credential hygiene, incident reporting procedures, data handling requirements, social engineering, and CUI handling. Training completion is tracked in the compliance repository (`cybersecurity-education-tracker.md`). Customer agencies are responsible for end-user security awareness training.
 
 ### AT-2(2): Insider Threat
 
@@ -373,7 +373,7 @@ For corporate Google Cloud access, Google Workspace enforces 24-hour RAPT (Reaut
 - **Responsibility**: CSP + Customer
 - **Status**: Implemented
 
-**Implementation**: Latent Archon maintains training records in Drata including: personnel name, training course, completion date, and next due date. Records are retained for the duration of employment plus one year. Customer agencies are responsible for maintaining their own user training records.
+**Implementation**: Latent Archon maintains training records in the compliance repository (`cybersecurity-education-tracker.md`) including: personnel name, training course, completion date, and next due date. Records are retained for the duration of employment plus one year. Customer agencies are responsible for maintaining their own user training records.
 
 ---
 
@@ -449,7 +449,7 @@ The event types are reviewed annually and updated as new features are added.
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: Audit review is automated through: Cloud Monitoring alert policies that trigger on specific event patterns, real-time email notifications to tenant admins, and the Pub/Sub SIEM export pipeline for automated ingestion by agency security tools. The Drata integration provides continuous compliance monitoring against control requirements.
+**Implementation**: Audit review is automated through: Cloud Monitoring alert policies that trigger on specific event patterns, real-time email notifications to tenant admins, and the Pub/Sub SIEM export pipeline for automated ingestion by agency security tools. The 3PAO assessment portal provides continuous compliance monitoring against control requirements via automated OSCAL SSP generation.
 
 ### AU-7: Audit Record Reduction and Report Generation
 
@@ -540,7 +540,7 @@ External interconnections (customer IdP SAML/SCIM, Microsoft Graph, Cloudflare D
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: POA&M items are tracked in Appendix I of this SSP and in Drata. Each finding includes: unique ID, description, risk level, remediation milestone, target date, and current status. POA&M is reviewed and updated monthly.
+**Implementation**: POA&M items are tracked in Appendix I of this SSP. Each finding includes: unique ID, description, risk level, remediation milestone, target date, and current status. POA&M is reviewed and updated monthly.
 
 ### CA-6: Authorization
 
@@ -554,14 +554,14 @@ External interconnections (customer IdP SAML/SCIM, Microsoft Graph, Cloudflare D
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: Continuous monitoring is implemented through: Cloud Monitoring dashboards for infrastructure metrics, Cloud Armor analytics for WAF/DDoS events, Cloud Logging for all application and infrastructure logs, Drata automated compliance monitoring (continuous), automated vulnerability scanning (continuous via Dependabot, weekly via Trivy/GoSec/Semgrep), red team attack suite execution (monthly), access reviews (quarterly), automated KSI (Key Security Indicator) evidence collection via Go CLI (`cmd/ksi-evidence`) running weekly in CI — queries GCP APIs for firewall rules, Cloud Run services, Cloud Armor policies, KMS key rotation, log sinks, container images, SQL backup configuration, and GCS versioning — and produces structured JSON evidence files, and OSCAL v1.1.3 SSP JSON generation and validation via CI (`cmd/generate-ssp/` Go CLI + `oscal-cli`). See Appendix G for the full Continuous Monitoring Plan.
+**Implementation**: Continuous monitoring is implemented through: Cloud Monitoring dashboards for infrastructure metrics, Cloud Armor analytics for WAF/DDoS events, Cloud Logging for all application and infrastructure logs, OSCAL-based compliance monitoring via the 3PAO assessment portal (continuous), automated vulnerability scanning (continuous via Dependabot, weekly via Trivy/GoSec/Semgrep), red team attack suite execution (monthly), access reviews (quarterly), automated KSI (Key Security Indicator) evidence collection via Go CLI (`cmd/ksi-evidence`) running weekly in CI — queries GCP APIs for firewall rules, Cloud Run services, Cloud Armor policies, KMS key rotation, log sinks, container images, SQL backup configuration, and GCS versioning — and produces structured JSON evidence files, and OSCAL v1.1.3 SSP JSON generation and validation via CI (`cmd/generate-ssp/` Go CLI + `oscal-cli`). See Appendix G for the full Continuous Monitoring Plan.
 
 ### CA-8: Penetration Testing
 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Latent Archon maintains an internal red team program (`redteam/` repository) with 99 automated attacks across 6 suites, mapped to MITRE ATT&CK tactics. The red team CLI is executed monthly against staging and can target production. Attacks cover: authentication bypass, privilege escalation, data exfiltration, left-field/cloud-native attacks, OWASP Top 10 web application testing (SQLi, XSS, XXE, SSRF, file handling, business logic), and external tool-based assessment (nuclei, nikto, sqlmap, ffuf, nmap). Results are uploaded to Drata as evidence.
+**Implementation**: Latent Archon maintains an internal red team program (`redteam/` repository) with 99 automated attacks across 6 suites, mapped to MITRE ATT&CK tactics. The red team CLI is executed monthly against staging and can target production. Attacks cover: authentication bypass, privilege escalation, data exfiltration, left-field/cloud-native attacks, OWASP Top 10 web application testing (SQLi, XSS, XXE, SSRF, file handling, business logic), and external tool-based assessment (nuclei, nikto, sqlmap, ffuf, nmap). Results are archived to GCS evidence bucket and accessible via the 3PAO assessment portal.
 
 ### CA-9: Internal System Connections
 
@@ -649,14 +649,14 @@ External interconnections (customer IdP SAML/SCIM, Microsoft Graph, Cloudflare D
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: System component inventory is maintained through: (1) Terraform state files listing all GCP resources (Cloud Run services, Cloud SQL instances, GCS buckets, etc.); (2) SBOM generation on every Docker build (CycloneDX + SPDX format) capturing all Go dependencies and their versions; (3) `go.mod` + `go.sum` pinning all direct and transitive dependencies; (4) Drata asset registry with 30 assets (20 virtual GCP infrastructure, 6 software, 4 data). Inventory is auto-updated on each CI/CD build.
+**Implementation**: System component inventory is maintained through: (1) Terraform state files listing all GCP resources (Cloud Run services, Cloud SQL instances, GCS buckets, etc.); (2) SBOM generation on every Docker build (CycloneDX + SPDX format) capturing all Go dependencies and their versions; (3) `go.mod` + `go.sum` pinning all direct and transitive dependencies; (4) Automated OSCAL SSP generation from live IaC facts. Inventory is auto-updated on each CI/CD build.
 
 ### CM-8(1): Updates During Installation and Removal
 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Component inventory is automatically updated: (1) Terraform state is updated on every `terragrunt apply`; (2) SBOM is regenerated on every Docker image build; (3) Drata asset sync runs weekly; (4) Dependabot automatically detects new/changed dependencies and creates update PRs.
+**Implementation**: Component inventory is automatically updated: (1) Terraform state is updated on every `terragrunt apply`; (2) SBOM is regenerated on every Docker image build; (3) OSCAL SSP regenerated on every push to main; (4) Dependabot automatically detects new/changed dependencies and creates update PRs.
 
 ### CM-9: Configuration Management Plan
 
@@ -702,7 +702,7 @@ External interconnections (customer IdP SAML/SCIM, Microsoft Graph, Cloudflare D
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Operations personnel receive contingency plan training upon assignment and annually thereafter. Training covers: incident classification, recovery procedures for each failure scenario (database, Cloud Run, GCS, Vector Search, regional), communication protocols, and escalation paths. Training is tracked in Drata.
+**Implementation**: Operations personnel receive contingency plan training upon assignment and annually thereafter. Training covers: incident classification, recovery procedures for each failure scenario (database, Cloud Run, GCS, Vector Search, regional), communication protocols, and escalation paths. Training is tracked in the compliance repository (`cybersecurity-education-tracker.md`).
 
 ### CP-4: Contingency Plan Testing
 
@@ -900,7 +900,7 @@ Password complexity and rotation policies are enforced by Identity Platform for 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: All Latent Archon personnel receive incident response training upon onboarding and annually thereafter. Operations personnel receive additional hands-on training covering: incident detection tools (Cloud Armor analytics, Cloud Logging queries), containment procedures (Identity Platform session revocation, Cloud Armor emergency rules), and communication protocols. Training is tracked in Drata.
+**Implementation**: All Latent Archon personnel receive incident response training upon onboarding and annually thereafter. Operations personnel receive additional hands-on training covering: incident detection tools (Cloud Armor analytics, Cloud Logging queries), containment procedures (Identity Platform session revocation, Cloud Armor emergency rules), and communication protocols. Training is tracked in the compliance repository (`cybersecurity-education-tracker.md`).
 
 ### IR-3: Incident Response Testing
 
@@ -1115,7 +1115,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The Latent Archon information security program is governed by the Information Security Policy (POL-IS-001). The program plan encompasses: (1) security governance structure with defined roles (CEO as executive sponsor and ISSO); (2) hierarchy of 13 subordinate security policies; (3) compliance framework alignment (NIST 800-53 High, FedRAMP High, DoD IL5, DFARS 252.204-7012); (4) risk management integration; (5) continuous improvement through Drata automated monitoring.
+**Implementation**: The Latent Archon information security program is governed by the Information Security Policy (POL-IS-001). The program plan encompasses: (1) security governance structure with defined roles (CEO as executive sponsor and ISSO); (2) hierarchy of 13 subordinate security policies; (3) compliance framework alignment (NIST 800-53 High, FedRAMP High, DoD IL5, DFARS 252.204-7012); (4) risk management integration; (5) continuous improvement through automated OSCAL-based compliance monitoring.
 
 ### PM-2: Information Security Program Leadership Role
 
@@ -1129,21 +1129,21 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Security resources are allocated through: (1) Dedicated security budget for tools (Drata, scanning tools, Cloud Armor), 3PAO engagement, and training; (2) Engineering time allocation for security controls implementation (estimated 30% of engineering capacity); (3) Automated compliance tooling (Drata sync, CI/CD security pipeline) to reduce manual compliance burden.
+**Implementation**: Security resources are allocated through: (1) Dedicated security budget for tools (scanning tools, Cloud Armor, compliance automation), 3PAO engagement, and training; (2) Engineering time allocation for security controls implementation (estimated 30% of engineering capacity); (3) Automated compliance tooling (OSCAL SSP generation, 3PAO assessment portal, CI/CD security pipeline) to reduce manual compliance burden.
 
 ### PM-4: Plan of Action and Milestones Process
 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: POA&M items are tracked in Appendix I of this SSP and synchronized to Drata. The POA&M process includes: (1) Identification of findings from assessments, scans, and red team exercises; (2) Risk-based prioritization using 5×5 likelihood/impact matrix; (3) Assignment of remediation owner and target date; (4) Monthly review and status update; (5) Closure verification with evidence.
+**Implementation**: POA&M items are tracked in Appendix I of this SSP and tracked in the compliance repository. The POA&M process includes: (1) Identification of findings from assessments, scans, and red team exercises; (2) Risk-based prioritization using 5×5 likelihood/impact matrix; (3) Assignment of remediation owner and target date; (4) Monthly review and status update; (5) Closure verification with evidence.
 
 ### PM-5: System Inventory
 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The system inventory is maintained through: (1) Terraform state files (authoritative infrastructure inventory); (2) Drata asset registry (30 registered assets); (3) SBOM generation on each build (software dependency inventory). The inventory is updated automatically via CI/CD and weekly Drata sync.
+**Implementation**: The system inventory is maintained through: (1) Terraform state files (authoritative infrastructure inventory); (2) automated OSCAL SSP generation from live IaC; (3) SBOM generation on each build (software dependency inventory). The inventory is updated automatically via CI/CD and OSCAL SSP regeneration on push.
 
 ### PM-6: Measures of Performance
 
@@ -1171,7 +1171,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The Risk Management Policy (POL-RM-001, `policies/risk-management.md`) defines: risk assessment methodology (5×5 likelihood/impact matrix), inherent vs. residual scoring, treatment options (mitigate, transfer, accept, avoid), risk appetite statement, formal 12-entry risk register, and monitoring cadence. Risks are synced to Drata with inherent and residual scores.
+**Implementation**: The Risk Management Policy (POL-RM-001, `policies/risk-management.md`) defines: risk assessment methodology (5×5 likelihood/impact matrix), inherent vs. residual scoring, treatment options (mitigate, transfer, accept, avoid), risk appetite statement, formal 12-entry risk register, and monitoring cadence. Risks are documented with inherent and residual scores.
 
 ### PM-10: Authorization Process
 
@@ -1192,7 +1192,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The security testing, training, and monitoring program includes: (1) **Testing**: Red team program (monthly), SAST pipeline (continuous), vulnerability scanning (weekly), penetration testing (annual); (2) **Training**: Security awareness (annual), secure development (onboarding + annual), incident response (annual); (3) **Monitoring**: Cloud Monitoring (continuous), Cloud Armor analytics (continuous), Drata compliance monitoring (continuous), audit log analysis (continuous).
+**Implementation**: The security testing, training, and monitoring program includes: (1) **Testing**: Red team program (monthly), SAST pipeline (continuous), vulnerability scanning (weekly), penetration testing (annual); (2) **Training**: Security awareness (annual), secure development (onboarding + annual), incident response (annual); (3) **Monitoring**: Cloud Monitoring (continuous), Cloud Armor analytics (continuous), OSCAL-based compliance monitoring via the 3PAO assessment portal (continuous), audit log analysis (continuous).
 
 ### PM-15: Security and Privacy Groups and Associations
 
@@ -1353,7 +1353,7 @@ Supplementary controls for Latent Archon remote personnel are documented in the 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Formal risk assessments are conducted: (1) **Annually**: Comprehensive review of 12-entry risk register with inherent/residual scoring (5×5 likelihood × impact matrix); (2) **On significant change**: Architecture changes, new features, or new integrations trigger targeted risk assessment; (3) **Continuously**: Drata automated risk monitoring and vulnerability scanning provide real-time risk visibility. Risk register is maintained in Drata and synced via the compliance CLI tool.
+**Implementation**: Formal risk assessments are conducted: (1) **Annually**: Comprehensive review of 12-entry risk register with inherent/residual scoring (5×5 likelihood × impact matrix); (2) **On significant change**: Architecture changes, new features, or new integrations trigger targeted risk assessment; (3) **Continuously**: Automated vulnerability scanning and OSCAL-based compliance monitoring provide real-time risk visibility. Risk register is maintained in the compliance repository (`policies/risk-management.md`).
 
 ### RA-3(1): Supply Chain Risk Assessment
 
@@ -1497,7 +1497,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Static code analysis is performed on every build via: GoSec (Go-specific security scanner), Semgrep (multi-language pattern matching), and govulncheck (Go vulnerability database). Analysis failures block PR merge. Results are tracked in CI/CD logs and uploaded to Drata as evidence.
+**Implementation**: Static code analysis is performed on every build via: GoSec (Go-specific security scanner), Semgrep (multi-language pattern matching), and govulncheck (Go vulnerability database). Analysis failures block PR merge. Results are tracked in CI/CD logs and archived to GCS evidence bucket.
 
 ---
 
@@ -1707,14 +1707,14 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Flaw remediation follows defined SLAs: Critical CVSSv3 — 15 days, High — 30 days, Medium — 90 days, Low — 180 days. Remediation sources include: Dependabot PRs (automatic), govulncheck findings, Trivy scan results, GoSec findings, red team discoveries, and customer/3PAO reports. Remediation is tracked in POA&M and Drata. Emergency patches for actively exploited vulnerabilities follow the expedited change process (deploy within 24 hours, post-hoc review).
+**Implementation**: Flaw remediation follows defined SLAs: Critical CVSSv3 — 15 days, High — 30 days, Medium — 90 days, Low — 180 days. Remediation sources include: Dependabot PRs (automatic), govulncheck findings, Trivy scan results, GoSec findings, red team discoveries, and customer/3PAO reports. Remediation is tracked in POA&M (Appendix I). Emergency patches for actively exploited vulnerabilities follow the expedited change process (deploy within 24 hours, post-hoc review).
 
 ### SI-2(2): Automated Flaw Remediation Status
 
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Flaw remediation status is tracked through: (1) Dependabot automatically creates PRs for dependency vulnerabilities; (2) CI/CD pipeline fails on new Critical/High findings; (3) Drata provides continuous compliance monitoring dashboard; (4) POA&M items are reviewed monthly.
+**Implementation**: Flaw remediation status is tracked through: (1) Dependabot automatically creates PRs for dependency vulnerabilities; (2) CI/CD pipeline fails on new Critical/High findings; (3) 3PAO assessment portal provides continuous compliance monitoring; (4) POA&M items are reviewed monthly.
 
 ### SI-3: Malicious Code Protection
 
@@ -1878,7 +1878,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Supplier reviews follow the Vendor Risk Policy tiered schedule: (1) Critical vendors (GCP): Quarterly review of FedRAMP authorization status, SLA compliance, security bulletins; (2) High vendors (GitHub): Semi-annual review; (3) Medium/Low vendors: Annual review. Reviews include: authorization status verification, incident history check, and SLA performance review. Results tracked in Drata vendor registry.
+**Implementation**: Supplier reviews follow the Vendor Risk Policy tiered schedule: (1) Critical vendors (GCP): Quarterly review of FedRAMP authorization status, SLA compliance, security bulletins; (2) High vendors (GitHub): Semi-annual review; (3) Medium/Low vendors: Annual review. Reviews include: authorization status verification, incident history check, and SLA performance review. Results tracked in the supply chain risk management plan.
 
 ### SR-8: Notification Agreements
 
@@ -1988,7 +1988,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: Shared
 - **Status**: Implemented
 
-**Implementation**: Organization administrators review user privileges via the admin dashboard, which displays all org members with their current RBAC roles and workspace memberships. Latent Archon recommends quarterly privilege reviews aligned with agency access review cycles. For SCIM-enabled organizations, privilege review is partially automated — role assignments are continuously synchronized with the customer IdP, and deprovisioning occurs automatically when users are removed from IdP groups. Drata integration (`compliance/drata/`) tracks access review compliance as part of continuous monitoring. All role assignments and changes are recorded in the audit log, providing a complete privilege history for review.
+**Implementation**: Organization administrators review user privileges via the admin dashboard, which displays all org members with their current RBAC roles and workspace memberships. Latent Archon recommends quarterly privilege reviews aligned with agency access review cycles. For SCIM-enabled organizations, privilege review is partially automated — role assignments are continuously synchronized with the customer IdP, and deprovisioning occurs automatically when users are removed from IdP groups. Automated access review (`cmd/access-review/`) tracks access review compliance as part of continuous monitoring. All role assignments and changes are recorded in the audit log, providing a complete privilege history for review.
 
 **Customer Responsibility**: Customers are responsible for conducting periodic access reviews and ensuring IdP group memberships remain current.
 
@@ -2069,7 +2069,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Latent Archon conducts monthly automated red team exercises (`redteam/`) comprising 99 attacks across 6 suites: authentication bypass, privilege escalation, data exfiltration, leftfield (novel attack vectors), web application, and manual tool-based testing. Attacks are mapped to the MITRE ATT&CK framework. The red team deployment guide (`compliance/red-team-deployment-guide.md`) documents test methodology and execution procedures. OWASP testing tools (`owasp/`) provide additional web application security validation using Playwright-based scanning. Test results and findings are uploaded to Drata (`compliance/drata/`) as evidence artifacts. Remediation of findings follows the Configuration Management Policy (POL-CM-001) with severity-based SLAs. Annual 3PAO penetration testing is conducted as part of the FedRAMP assessment process.
+**Implementation**: Latent Archon conducts monthly automated red team exercises (`redteam/`) comprising 99 attacks across 6 suites: authentication bypass, privilege escalation, data exfiltration, leftfield (novel attack vectors), web application, and manual tool-based testing. Attacks are mapped to the MITRE ATT&CK framework. The red team deployment guide (`compliance/red-team-deployment-guide.md`) documents test methodology and execution procedures. OWASP testing tools (`owasp/`) provide additional web application security validation using Playwright-based scanning. Test results and findings are archived to GCS evidence bucket. Remediation of findings follows the Configuration Management Policy (POL-CM-001) with severity-based SLAs. Annual 3PAO penetration testing is conducted as part of the FedRAMP assessment process.
 
 ### CA-8(1): Independent Penetration Agent
 
@@ -2108,7 +2108,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: System component inventory includes accountability information mapping components to responsible individuals and teams: (1) **Terraform state** — serves as the authoritative infrastructure inventory, with each resource traceable to its defining module (`infra/gcp/modules/` — 14+ modules) and the engineer who last modified it via Git blame, (2) **Cloud Run service mapping** — each of the three services (`archon-app`, `archon-admin`, `archon-ops`) is mapped to its responsible team and service account in the Terraform configuration, (3) **Software component inventory** — daily SBOM generation (`cloudbuild-sbom.yaml`) produces CycloneDX and SPDX bills of materials cataloging all software dependencies with version, license, and supplier information, (4) **Drata asset inventory** — 30 tracked assets with assigned owners, classification, and compliance status synced weekly (`compliance/drata/`). The separation of duties matrix (`compliance/separation-of-duties-matrix.md`) documents accountability boundaries across roles.
+**Implementation**: System component inventory includes accountability information mapping components to responsible individuals and teams: (1) **Terraform state** — serves as the authoritative infrastructure inventory, with each resource traceable to its defining module (`infra/gcp/modules/` — 14+ modules) and the engineer who last modified it via Git blame, (2) **Cloud Run service mapping** — each of the three services (`archon-app`, `archon-admin`, `archon-ops`) is mapped to its responsible team and service account in the Terraform configuration, (3) **Software component inventory** — daily SBOM generation (`cloudbuild-sbom.yaml`) produces CycloneDX and SPDX bills of materials cataloging all software dependencies with version, license, and supplier information, (4) **OSCAL SSP inventory** — automated asset inventory generated from live IaC facts via `cmd/generate-ssp/`. The separation of duties matrix (`compliance/separation-of-duties-matrix.md`) documents accountability boundaries across roles.
 
 ---
 
@@ -2423,7 +2423,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: The System Security Plan is coordinated across organizational boundaries. Customer agencies receive the shared responsibility model and customer secure configuration guide (`compliance/customer-secure-configuration-guide.md`). Inherited controls are mapped to GCP's FedRAMP High P-ATO. Internal coordination follows the separation of duties matrix (`compliance/separation-of-duties-matrix.md`) defining roles for CEO, CTO, and ISSO. The ISSO (`compliance/isso-appointment-letter.md`) participates in change management review. Security planning artifacts are maintained in Drata with weekly sync and shared with relevant stakeholders.
+**Implementation**: The System Security Plan is coordinated across organizational boundaries. Customer agencies receive the shared responsibility model and customer secure configuration guide (`compliance/customer-secure-configuration-guide.md`). Inherited controls are mapped to GCP's FedRAMP High P-ATO. Internal coordination follows the separation of duties matrix (`compliance/separation-of-duties-matrix.md`) defining roles for CEO, CTO, and ISSO. The ISSO (`compliance/isso-appointment-letter.md`) participates in change management review. Security planning artifacts are maintained in the compliance repository and accessible via the 3PAO assessment portal.
 
 ---
 
@@ -2491,7 +2491,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Systematic threat modeling and vulnerability analysis is performed through multiple complementary methods. The red team program executes 99 attack scenarios across 6 suites with MITRE ATT&CK technique mapping, run monthly. OWASP Top 10 coverage is included in the webapp attack suite. Architecture-level threat analysis is documented in the security whitepaper (`compliance/security-whitepaper.md`, 770+ lines). Attack surface analysis is performed in each red team report. GoSec and Semgrep run daily in CI for automated static vulnerability analysis. Results are uploaded to Drata evidence library for continuous monitoring.
+**Implementation**: Systematic threat modeling and vulnerability analysis is performed through multiple complementary methods. The red team program executes 99 attack scenarios across 6 suites with MITRE ATT&CK technique mapping, run monthly. OWASP Top 10 coverage is included in the webapp attack suite. Architecture-level threat analysis is documented in the security whitepaper (`compliance/security-whitepaper.md`, 770+ lines). Attack surface analysis is performed in each red team report. GoSec and Semgrep run daily in CI for automated static vulnerability analysis. Results are archived to GCS evidence bucket for continuous monitoring via the 3PAO assessment portal.
 
 ### SA-17: Developer Security and Privacy Architecture and Design
 
@@ -2596,7 +2596,7 @@ Cloud Run serverless deployment means OS-level patching is inherited from GCP.
 - **Responsibility**: CSP
 - **Status**: Implemented
 
-**Implementation**: Security function verification results are systematically reported to designated stakeholders. Red team reports (99 attack scenarios, 6 suites) are uploaded to the Drata evidence library monthly. CP-4 contingency test reports (`compliance/contingency-test/`) are uploaded to Drata monthly. Trivy scan results and SBOMs (CycloneDX + SPDX) are stored in CI/CD logs and Drata evidence. IaC drift detection results are posted as PR comments via `compliance/check-ssp-iac-drift/`. OSCAL SSP validation results (`compliance/oscal/`) are tracked in CI. Continuous monitoring status is reported via the Drata dashboard with weekly evidence sync across 13 evidence documents.
+**Implementation**: Security function verification results are systematically reported to designated stakeholders. Red team reports (99 attack scenarios, 6 suites) are archived to GCS evidence bucket monthly. CP-4 contingency test reports (`compliance/contingency-test/`) are archived to GCS monthly. Trivy scan results and SBOMs (CycloneDX + SPDX) are stored in CI/CD logs and GCS evidence bucket. IaC drift detection results are posted as PR comments via `compliance/check-ssp-iac-drift/`. OSCAL SSP validation results (`compliance/oscal/`) are tracked in CI. Continuous monitoring status is reported via the 3PAO assessment portal with automated evidence collection across 13 evidence documents.
 
 ### SI-7(5): Automated Response to Integrity Violations
 

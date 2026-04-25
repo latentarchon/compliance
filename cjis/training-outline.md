@@ -126,9 +126,9 @@ After completing the training modules, personnel must:
 
 | Record | System | Retention |
 |--------|--------|-----------|
-| Module completion | Drata (evidence library) | Employment + 3 years |
-| Quiz score | Drata (evidence library) | Employment + 3 years |
-| Signed acknowledgment | Drata (personnel compliance) | Employment + 3 years |
+| Module completion | GCS evidence bucket | Employment + 3 years |
+| Quiz score | GCS evidence bucket | Employment + 3 years |
+| Signed acknowledgment | Compliance repository | Employment + 3 years |
 | Trainer/facilitator (if live session) | Internal records | Employment + 3 years |
 
 Records are available for audit by state CSA upon request.

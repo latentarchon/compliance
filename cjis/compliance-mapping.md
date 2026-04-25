@@ -47,7 +47,7 @@ This document maps Latent Archon's security controls to the 13 policy areas of t
 | Security awareness training within 6 months of access to CJI | Onboarding training within 5 business days (exceeds requirement) | `policies/security-awareness-training.md` §4.1 |
 | Training refresher every 2 years (minimum) | Annual refresher (exceeds biennial requirement) | `policies/security-awareness-training.md` §4.3 |
 | Training covers CJIS Security Policy requirements | CJIS-specific training module added to curriculum | `cjis/training-outline.md` |
-| Training records maintained | Tracked in Drata with 3-year retention | `policies/security-awareness-training.md` §7 |
+| Training records maintained | Tracked in compliance repository (`cybersecurity-education-tracker.md`) with 3-year retention | `policies/security-awareness-training.md` §7 |
 | Training includes social engineering awareness | Phishing awareness training semi-annually | `policies/security-awareness-training.md` §3.1 |
 
 ---
@@ -219,7 +219,7 @@ CJIS requires "Advanced Authentication" (MFA) for:
 |-------------|----------------|----------|
 | Triennial audit by FBI CJIS or state CSA | Not yet conducted (pre-authorization) | POA&M item |
 | Internal audit capability | Continuous monitoring plan + monthly red team + quarterly access reviews | `continuous-monitoring-plan.md` |
-| Audit findings tracked | POA&M tracking in SSP and Drata | `fedramp-ssp.md` Appendix I |
+| Audit findings tracked | POA&M tracking in SSP (Appendix I) | `fedramp-ssp.md` Appendix I |
 | Corrective action plans | Remediation items tracked with owners and deadlines | `fedramp-ssp.md` Appendix I |
 
 **Gap**: First formal audit pending — requires engagement with state CSA (triggered by first law enforcement customer). All technical controls and documentation are in place to support the audit.

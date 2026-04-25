@@ -36,7 +36,7 @@ Latent Archon operates an internal red team program with automated attack execut
 - **Frequency**: Monthly automated runs against staging; ad-hoc after security-relevant changes
 - **Infrastructure**: Isolated GCP project (`archon-red-*`) with dedicated service accounts
 - **Reporting**: JSON + Markdown reports with pass/fail per attack, evidence capture, remediation guidance
-- **Integration**: Results synced to Drata as evidence; failures generate POA&M entries automatically
+- **Integration**: Results archived to GCS evidence bucket; failures generate POA&M entries automatically
 
 ## What We Test
 

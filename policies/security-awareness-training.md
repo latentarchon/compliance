@@ -29,11 +29,11 @@ This policy applies to all employees, contractors, and temporary personnel with 
 
 | Training | Audience | Frequency | Delivery | Tracking |
 |----------|----------|-----------|----------|----------|
-| **Security Awareness** | All personnel | Annual + onboarding | Online module | Drata personnel compliance check |
-| **Secure Development** | Engineers | Annual | Workshop / online | Drata + completion certificate |
+| **Security Awareness** | All personnel | Annual + onboarding | Online module | Compliance repository personnel tracker |
+| **Secure Development** | Engineers | Annual | Workshop / online | Completion certificate + compliance repository |
 | **Incident Response** | IR team members | Annual | Tabletop exercise | Exercise attendance record |
 | **Phishing Awareness** | All personnel | Semi-annual | Simulated phishing campaign | Campaign results |
-| **Policy Acknowledgment** | All personnel | Annual + onboarding | Drata policy acceptance | Drata assigned policies |
+| **Policy Acknowledgment** | All personnel | Annual + onboarding | Policy acceptance | Compliance repository |
 
 ### 3.2 Role-Based Training
 
@@ -53,12 +53,12 @@ This policy applies to all employees, contractors, and temporary personnel with 
 
 New personnel must complete:
 
-1. Read and acknowledge all applicable security policies (tracked in Drata)
+1. Read and acknowledge all applicable security policies (tracked in compliance repository)
 2. Complete security awareness training module
 3. Configure MFA on all Latent Archon accounts (Identity Platform TOTP)
 4. Review the Acceptable Use Policy (POL-AU-001)
 5. Review the Incident Response Policy (POL-IR-001) — know how to report
-6. Background check initiation (tracked in Drata)
+6. Background check initiation (tracked in compliance repository)
 
 ### 4.2 Ongoing Awareness Activities
 
@@ -66,9 +66,9 @@ New personnel must complete:
 |----------|-----------|--------|
 | Security tips and advisories | Monthly | Email or Slack |
 | CVE and threat briefings | As needed | Email summary |
-| Policy update notifications | On change | Email + Drata re-acknowledgment |
+| Policy update notifications | On change | Email + re-acknowledgment |
 | Red team results summary (sanitized) | Quarterly | Internal report |
-| Security metrics dashboard | Continuous | Drata compliance dashboard |
+| Security metrics dashboard | Continuous | 3PAO assessment portal |
 
 ### 4.3 Annual Refresher
 
@@ -137,18 +137,18 @@ All training completion is tracked via:
 
 | Record Type | System | Retention |
 |-------------|--------|-----------|
-| Security awareness completion | Drata (personnel compliance check: `SECURITY_TRAINING`) | Employment + 3 years |
-| Policy acknowledgment | Drata (assigned policies) | Employment + 3 years |
-| Secure development training | Drata (evidence library) | Employment + 3 years |
-| Tabletop exercise attendance | Drata (evidence library) | 3 years |
-| Phishing simulation results | Training platform / Drata | 3 years |
-| Background check completion | Drata (background checks) | Employment + 7 years |
+| Security awareness completion | Compliance repository (`cybersecurity-education-tracker.md`) | Employment + 3 years |
+| Policy acknowledgment | Compliance repository | Employment + 3 years |
+| Secure development training | GCS evidence bucket | Employment + 3 years |
+| Tabletop exercise attendance | GCS evidence bucket | 3 years |
+| Phishing simulation results | Training platform | 3 years |
+| Background check completion | Compliance repository | Employment + 7 years |
 
 ### 7.2 Non-Compliance
 
 | Condition | Action |
 |-----------|--------|
-| Training not completed within 30 days of due date | Automated reminder via Drata |
+| Training not completed within 30 days of due date | Automated reminder via email |
 | Training not completed within 60 days | Manager notification, access review |
 | Training not completed within 90 days | Access suspension until training completed |
 | Repeated non-compliance | Documented in personnel file, escalated to CEO |
@@ -161,9 +161,9 @@ All training completion is tracked via:
 
 | Metric | Target | Measurement |
 |--------|--------|-------------|
-| Training completion rate | > 95% within 30 days of due date | Drata compliance dashboard |
+| Training completion rate | > 95% within 30 days of due date | Compliance repository tracker |
 | Phishing simulation click rate | < 10% | Phishing platform reports |
-| Policy acknowledgment rate | 100% within 5 days of publication | Drata assigned policies |
+| Policy acknowledgment rate | 100% within 5 days of publication | Compliance repository |
 | Time to MFA enrollment | < 24 hours from account creation | Identity Platform logs |
 | Security incident rate (human error) | Decreasing year-over-year | Incident reports |
 
@@ -185,7 +185,7 @@ The training program is reviewed annually and updated based on:
 - Training completion is a condition of continued system access
 - Failure to complete required training results in progressive access restrictions
 - Willful refusal to participate in security training is a policy violation subject to disciplinary action
-- Training status is visible to management via Drata compliance dashboard
+- Training status is visible to management via the compliance repository personnel tracker
 
 ---
 

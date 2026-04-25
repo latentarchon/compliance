@@ -128,20 +128,20 @@ Implementation follows FedRAMP's recommended order:
 - ✅ Dependencies monitored continuously (Dependabot on all repos)
 - ✅ SBOM generated per build (CycloneDX format)
 - ✅ Red team exercises run monthly (99 attacks, 6 suites)
-- ✅ Scan results uploaded to Drata evidence library
+- ✅ Scan results archived to GCS evidence bucket
 
 **Information Resources**:
 - `backend/.github/workflows/deploy.yaml` — Trivy scan + SBOM generation
 - `redteam/` — 99 automated attacks across 6 suites (auth bypass, escalation, exfiltration, leftfield, webapp, manual tools)
 - `.github/dependabot.yml` — all 9 repos
-- `compliance/drata/` — evidence sync CLI
+- Cloud Build archive steps — automated evidence collection to GCS
 - `policies/vulnerability-scanning.md` — POL-VS-001
 
 **Machine-Based Validation** (continuous):
 - Trivy scan: every Docker build (blocks deploy on CRITICAL/HIGH)
 - Dependabot: continuous dependency monitoring (auto-PRs)
 - Red team: monthly cron (1st of month), all 6 suites in dry-run
-- SBOM: generated and uploaded to Drata on every backend deploy
+- SBOM: generated and archived to GCS on every backend deploy
 
 **Non-Machine-Based Validation** (quarterly):
 - Review Trivy findings trend report
@@ -246,17 +246,17 @@ Implementation follows FedRAMP's recommended order:
 
 **Pass/Fail Criteria**:
 - ✅ Continuous monitoring plan documented
-- ✅ Automated evidence collection and Drata sync
+- ✅ Automated evidence collection and GCS archival
 - ⬜ Quarterly review template and cadence (TODO — needs agency sponsor)
 
 **Information Resources**:
 - `compliance/continuous-monitoring-plan.md`
-- `compliance/drata/` — automated evidence sync (weekly cron)
+- Cloud Build compliance pipelines — automated evidence archival
 - Red team reports, CP-4 reports, vulnerability scan results
 
 **Machine-Based Validation** (weekly):
-- Drata full sync: Monday 6am UTC (compliance/drata/.github/workflows/drata-sync.yml)
-- Evidence library: 13 compliance documents auto-uploaded
+- Cloud Build compliance pipelines archive evidence to GCS weekly
+- OSCAL SSP regenerated on every push to main
 
 **Non-Machine-Based Validation** (quarterly):
 - Quarterly review report generation (pending sponsor engagement)
@@ -298,11 +298,11 @@ Implementation follows FedRAMP's recommended order:
 **Information Resources**:
 - `policies/incident-response.md` — POL-IR-001
 - `redteam/` — monthly IR exercises
-- `compliance/drata/` — IR evidence upload
+- Cloud Build archive steps — IR evidence collection to GCS
 
 **Machine-Based Validation** (monthly):
 - Red team exercises generate IR timeline evidence
-- Reports uploaded to Drata evidence library
+- Reports archived to GCS evidence bucket
 
 **Non-Machine-Based Validation** (annually):
 - Tabletop exercise with FedRAMP notification procedures
@@ -499,7 +499,7 @@ Implementation follows FedRAMP's recommended order:
 - ✅ Incident response plan (POL-IR-001)
 - ✅ Monthly red team exercises (99 attacks, 6 suites)
 - ✅ MITRE ATT&CK technique mapping on all attacks
-- ✅ Reports auto-uploaded to Drata evidence library
+- ✅ Reports auto-archived to GCS evidence bucket
 
 **Information Resources**:
 - `policies/incident-response.md`
@@ -509,7 +509,7 @@ Implementation follows FedRAMP's recommended order:
 **Machine-Based Validation** (monthly):
 - Red team CLI runs all suites in dry-run mode
 - Generates Markdown report with MITRE mapping and NIST controls matrix
-- Report uploaded to Drata
+- Report archived to GCS evidence bucket
 
 **Status**: ✅ Implemented.
 
@@ -632,7 +632,7 @@ See Cloud Native Architecture §3.1.
 
 **Information Resources**:
 - `supply-chain-risk-management-plan.md`
-- `compliance/drata/` — vendors, risks, assets commands
+- `compliance/supply-chain-risk-management-plan.md` — vendor inventory
 - `policies/vendor-risk.md` — POL-VR-001
 
 **Status**: ✅ Implemented.
@@ -649,7 +649,7 @@ See Cloud Native Architecture §3.1.
 - ✅ Contingency plan documented
 - ✅ Automated CP-4 tests monthly (database backup/PITR, storage versioning, container health, KMS keys, container registry)
 - ✅ RTO/RPO defined per component
-- ✅ Test reports uploaded to Drata
+- ✅ Test reports archived to GCS evidence bucket
 
 **Status**: ✅ Implemented.
 

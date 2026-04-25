@@ -43,7 +43,7 @@
 
 - [ ] All signed addenda on file (encrypted storage)
 - [ ] All background check confirmations on file
-- [ ] All training records current in Drata
+- [ ] All training records current in compliance repository
 - [ ] Personnel tracker up to date
 - [ ] Audit log retention verified (1+ year)
 - [ ] Incident response contacts include CJIS-specific entities

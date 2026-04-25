@@ -5,7 +5,7 @@ func manualControls() []ControlDef {
 		// AT family — training requires human delivery and verification
 		{ID: "at-1", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			NarrativeFn: func(f *InfraFacts) string {
-				return "Latent Archon maintains a Security Awareness and Training Policy (POL-AT-001) requiring annual security awareness training for all personnel and role-based training for privileged users. The policy is reviewed annually and updated as needed. Training completion is tracked via Drata."
+				return "Latent Archon maintains a Security Awareness and Training Policy (POL-AT-001) requiring annual security awareness training for all personnel and role-based training for privileged users. The policy is reviewed annually and updated as needed. Training completion is tracked in the compliance repository (`cybersecurity-education-tracker.md`)."
 			}},
 		{ID: "at-2", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			NarrativeFn: func(f *InfraFacts) string {
@@ -21,7 +21,7 @@ func manualControls() []ControlDef {
 			}},
 		{ID: "at-4", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "moderate",
 			NarrativeFn: func(f *InfraFacts) string {
-				return "Security training records are maintained in Drata. Records include: trainee name, training date, training type, completion status, and expiration date. Records are retained for the duration of employment plus 3 years."
+				return "Security training records are maintained in the compliance repository (`cybersecurity-education-tracker.md`). Records include: trainee name, training date, training type, completion status, and expiration date. Records are retained for the duration of employment plus 3 years."
 			}},
 
 		// PE family — physical security inherited from GCP

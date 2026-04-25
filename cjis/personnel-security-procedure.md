@@ -190,11 +190,11 @@ When a covered individual separates from Latent Archon:
 
 | Record | Retention | Storage |
 |--------|-----------|---------|
-| Signed CJIS Security Addendum | Employment + 3 years | Encrypted storage / Drata |
-| Background check clearance confirmation | Employment + 3 years | Encrypted storage / Drata |
+| Signed CJIS Security Addendum | Employment + 3 years | Encrypted storage / GCS evidence bucket |
+| Background check clearance confirmation | Employment + 3 years | Encrypted storage / GCS evidence bucket |
 | Fingerprint receipt/confirmation | Employment + 3 years | Encrypted storage |
 | Personnel tracker | Active maintenance; archived versions indefinitely | `compliance/cjis/personnel-tracker.md` |
-| Training completion records | Employment + 3 years | Drata |
+| Training completion records | Employment + 3 years | Compliance repository |
 | Separation/termination records | 3 years post-separation | Encrypted storage |
 
 ### 6.2 What NOT to Retain

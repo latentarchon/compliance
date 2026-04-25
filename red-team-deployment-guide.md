@@ -137,4 +137,4 @@ The red-infra deployment supports these KSI themes:
 | KSI-IAM (Identity) | Auth bypass/token forgery test results | Redteam CLI logs |
 | CA-8 (Penetration Testing) | Full assessment reports with MITRE ATT&CK mapping | Report generator |
 
-Red team reports are uploaded to Drata and referenced in the POA&M as evidence for CA-8, IR-3, and SI-4 controls.
+Red team reports are archived to the GCS evidence bucket and referenced in the POA&M as evidence for CA-8, IR-3, and SI-4 controls.

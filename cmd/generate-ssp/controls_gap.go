@@ -157,7 +157,7 @@ func gapCPControls() []ControlDef {
 			}},
 		{ID: "cp-4.1", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "high",
 			NarrativeFn: func(f *InfraFacts) string {
-				return "Contingency plan testing coordination: monthly automated CP-4 exercises run via Cloud Build cron. Tests coordinate recovery of Cloud SQL, Cloud Storage, and Cloud Run services. Results uploaded to Drata as evidence."
+				return "Contingency plan testing coordination: monthly automated CP-4 exercises run via Cloud Build cron. Tests coordinate recovery of Cloud SQL, Cloud Storage, and Cloud Run services. Results archived to GCS evidence bucket."
 			}},
 		{ID: "cp-4.2", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "high",
 			NarrativeFn: func(f *InfraFacts) string {
@@ -174,7 +174,7 @@ func gapCPControls() []ControlDef {
 			}},
 		{ID: "cp-9.1", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "high",
 			NarrativeFn: func(f *InfraFacts) string {
-				return "Testing backups: monthly CP-4 exercises include backup restoration verification: (1) Cloud SQL backup restored to test instance; (2) Cloud Storage objects verified for integrity; (3) results documented and uploaded to Drata."
+				return "Testing backups: monthly CP-4 exercises include backup restoration verification: (1) Cloud SQL backup restored to test instance; (2) Cloud Storage objects verified for integrity; (3) results documented and archived to GCS."
 			}},
 		{ID: "cp-9.5", ImplStatus: "implemented", RoleID: "system-owner", Baseline: "high",
 			NarrativeFn: func(f *InfraFacts) string {

@@ -34,12 +34,12 @@ This plan covers monitoring of all security controls within the authorization bo
 | KSI evidence collection | Weekly | Go CLI (`cmd/ksi-evidence`) queries cloud APIs per provider; SHA-256 manifest |
 | SCN classification | Per-PR | Go CLI (`cmd/classify-scn`) analyzes diffs; posts PR comment |
 | OSCAL SSP validation | Per-PR | CI generates OSCAL v1.1.3 JSON and validates schema |
-| Configuration compliance check | Weekly | Drata automated monitoring sync |
+| Configuration compliance check | Weekly | OSCAL-based compliance monitoring |
 | Access review (IAM/RBAC) | Monthly | CEO review assisted by automated drift checker |
 | Security control assessment | Annual | 3PAO assessment (POA-1) |
 | Penetration testing | Annual | 3PAO or qualified assessor (POA-1) |
 | Red team exercises | Monthly | Automated red team suite (99 attacks, 6 suites) — no human initiation required |
-| POA&M review | Monthly | CEO review and Drata sync |
+| POA&M review | Monthly | CEO review |
 | SSP update | Annual + on significant change | CEO review |
 | Contingency plan test | Monthly | Automated contingency-test CLI (backup/PITR/health checks) |
 
@@ -53,7 +53,7 @@ This plan covers monitoring of all security controls within the authorization bo
 | **Cloud Audit Logs** | All cloud resource changes, data access events | Log-based alerts |
 | **Application Audit Logger** | Authentication, authorization, data access, role changes, SCIM events | WARN-level events → email notifications |
 | **Dependabot** | Dependency vulnerabilities across all repositories | GitHub alerts + automated PRs |
-| **Drata** | Control implementation status, evidence freshness, personnel compliance | Dashboard + weekly sync report |
+| **3PAO Assessment Portal** | Control implementation status, evidence freshness, compliance posture | OSCAL SSP dashboard + automated evidence collection |
 | **CI/CD Security Pipeline** | SAST findings, container vulnerabilities, secret exposure, image signing (Cosign) | Build failure + PR blocking |
 | **DLP** (Cloud DLP) | PII, credentials, and financial data in uploaded documents (pre-RAG scanning) | DLP findings logged; optional redaction via de-identify template |
 <!-- MULTI-CLOUD: Original monitoring tools also referenced CloudWatch, Azure Monitor, WAFv2, Front Door WAF, Comprehend, AI Language. -->
@@ -191,20 +191,19 @@ The automated SCN classifier (`cmd/classify-scn`) runs on every PR and classifie
 
 ## 7. Evidence Collection
 
-### 7.1 Automated Evidence via Drata
+### 7.1 Automated Evidence Collection
 
-The Drata sync CLI (`drata-sync`) automatically uploads the following evidence weekly:
+Evidence is automatically archived to the GCS evidence bucket via Cloud Build and accessible through the 3PAO assessment portal:
 
-| Evidence Type | Source | Drata Mapping |
-|--------------|--------|---------------|
-| 13 security policies | compliance/policies/ | Policy evidence library |
-| SSP document | compliance/fedramp-ssp.md | SSP evidence |
-| Security whitepaper | compliance/security-whitepaper.md | Architecture evidence |
-| SBOM artifacts | CI/CD pipeline | Software composition evidence |
-| Red team reports | redteam CI/CD | Penetration test evidence |
-| Vendor registry | drata-sync vendors | Vendor management evidence |
-| Risk register | drata-sync risks | Risk assessment evidence |
-| Asset inventory | drata-sync assets | Asset management evidence |
+| Evidence Type | Source | Collection Method |
+|--------------|--------|-------------------|
+| 13 security policies | compliance/policies/ | Git repository (versioned) |
+| SSP document | compliance/fedramp-ssp.md | OSCAL SSP generation on every push |
+| Security whitepaper | compliance/security-whitepaper.md | Git repository (versioned) |
+| SBOM artifacts | CI/CD pipeline | Cloud Build archive step per deploy |
+| Red team reports | redteam CI/CD | Cloud Build archive step (monthly) |
+| Risk register | compliance/policies/risk-management.md | Git repository (versioned) |
+| Asset inventory | Terraform state files | IaC-managed (authoritative) |
 
 ### 7.2 Automated KSI Evidence via CI
 

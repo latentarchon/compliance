@@ -47,7 +47,6 @@ cloud/                             # Cloud-specific supplements
   aws.md                           # AWS supplement (commented out — GCP-only focus)
   azure.md                         # Azure supplement (commented out — GCP-only focus)
   service-mapping.md               # Cross-cloud equivalence table (commented out — GCP-only focus)
-drata/                             # Drata API integration CLI tool (Go)
 sales/                             # Sales and procurement collateral
   capability-statement.md
   pipeline-targets.md
@@ -99,19 +98,6 @@ oscal/                             # Machine-readable OSCAL artifacts
 | `fedramp-ssp-appendix-a-controls.md` | ATO / compliance officers / 3PAO | NIST 800-53 control implementations (High baseline, IL5 + enhancement controls in Appendix A-2) |
 | `ssp-lite-nist-800-53.md` | ATO / compliance officers | Control-by-control NIST 800-53 mapping |
 | `sales/capability-statement.md` | Contracting officers | Company capability one-pager |
-| `drata/` | Engineering | Automated Drata compliance sync tool |
-
-## Drata Integration
-
-The `drata/` directory contains a Go CLI tool that syncs compliance data to Drata. See [`drata/README.md`](drata/README.md) for full documentation.
-
-```bash
-cd drata && go build -o drata-sync ./cmd/drata-sync/
-./drata-sync --owner-id 1 --compliance-dir ../ --dry-run --verbose all
-```
-
-**What it syncs**: 13 evidence documents, 2 vendors, 12 risk register entries, 30 assets.  
-**Automation**: Weekly GitHub Action + CI/CD evidence push from backend and redteam repos.
 
 ## PDF Generation
 
@@ -142,7 +128,7 @@ This repository serves as feasibility evidence for government R&D programs (SBIR
 | [Go Compliance Tooling](cmd/) | SSP generator, OSCAL scanner, access/audit review, POA&M reporting, drift checker |
 | [Automated ConMon](cloudbuild-monthly.yaml) | Monthly Cloud Build pipeline: scanning, evidence collection, KSI updates |
 | [13 Security Policies](policies/) | NIST-aligned governance policies with annual review cycle |
-| [Drata Integration](drata/) | Automated evidence sync to continuous compliance platform |
+
 | [CJIS Mapping](cjis/) | All 13 CJIS policy areas with MCA template |
 | [Red Team Program](../redteam/) | 99 automated attacks across 6 MITRE ATT&CK-mapped suites |
 
@@ -154,7 +140,8 @@ IaC (Terraform/Terragrunt)
     → oscal/ssp.json (machine-readable)
     → fedramp-ssp.md (human-readable)
     → evidence/ (verified controls, tier summaries)
-      → Drata sync (weekly)
+      → GCS evidence bucket (Cloud Build archive)
+      → 3PAO assessment portal
       → Cloud Build monthly ConMon
 ```
 

@@ -9,7 +9,7 @@
 
 ---
 
-> **Organizational context**: Latent Archon is a founder-led, automation-first security organization. The CEO/ISSO directs all policy. As the team scales, all personnel will acknowledge this policy via Drata. See SOD-LA-001.
+> **Organizational context**: Latent Archon is a founder-led, automation-first security organization. The CEO/ISSO directs all policy. As the team scales, all personnel will acknowledge this policy via the compliance repository. See SOD-LA-001.
 
 ## 1. Purpose
 
@@ -193,7 +193,7 @@ All personnel must:
 
 - Read and acknowledge this policy within 5 business days of onboarding
 - Re-acknowledge annually upon policy renewal
-- Acknowledgment tracked via Drata personnel compliance checks
+- Acknowledgment tracked via the compliance repository personnel tracker
 
 ---
 

@@ -145,7 +145,7 @@ The production baseline is defined by:
 | **Trivy** | Container image scanning |
 | **Gitleaks** | Secret detection |
 | **Dependabot** | Dependency update automation |
-| **Drata** | Compliance monitoring and evidence collection |
+| **3PAO Assessment Portal** | OSCAL-based compliance monitoring and evidence presentation |
 | **sqlc** | Type-safe SQL code generation |
 | **Atlas** | Database schema migration versioning and checksums |
 | **pgAudit** | PostgreSQL audit logging (DDL, role changes, writes) |

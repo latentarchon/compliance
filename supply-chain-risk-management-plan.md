@@ -24,7 +24,7 @@ This plan covers all external components within or supporting the authorization 
 - Open-source software dependencies (Go modules, NPM packages)
 - Container base images
 - DNS provider (Cloudflare)
-- Compliance tooling (Drata)
+- Compliance tooling (OSCAL SSP generation, 3PAO assessment portal)
 
 ---
 
@@ -40,7 +40,6 @@ This plan covers all external components within or supporting the authorization 
 | Microsoft Azure | Infrastructure (Container Apps, PostgreSQL Flex, Blob Storage, Azure OpenAI, Key Vault, Front Door WAF, Service Bus, Azure Monitor) | Critical | FedRAMP High | Quarterly | -->
 | **GitHub** | Source control, CI/CD (Actions), Dependabot | High | SOC 2 Type II | Semi-annual |
 | **Cloudflare** | DNS, DNSSEC, Edge WAF (Managed + OWASP rulesets), rate limiting, threat score challenges, path probing protection, IP/ASN blocking, Zero Trust Access, Logpush | High | FedRAMP Moderate | Quarterly |
-| **Drata** | Compliance automation | Low | SOC 2 Type II | Annual |
 
 Each customer deployment uses a **single cloud provider**. The vendor risk for that deployment is assessed against the specific CSP used.
 
@@ -156,7 +155,7 @@ Per the Vendor Risk Management Policy (POL-VR-001):
 1. **Pinning**: All dependencies pinned by cryptographic hash (go.sum, package-lock.json, .terraform.lock.hcl)
 2. **Automated Updates**: Dependabot creates PRs for dependency updates weekly
 3. **CI Validation**: All dependency updates must pass full CI pipeline (build, test, SAST, container scan)
-4. **Minimal Dependencies**: Prefer standard library over third-party; single external dependency for drata-sync (golang.org/x/time)
+4. **Minimal Dependencies**: Prefer standard library over third-party
 5. **SBOM**: Generated on every build in CycloneDX + SPDX formats
 
 ### 4.3 Build Pipeline Security

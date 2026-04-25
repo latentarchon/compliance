@@ -127,7 +127,7 @@ In a founder-led organization, traditional two-person conflict detection is repl
 | Same person authors AND approves code | CEO authors; automation reviews | Automation workforce independently gates all merges: SAST, SCA, secrets scan, container scan must pass. CEO cannot bypass CI. |
 | Same person deploys AND approves deployment | CEO authors; automation deploys | Deployment is fully automated — CEO cannot deploy manually. Production requires explicit promotion step. |
 | Same person manages IAM AND reviews IAM | CEO authors IaC; automation applies | Org policy blocks console IAM changes. Weekly `check-ssp-iac-drift` detects any unauthorized bindings. Immutable audit logs. |
-| Same person creates AND approves vulnerability exception | CEO triages machine-generated findings | All findings are machine-generated (not self-reported). FP determinations require written justification in POA&M. Drata tracks evidence. |
+| Same person creates AND approves vulnerability exception | CEO triages machine-generated findings | All findings are machine-generated (not self-reported). FP determinations require written justification in POA&M. GCS evidence bucket tracks evidence. |
 | Same person authors AND reviews compliance docs | CEO authors; automation validates | OSCAL validator checks SSP structure. `check-ssp-iac-drift` validates 26+ claims against live infrastructure. 3PAO provides independent review at assessment. |
 
 ---
@@ -141,7 +141,7 @@ Latent Archon’s security architecture is built on the principle that **machine
 | Traditional Control | Compensating Control | Verification |
 |--------------------|---------------------|-------------|
 | Separate development and operations teams | CI/CD pipeline handles all deployment; operator cannot deploy manually or skip scanning | Cloud Build audit logs |
-| Dedicated security team for reviews | 6 automated scanners (GoSec, Semgrep, govulncheck, Trivy, Gitleaks, Dependabot) run independently on every change | CI logs, Drata evidence |
+| Dedicated security team for reviews | 6 automated scanners (GoSec, Semgrep, govulncheck, Trivy, Gitleaks, Dependabot) run independently on every change | CI logs, GCS evidence bucket |
 | Separate database administrator | Zero direct database access in normal operations; all schema changes via Atlas migrations with checksum verification; IAM-only auth | pgAudit logs, Cloud SQL audit logs |
 | Separate network administrator | All network/firewall config via Terraform (GCP Cloud Armor + Cloudflare Edge WAF/rate-limiting/firewall); console changes blocked by org policy; weekly drift detection | Terraform state, drift detection logs |
 | Change Advisory Board (multi-person) | Automated security checks act as independent review; significant changes flagged by SCN classifier; 3PAO provides external review at assessment | SCN classifier PR comments, CI logs |

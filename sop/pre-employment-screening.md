@@ -103,7 +103,7 @@ After all screening and agreements are complete:
 | 2 | Add to GitHub organization with appropriate team | CEO | `gh api /orgs/latentarchon/members` shows user |
 | 3 | Grant GCP IAM roles via Terragrunt (IaC only — never console) | CEO (author IaC) → CI/CD (apply) | `terragrunt plan` shows expected bindings |
 | 4 | Configure MFA on all accounts | New hire | Verify MFA enabled in Google Workspace admin |
-| 5 | Add to Drata personnel tracking | CEO | Drata shows personnel as compliant |
+| 5 | Add to compliance repository personnel tracker | CEO | Personnel tracker shows personnel as compliant |
 | 6 | Schedule security awareness training (AT-2) | CEO | Training tracker updated |
 | 7 | Update `compliance/personnel.json` roster | CEO | OSCAL generators reflect new personnel |
 | 8 | Update separation-of-duties-matrix.md if roles change | CEO | SOD-LA-001 reflects current state |
