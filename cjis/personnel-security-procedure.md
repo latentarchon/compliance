@@ -194,7 +194,7 @@ When a covered individual separates from Latent Archon:
 | Background check clearance confirmation | Employment + 3 years | Encrypted storage / GCS evidence bucket |
 | Fingerprint receipt/confirmation | Employment + 3 years | Encrypted storage |
 | Personnel tracker | Active maintenance; archived versions indefinitely | `compliance/cjis/personnel-tracker.md` |
-| Training completion records | Employment + 3 years | Compliance repository |
+| Training completion records | Employment + 3 years | GCS evidence bucket |
 | Separation/termination records | 3 years post-separation | Encrypted storage |
 
 ### 6.2 What NOT to Retain

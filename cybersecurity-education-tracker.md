@@ -21,7 +21,7 @@ This document tracks completion of security awareness training, role-based train
 
 | Name | Role | Training Module | Completion Date | Certificate/Record | Next Due |
 |------|------|----------------|-----------------|-------------------|----------|
-| Andrew Hendel | CEO / ISSO | Security Awareness Fundamentals | April 2026 | Compliance repository | April 2027 |
+| Andrew Hendel | CEO / ISSO | Security Awareness Fundamentals | April 2026 | GCS evidence bucket | April 2027 |
 
 ### 2.2 Role-Based Training (Annual)
 
@@ -105,7 +105,7 @@ The following automated tests run on a recurring schedule and serve as persisten
 
 | Evidence Type | Retention Period | Storage Location |
 |---------------|-----------------|------------------|
-| Training completion records | 3 years minimum | Compliance repository + this document |
+| Training completion records | 3 years minimum | GCS evidence bucket + this document (index) |
 | Phishing simulation results | 3 years minimum | GCS evidence bucket |
 | Red team reports | 365 days (CI artifacts) + GCS | GitHub Actions + GCS evidence bucket |
 | ROB acceptance records | Indefinite | `rob_acceptances` database table |

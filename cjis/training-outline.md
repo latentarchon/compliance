@@ -128,7 +128,7 @@ After completing the training modules, personnel must:
 |--------|--------|-----------|
 | Module completion | GCS evidence bucket | Employment + 3 years |
 | Quiz score | GCS evidence bucket | Employment + 3 years |
-| Signed acknowledgment | Compliance repository | Employment + 3 years |
+| Signed acknowledgment | GCS evidence bucket | Employment + 3 years |
 | Trainer/facilitator (if live session) | Internal records | Employment + 3 years |
 
 Records are available for audit by state CSA upon request.
